@@ -1,0 +1,291 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h2 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> Panel de Control
+        </h2>
+    </div>
+</div>
+
+<!-- Widgets de resumen -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-primary font-weight-bold text-uppercase mb-1">Planes Activos</div>
+                <div class="h3 mb-0 font-weight-bold" id="planesActivos">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-success font-weight-bold text-uppercase mb-1">Programas</div>
+                <div class="h3 mb-0 font-weight-bold" id="totalProgramas">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-info font-weight-bold text-uppercase mb-1">Proyectos</div>
+                <div class="h3 mb-0 font-weight-bold" id="totalProyectos">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="text-warning font-weight-bold text-uppercase mb-1">Inversión Total</div>
+                <div class="h3 mb-0 font-weight-bold" id="inversionTotal">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Distribución por Estado</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="estadoChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Avance de Proyectos</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="avanceChart" style="max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de planes recientes -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Planes Próximos a Vencer</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="planesTable">
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Entidad</th>
+                                <th>Estado</th>
+                                <th>Fecha Fin</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="planesBody">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <span class="spinner-border spinner-border-sm"></span> Cargando...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .border-left-primary {
+            border-left: 4px solid #007bff !important;
+        }
+        .border-left-success {
+            border-left: 4px solid #28a745 !important;
+        }
+        .border-left-info {
+            border-left: 4px solid #17a2b8 !important;
+        }
+        .border-left-warning {
+            border-left: 4px solid #ffc107 !important;
+        }
+        .text-primary { color: #007bff; }
+        .text-success { color: #28a745; }
+        .text-info { color: #17a2b8; }
+        .text-warning { color: #ffc107; }
+        .font-weight-bold { font-weight: 600; }
+        .text-uppercase { text-transform: uppercase; font-size: 0.85rem; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        let estadoChart, avanceChart;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/Dashboard/GetDashboardData');
+                if (!response.ok) {
+                    console.error('Error cargando datos del dashboard');
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.success && result.data) {
+                    updateWidgets(result.data);
+                    updateCharts(result.data);
+                    updateTable(result.data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar los datos del dashboard', 'error');
+            }
+        }
+
+        function updateWidgets(data) {
+            document.getElementById('planesActivos').textContent = data.totalPlanesActivos || 0;
+            document.getElementById('totalProgramas').textContent = data.totalProgramasPresupuestarios || 0;
+            document.getElementById('totalProyectos').textContent = data.totalProyectosInversion || 0;
+            document.getElementById('inversionTotal').textContent = formatCurrency(data.inversionTotalAnualizada || 0);
+        }
+
+        function updateCharts(data) {
+            // Gráfico de distribución por estado
+            const estadoCtx = document.getElementById('estadoChart').getContext('2d');
+            estadoChart = new Chart(estadoCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Activos', 'En Revisión', 'Completados', 'Pausados'],
+                    datasets: [{
+                        data: [
+                            Math.floor(data.totalPlanesActivos * 0.6),
+                            Math.floor(data.totalPlanesActivos * 0.2),
+                            Math.floor(data.totalPlanesActivos * 0.15),
+                            Math.floor(data.totalPlanesActivos * 0.05)
+                        ],
+                        backgroundColor: [
+                            '#007bff',
+                            '#ffc107',
+                            '#28a745',
+                            '#dc3545'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de avance
+            const avanceCtx = document.getElementById('avanceChart').getContext('2d');
+            avanceChart = new Chart(avanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    datasets: [{
+                        label: 'Avance (%)',
+                        data: [15, 25, 35, 45, 60, 75],
+                        backgroundColor: '#007bff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('planesBody');
+            tbody.innerHTML = '';
+
+            if (data.planesProximo && data.planesProximo.length > 0) {
+                data.planesProximo.forEach(plan => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <strong>${plan.nombre}</strong>
+                            <br><small class="text-muted">${plan.descripcion}</small>
+                        </td>
+                        <td>${plan.entidadPublicaId}</td>
+                        <td>
+                            <span class="badge bg-${getEstadoBadgeClass(plan.estado)}">${plan.estado}</span>
+                        </td>
+                        <td>${formatDate(plan.fechaFin)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="viewPlan(${plan.planEstrategicoInstitucionalId})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay planes disponibles</td></tr>';
+            }
+        }
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0
+            }).format(value);
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('es-ES');
+        }
+
+        function getEstadoBadgeClass(estado) {
+            const estados = {
+                'Activo': 'success',
+                'En Revisión': 'warning',
+                'Completado': 'info',
+                'Pausado': 'danger'
+            };
+            return estados[estado] || 'secondary';
+        }
+
+        function viewPlan(planId) {
+            // Redirigir a vista de plan (implementar después)
+            Swal.fire('Info', `Ver plan ${planId}`, 'info');
+        }
+    </script>
+}

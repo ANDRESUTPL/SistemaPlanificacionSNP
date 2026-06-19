@@ -1,0 +1,182 @@
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+    Layout = null; // Sin layout para login
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - Sistema SNP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .login-header h1 {
+            font-size: 2em;
+            margin: 0;
+            font-weight: 700;
+        }
+        .login-header p {
+            margin: 10px 0 0 0;
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        .login-form {
+            padding: 40px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .form-check {
+            margin-bottom: 20px;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-login:active {
+            transform: translateY(0);
+        }
+        .error-alert {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-chart-line"></i> SNP</h1>
+            <p>Sistema de Planificación e Inversión Pública</p>
+        </div>
+        <div class="login-form">
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="error-alert">
+                    <i class="fas fa-exclamation-circle"></i> @ViewBag.ErrorMessage
+                </div>
+            }
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(x => x.Errors.Count > 0))
+            {
+                <div class="error-alert">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <ul class="mb-0" style="margin-left: 20px;">
+                        @foreach (var modelState in ViewData.ModelState.Values)
+                        {
+                            @foreach (var error in modelState.Errors)
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        }
+                    </ul>
+                </div>
+            }
+
+            <form method="post" asp-action="Login" id="loginForm">
+                @Html.AntiForgeryToken()
+
+                <div class="form-group">
+                    <label asp-for="NombreUsuario" class="form-label">Usuario</label>
+                    <input asp-for="NombreUsuario" class="form-control" placeholder="Ingresa tu usuario" required>
+                    <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Password" class="form-label">Contraseña</label>
+                    <input asp-for="Password" type="password" class="form-control" placeholder="Ingresa tu contraseña" required>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="form-check">
+                    <input asp-for="Recuerdame" type="checkbox" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                        Recuérdame en este equipo
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">
+                    <span class="loading-spinner" id="spinner"></span>
+                    <span id="btnText">Iniciar Sesión</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+            
+            btn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Verificando...';
+        });
+    </script>
+</body>
+</html>

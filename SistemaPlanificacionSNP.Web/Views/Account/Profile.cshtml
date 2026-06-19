@@ -1,0 +1,99 @@
+@model UserProfileViewModel
+
+@{
+    ViewData["Title"] = "Mi Perfil";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-circle"></i> Perfil de Usuario</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5 class="mb-3">Información Personal</h5>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">ID de Usuario</p>
+                            <p class="fw-bold">@Model.UsuarioId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Nombre de Usuario</p>
+                            <p class="fw-bold">@Model.NombreUsuario</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">Email</p>
+                            <p class="fw-bold">@Model.Email</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Estado</p>
+                            <p class="fw-bold">
+                                @if (Model.Activo)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactivo</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">Nombre</p>
+                            <p class="fw-bold">@Model.Nombre</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Apellido</p>
+                            <p class="fw-bold">@Model.Apellido</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <p class="text-muted">Fecha de Creación</p>
+                            <p class="fw-bold">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                        </div>
+                    </div>
+
+                    @if (Model.Roles.Any())
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p class="text-muted">Roles Asignados</p>
+                                <div>
+                                    @foreach (var rol in Model.Roles)
+                                    {
+                                        <span class="badge bg-info me-2">@rol</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <hr>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="/" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                        <a href="/account/change-password" class="btn btn-warning">
+                            <i class="fas fa-key"></i> Cambiar Contraseña
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
