@@ -125,7 +125,6 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 // Crear usuario
                 var usuario = _mapper.Map<Usuario>(usuarioCreateDto);
                 usuario.PasswordHash = _passwordService.HashPassword(usuarioCreateDto.Password);
-                usuario.UsuarioCreacionId = usuarioCreadorId;
                 usuario.FechaCreacion = DateTime.UtcNow;
                 usuario.Activo = true;
 
@@ -203,9 +202,6 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 if (usuarioUpdateDto.Activo.HasValue)
                     usuario.Activo = usuarioUpdateDto.Activo.Value;
 
-                usuario.FechaUltimaActualizacion = DateTime.UtcNow;
-                usuario.UsuarioUltimaActualizacionId = usuarioEditorId;
-
                 await _unitOfWork.Usuarios.UpdateAsync(usuario);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -273,7 +269,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 );
 
                 _logger.LogInformation($"User deleted: {usuario.NombreUsuario}");
-                return Ok(ApiResponse<string>.Success("Usuario eliminado exitosamente"));
+                return Ok(ApiResponse<string>.Succeeded("Usuario eliminado exitosamente"));
             }
             catch (Exception ex)
             {
@@ -306,44 +302,44 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
 
                 // Obtener todas las pantallas del sistema
                 var repo = _unitOfWork.GetRepository<Pantalla>();
-                var pantallas = await repo.FindAsync(p => p.Activa);
+                var pantallas = await repo.FindAsync(p => p.Activo);
 
                 // Obtener permisos del usuario basados en sus roles
                 var permisosUsuario = new Dictionary<int, PermisoDto>();
 
-                foreach (var usuarioRol in usuario.UsuariosRoles)
+                foreach (var usuarioRol in usuario.UsuarioRoles)
                 {
-                    foreach (var permiso in usuarioRol.Rol.RolesPermisos)
+                    foreach (var permiso in usuarioRol.Rol.RolPermisos)
                     {
                         // Tomar el permiso más permisivo si ya existe
-                        if (!permisosUsuario.ContainsKey(permiso.Permiso.PantallaId))
+                        if (!permisosUsuario.ContainsKey(permiso.PantallaId))
                         {
-                            permisosUsuario[permiso.Permiso.PantallaId] = new PermisoDto
+                            permisosUsuario[permiso.PantallaId] = new PermisoDto
                             {
-                                PermisoId = permiso.Permiso.PermisoId,
-                                PantallaId = permiso.Permiso.PantallaId,
-                                CodigoPermiso = permiso.Permiso.Pantalla.Codigo,
-                                NombrePantalla = permiso.Permiso.Pantalla.Nombre,
-                                Lectura = permiso.Permiso.Lectura,
-                                Creacion = permiso.Permiso.Creacion,
-                                Edicion = permiso.Permiso.Edicion,
-                                Eliminacion = permiso.Permiso.Eliminacion
+                                PermisoId = permiso.RolPermisoId,
+                                PantallaId = permiso.PantallaId,
+                                CodigoPermiso = permiso.Pantalla.Nombre,
+                                NombrePantalla = permiso.Pantalla.Nombre,
+                                Lectura = permiso.Lectura,
+                                Creacion = permiso.Creacion,
+                                Edicion = permiso.Edicion,
+                                Eliminacion = permiso.Eliminacion
                             };
                         }
                         else
                         {
                             // Combinar permisos (OR lógico)
-                            permisosUsuario[permiso.Permiso.PantallaId].Lectura |= permiso.Permiso.Lectura;
-                            permisosUsuario[permiso.Permiso.PantallaId].Creacion |= permiso.Permiso.Creacion;
-                            permisosUsuario[permiso.Permiso.PantallaId].Edicion |= permiso.Permiso.Edicion;
-                            permisosUsuario[permiso.Permiso.PantallaId].Eliminacion |= permiso.Permiso.Eliminacion;
+                            permisosUsuario[permiso.PantallaId].Lectura |= permiso.Lectura;
+                            permisosUsuario[permiso.PantallaId].Creacion |= permiso.Creacion;
+                            permisosUsuario[permiso.PantallaId].Edicion |= permiso.Edicion;
+                            permisosUsuario[permiso.PantallaId].Eliminacion |= permiso.Eliminacion;
                         }
                     }
                 }
 
                 // Construir árbol de menú (solo pantallas donde usuario tiene lectura)
                 var menuRaiz = BuildMenuTree(
-                    pantallas.Where(p => p.PantallaPadreId == null).ToList(),
+                    pantallas.Where(p => p.PantallaPadrId == null).ToList(),
                     pantallas,
                     permisosUsuario
                 );
@@ -381,9 +377,21 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                     Nombre = pantalla.Nombre,
                     Icono = pantalla.Icono,
                     Ruta = pantalla.Ruta,
-                    PantallaPadreId = pantalla.PantallaPadreId,
+                    PantallaPadreId = pantalla.PantallaPadrId,
                     Orden = pantalla.Orden,
-                    Permiso = permiso,
+                    RolPermisos = new List<RolPermisoDto>
+                    {
+                        new RolPermisoDto
+                        {
+                            RolPermisoId = permiso.PermisoId,
+                            RolId = 0,
+                            PantallaId = permiso.PantallaId,
+                            Lectura = permiso.Lectura,
+                            Creacion = permiso.Creacion,
+                            Edicion = permiso.Edicion,
+                            Eliminacion = permiso.Eliminacion
+                        }
+                    },
                     Subpantallas = BuildMenuTree(
                         pantalla.PantallasHijas.ToList(),
                         todasPantallas,
@@ -423,7 +431,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 var rolRepo = _unitOfWork.GetRepository<Rol>();
 
                 // Remover roles actuales
-                usuario.UsuariosRoles.Clear();
+                usuario.UsuarioRoles.Clear();
 
                 // Agregar nuevos roles
                 var rolesNuevos = new List<Rol>();
@@ -432,7 +440,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                     var rol = await rolRepo.GetByIdAsync(rolId);
                     if (rol != null)
                     {
-                        usuario.UsuariosRoles.Add(new UsuarioRol
+                        usuario.UsuarioRoles.Add(new UsuarioRol
                         {
                             UsuarioId = usuarioId,
                             RolId = rolId,
@@ -455,7 +463,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 );
 
                 _logger.LogInformation($"Roles assigned to user: {usuario.NombreUsuario}");
-                return Ok(ApiResponse<string>.Success("Roles asignados exitosamente"));
+                return Ok(ApiResponse<string>.Succeeded("Roles asignados exitosamente"));
             }
             catch (Exception ex)
             {

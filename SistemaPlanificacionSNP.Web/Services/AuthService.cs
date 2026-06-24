@@ -59,21 +59,39 @@ namespace SistemaPlanificacionSNP.Web.Services
         public string? GetAccessToken()
         {
             var context = _httpContextAccessor.HttpContext;
-            context?.Request.Cookies.TryGetValue(AccessTokenKey, out var token);
+            string? token = null;
+
+            if (context != null)
+            {
+                context.Request.Cookies.TryGetValue(AccessTokenKey, out token);
+            }
+
             return token;
         }
 
         public string? GetRefreshToken()
         {
             var context = _httpContextAccessor.HttpContext;
-            context?.Request.Cookies.TryGetValue(RefreshTokenKey, out var token);
+            string? token = null;
+
+            if (context != null)
+            {
+                context.Request.Cookies.TryGetValue(RefreshTokenKey, out token);
+            }
+
             return token;
         }
 
         public string? GetUserName()
         {
             var context = _httpContextAccessor.HttpContext;
-            context?.Request.Cookies.TryGetValue(UserNameKey, out var userName);
+            string? userName = null;
+
+            if (context != null)
+            {
+                context.Request.Cookies.TryGetValue(UserNameKey, out userName);
+            }
+
             return userName;
         }
 

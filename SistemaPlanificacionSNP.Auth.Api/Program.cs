@@ -6,6 +6,7 @@ using SistemaPlanificacionSNP.Infrastructure.JWT;
 using SistemaPlanificacionSNP.Infrastructure.Mapping;
 using SistemaPlanificacionSNP.Infrastructure.Repositories;
 using SistemaPlanificacionSNP.Infrastructure.Services;
+using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
