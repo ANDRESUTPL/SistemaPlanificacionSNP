@@ -1,24 +1,33 @@
-namespace SistemaPlanificacionSNP.Domain.Entities.Seguridad
-{
-    /// <summary>
-    /// Entidad que representa un usuario del sistema
-    /// </summary>
-    public class Usuario
-    {
-        public int UsuarioId { get; set; }
-        public string NombreUsuario { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public string Apellido { get; set; } = string.Empty;
-        public bool Activo { get; set; } = true;
-        public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-        public DateTime? FechaUltimoLogin { get; set; }
-        public string? RefreshToken { get; set; }
-        public DateTime? RefreshTokenExpiracion { get; set; }
+﻿using System;
+using System.Collections.Generic;
 
-        // Relaciones
-        public ICollection<UsuarioRol> UsuarioRoles { get; set; } = new List<UsuarioRol>();
-        public ICollection<AuditoriaTransaccional> Auditorias { get; set; } = new List<AuditoriaTransaccional>();
-    }
+namespace SistemaPlanificacionSNP.Domain.Entities.Seguridad;
+
+public partial class Usuario
+{
+    public int UsuarioId { get; set; }
+
+    public string NombreUsuario { get; set; } = null!;
+
+    public string Email { get; set; } = null!;
+
+    public string PasswordHash { get; set; } = null!;
+
+    public string Nombre { get; set; } = null!;
+
+    public string Apellido { get; set; } = null!;
+
+    public bool Activo { get; set; }
+
+    public DateTime FechaCreacion { get; set; }
+
+    public DateTime? FechaUltimoLogin { get; set; }
+
+    public string? RefreshToken { get; set; }
+
+    public DateTime? RefreshTokenExpiracion { get; set; }
+
+    public virtual ICollection<AuditoriaTransaccional> AuditoriaTransaccionals { get; set; } = new List<AuditoriaTransaccional>();
+
+    public virtual ICollection<UsuarioRol> UsuarioRols { get; set; } = new List<UsuarioRol>();
 }

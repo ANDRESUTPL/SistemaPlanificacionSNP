@@ -14,7 +14,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         private readonly IApiClient _apiClient;
         private readonly IAuthService _authService;
         private readonly ILogger<AccountController> _logger;
-        private const string ApiGatewayUrl = "https://localhost:7000";
+        private const string ApiGatewayUrl = "https://localhost:52555";
 
         public AccountController(IApiClient apiClient, IAuthService authService, ILogger<AccountController> logger)
         {

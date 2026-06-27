@@ -14,10 +14,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
     {
         public MappingProfile()
         {
-            // ==================== USUARIO ====================
-            CreateMap<Usuario, UsuarioDto>()
-                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.UsuarioRoles.Select(ur => ur.Rol)));
-            
+            // ==================== USUARIO ====================           
+            CreateMap<UsuarioDto, Usuario>();
+            CreateMap<Usuario, UsuarioDto>();
             CreateMap<UsuarioCreateDto, Usuario>()
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Se asigna en el controller
 
@@ -40,8 +39,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
 
             // ==================== PANTALLA Y MENÚ ====================
             CreateMap<Pantalla, MenuPermisoDto>()
-                .ForMember(dest => dest.RolPermisos, opt => opt.MapFrom(src => src.RolPermisos))
-                .ForMember(dest => dest.Subpantallas, opt => opt.MapFrom(src => src.PantallasHijas));
+                .ForMember(dest => dest.RolPermisos, opt => opt.MapFrom(src => src.RolPermisos));
 
             // ==================== PLAN ESTRATÉGICO ====================
             CreateMap<PlanEstrategicoInstitucional, PlanEstrategicoInstitucionalDto>()

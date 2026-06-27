@@ -1,394 +1,192 @@
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using SistemaPlanificacionSNP.Domain.Entities.Seguridad;
-using SistemaPlanificacionSNP.Domain.Entities.Parametrizacion;
-using SistemaPlanificacionSNP.Domain.Entities.MacroPlanificacion;
-using SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
 
-namespace SistemaPlanificacionSNP.Infrastructure.Data
+namespace SistemaPlanificacionSNP.Infrastructure.Data;
+
+public partial class ApplicationDbContext : DbContext
 {
-    public class ApplicationDbContext : DbContext
+    public ApplicationDbContext()
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
-        }
-
-        #region DbSets - Seguridad
-        public DbSet<Usuario> Usuarios { get; set; }
-        public DbSet<Rol> Roles { get; set; }
-        public DbSet<UsuarioRol> UsuarioRoles { get; set; }
-        public DbSet<Pantalla> Pantallas { get; set; }
-        public DbSet<RolPermiso> RolPermisos { get; set; }
-        public DbSet<AuditoriaTransaccional> Auditorias { get; set; }
-        #endregion
-
-        #region DbSets - Parametrizacion
-        public DbSet<PeriodoPlanificacion> PeriodosPlanificacion { get; set; }
-        public DbSet<EntidadPublica> EntidadesPublicas { get; set; }
-        public DbSet<Catalogo> Catalogos { get; set; }
-        public DbSet<ItemCatalogo> ItemsCatalogo { get; set; }
-        #endregion
-
-        #region DbSets - MacroPlanificacion
-        public DbSet<ObjetivoDesarrolloSostenible> ObjetivosDesarrolloSostenible { get; set; }
-        public DbSet<PlanNacionalDesarrollo> PlanesNacionalesDesarrollo { get; set; }
-        #endregion
-
-        #region DbSets - PlanificacionInstitucional
-        public DbSet<PlanEstrategicoInstitucional> PlanesEstrategicos { get; set; }
-        public DbSet<ObjetivoEstrategico> ObjetivosEstrategicos { get; set; }
-        public DbSet<ProgramaPresupuestario> ProgramasPresupuestarios { get; set; }
-        public DbSet<MatrizIndicador> MatricesIndicadores { get; set; }
-        public DbSet<MetaTerritorial> MetasTerritorial { get; set; }
-        public DbSet<ProyectoInversion> ProyectosInversion { get; set; }
-        public DbSet<RevisionSNP> Revisiones { get; set; }
-        #endregion
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            // ====== CONFIGURACIÓN SEGURIDAD ======
-            ConfigurarUsuario(modelBuilder);
-            ConfigurarRol(modelBuilder);
-            ConfigurarUsuarioRol(modelBuilder);
-            ConfigurarPantalla(modelBuilder);
-            ConfigurarRolPermiso(modelBuilder);
-            ConfigurarAuditoriaTransaccional(modelBuilder);
-
-            // ====== CONFIGURACIÓN PARAMETRIZACION ======
-            ConfigurarPeriodoPlanificacion(modelBuilder);
-            ConfigurarEntidadPublica(modelBuilder);
-            ConfigurarCatalogo(modelBuilder);
-            ConfigurarItemCatalogo(modelBuilder);
-
-            // ====== CONFIGURACIÓN MACROPLANIFICACION ======
-            ConfigurarObjetivoDesarrolloSostenible(modelBuilder);
-            ConfigurarPlanNacionalDesarrollo(modelBuilder);
-
-            // ====== CONFIGURACIÓN PLANIFICACION INSTITUCIONAL ======
-            ConfigurarPlanEstrategicoInstitucional(modelBuilder);
-            ConfigurarObjetivoEstrategico(modelBuilder);
-            ConfigurarProgramaPresupuestario(modelBuilder);
-            ConfigurarMatrizIndicador(modelBuilder);
-            ConfigurarMetaTerritorial(modelBuilder);
-            ConfigurarProyectoInversion(modelBuilder);
-            ConfigurarRevisionSNP(modelBuilder);
-        }
-
-        #region Configuraciones - Seguridad
-        private void ConfigurarUsuario(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Usuario>(entity =>
-            {
-                entity.HasKey(e => e.UsuarioId);
-                entity.Property(e => e.NombreUsuario).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.PasswordHash).IsRequired();
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Apellido).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.RefreshToken).HasMaxLength(500);
-                
-                entity.HasIndex(e => e.NombreUsuario).IsUnique();
-                entity.HasIndex(e => e.Email).IsUnique();
-
-                entity.HasMany(e => e.UsuarioRoles)
-                    .WithOne(ur => ur.Usuario)
-                    .HasForeignKey(ur => ur.UsuarioId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.Auditorias)
-                    .WithOne(a => a.Usuario)
-                    .HasForeignKey(a => a.UsuarioId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-        }
-
-        private void ConfigurarRol(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Rol>(entity =>
-            {
-                entity.HasKey(e => e.RolId);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Descripcion).HasMaxLength(255);
-                entity.HasIndex(e => e.Nombre).IsUnique();
-
-                entity.HasMany(e => e.UsuarioRoles)
-                    .WithOne(ur => ur.Rol)
-                    .HasForeignKey(ur => ur.RolId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.RolPermisos)
-                    .WithOne(rp => rp.Rol)
-                    .HasForeignKey(rp => rp.RolId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarUsuarioRol(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<UsuarioRol>(entity =>
-            {
-                entity.HasKey(e => e.UsuarioRolId);
-                entity.HasIndex(e => new { e.UsuarioId, e.RolId }).IsUnique();
-            });
-        }
-
-        private void ConfigurarPantalla(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Pantalla>(entity =>
-            {
-                entity.HasKey(e => e.PantallaId);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Ruta).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.Icono).HasMaxLength(50);
-
-                entity.HasOne(e => e.PantallaPadre)
-                    .WithMany(p => p.PantallasHijas)
-                    .HasForeignKey(e => e.PantallaPadrId)
-                    .OnDelete(DeleteBehavior.NoAction);
-
-                entity.HasMany(e => e.RolPermisos)
-                    .WithOne(rp => rp.Pantalla)
-                    .HasForeignKey(rp => rp.PantallaId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarRolPermiso(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<RolPermiso>(entity =>
-            {
-                entity.HasKey(e => e.RolPermisoId);
-                entity.HasIndex(e => new { e.RolId, e.PantallaId }).IsUnique();
-            });
-        }
-
-        private void ConfigurarAuditoriaTransaccional(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<AuditoriaTransaccional>(entity =>
-            {
-                entity.HasKey(e => e.AuditoriaId);
-                entity.Property(e => e.Entidad).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.TipoOperacion).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.DatosAnteriores).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.DatosNuevos).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.Descripcion).HasMaxLength(500);
-            });
-        }
-        #endregion
-
-        #region Configuraciones - Parametrizacion
-        private void ConfigurarPeriodoPlanificacion(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<PeriodoPlanificacion>(entity =>
-            {
-                entity.HasKey(e => e.PeriodoPlanificacionId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
-                entity.HasIndex(e => e.Codigo).IsUnique();
-
-                entity.HasMany(e => e.EntidadesPublicas)
-                    .WithOne(ep => ep.PeriodoPlanificacion)
-                    .HasForeignKey(ep => ep.PeriodoPlanificacionId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-        }
-
-        private void ConfigurarEntidadPublica(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<EntidadPublica>(entity =>
-            {
-                entity.HasKey(e => e.EntidadPublicaId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Sigla).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Mision).IsRequired().HasColumnType("nvarchar(max)");
-                entity.HasIndex(e => e.Codigo).IsUnique();
-
-                entity.HasMany(e => e.PlanesEstrategicos)
-                    .WithOne(pei => pei.EntidadPublica)
-                    .HasForeignKey(pei => pei.EntidadPublicaId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-        }
-
-        private void ConfigurarCatalogo(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Catalogo>(entity =>
-            {
-                entity.HasKey(e => e.CatalogoId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Descripcion).HasMaxLength(255);
-                entity.HasIndex(e => e.Codigo).IsUnique();
-
-                entity.HasMany(e => e.Items)
-                    .WithOne(ic => ic.Catalogo)
-                    .HasForeignKey(ic => ic.CatalogoId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarItemCatalogo(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ItemCatalogo>(entity =>
-            {
-                entity.HasKey(e => e.ItemCatalogoId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Descripcion).HasMaxLength(255);
-                entity.HasIndex(e => new { e.CatalogoId, e.Codigo }).IsUnique();
-            });
-        }
-        #endregion
-
-        #region Configuraciones - MacroPlanificacion
-        private void ConfigurarObjetivoDesarrolloSostenible(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ObjetivoDesarrolloSostenible>(entity =>
-            {
-                entity.HasKey(e => e.OdsId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.HasIndex(e => e.Codigo).IsUnique();
-
-                entity.HasMany(e => e.PlanesNacionales)
-                    .WithOne(pnd => pnd.Ods)
-                    .HasForeignKey(pnd => pnd.OdsId)
-                    .OnDelete(DeleteBehavior.NoAction);
-            });
-        }
-
-        private void ConfigurarPlanNacionalDesarrollo(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<PlanNacionalDesarrollo>(entity =>
-            {
-                entity.HasKey(e => e.PndId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.HasIndex(e => e.Codigo).IsUnique();
-            });
-        }
-        #endregion
-
-        #region Configuraciones - PlanificacionInstitucional
-        private void ConfigurarPlanEstrategicoInstitucional(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<PlanEstrategicoInstitucional>(entity =>
-            {
-                entity.HasKey(e => e.PeiId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.Estado).IsRequired().HasMaxLength(20);
-                entity.HasIndex(e => e.Codigo).IsUnique();
-
-                entity.HasMany(e => e.ObjetivosEstrategicos)
-                    .WithOne(oei => oei.PlanEstrategico)
-                    .HasForeignKey(oei => oei.PeiId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.Revisiones)
-                    .WithOne(r => r.PlanEstrategico)
-                    .HasForeignKey(r => r.PeiId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarObjetivoEstrategico(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ObjetivoEstrategico>(entity =>
-            {
-                entity.HasKey(e => e.OeiId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-
-                entity.HasMany(e => e.ProgramasPresupuestarios)
-                    .WithOne(pp => pp.ObjetivoEstrategico)
-                    .HasForeignKey(pp => pp.OeiId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarProgramaPresupuestario(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ProgramaPresupuestario>(entity =>
-            {
-                entity.HasKey(e => e.ProgramaId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.PresupuestoAsignado).HasPrecision(18, 2);
-
-                entity.HasMany(e => e.MatricesIndicadores)
-                    .WithOne(mi => mi.ProgramaPresupuestario)
-                    .HasForeignKey(mi => mi.ProgramaId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.ProyectosInversion)
-                    .WithOne(pi => pi.ProgramaPresupuestario)
-                    .HasForeignKey(pi => pi.ProgramaId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarMatrizIndicador(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<MatrizIndicador>(entity =>
-            {
-                entity.HasKey(e => e.MatrizIndicadorId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.TipoIndicador).HasMaxLength(50);
-                entity.Property(e => e.Unidad).HasMaxLength(50);
-                entity.Property(e => e.ValorBase).HasPrecision(18, 4);
-                entity.Property(e => e.ValorMeta).HasPrecision(18, 4);
-
-                entity.HasMany(e => e.MetasTerritorial)
-                    .WithOne(mt => mt.MatrizIndicador)
-                    .HasForeignKey(mt => mt.MatrizIndicadorId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-        }
-
-        private void ConfigurarMetaTerritorial(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<MetaTerritorial>(entity =>
-            {
-                entity.HasKey(e => e.MetaTerritorialId);
-                entity.Property(e => e.Territorio).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.MetaFisica).HasPrecision(18, 4);
-                entity.Property(e => e.MetaFinanciera).HasPrecision(18, 2);
-            });
-        }
-
-        private void ConfigurarProyectoInversion(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<ProyectoInversion>(entity =>
-            {
-                entity.HasKey(e => e.ProyectoId);
-                entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Descripcion).HasColumnType("nvarchar(max)");
-                entity.Property(e => e.CostoTotal).HasPrecision(18, 2);
-                entity.Property(e => e.Estado).IsRequired().HasMaxLength(20);
-                entity.HasIndex(e => e.Codigo).IsUnique();
-            });
-        }
-
-        private void ConfigurarRevisionSNP(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<RevisionSNP>(entity =>
-            {
-                entity.HasKey(e => e.RevisionId);
-                entity.Property(e => e.Estado).IsRequired().HasMaxLength(20);
-                entity.Property(e => e.Comentarios).HasColumnType("nvarchar(max)");
-            });
-        }
-        #endregion
     }
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<AuditoriaTransaccional> AuditoriaTransaccionals { get; set; }
+
+    public virtual DbSet<Pantalla> Pantallas { get; set; }
+
+    public virtual DbSet<Rol> Rols { get; set; }
+
+    public virtual DbSet<RolPermiso> RolPermisos { get; set; }
+
+    public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<Usuario> Usuarios { get; set; }
+
+    public virtual DbSet<Usuario1> Usuarios1 { get; set; }
+
+    public virtual DbSet<UsuarioRol> UsuarioRols { get; set; }
+
+    public virtual DbSet<UsuarioRole> UsuarioRoles { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=DEPARTAMENTOTI;Database=SNP_Auth;Trusted_Connection=true;Encrypt=false;User Id=AdminSQLUser;Password=1915.*@Ort.;");
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AuditoriaTransaccional>(entity =>
+        {
+            entity.HasKey(e => e.AuditoriaId);
+
+            entity.ToTable("AuditoriaTransaccional");
+
+            entity.HasIndex(e => e.UsuarioId, "IX_AuditoriaTransaccional_UsuarioId");
+
+            entity.Property(e => e.Entidad).HasMaxLength(100);
+            entity.Property(e => e.FechaOperacion).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.TipoOperacion).HasMaxLength(50);
+
+            entity.HasOne(d => d.Usuario).WithMany(p => p.AuditoriaTransaccionals)
+                .HasForeignKey(d => d.UsuarioId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AuditoriaTransaccional_Usuario");
+        });
+
+        modelBuilder.Entity<Pantalla>(entity =>
+        {
+            entity.ToTable("Pantalla");
+
+            entity.Property(e => e.Activo).HasDefaultValue(true);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Icono).HasMaxLength(100);
+            entity.Property(e => e.Nombre).HasMaxLength(100);
+            entity.Property(e => e.Ruta).HasMaxLength(256);
+
+            entity.HasOne(d => d.PantallaPadr).WithMany(p => p.InversePantallaPadr)
+                .HasForeignKey(d => d.PantallaPadrId)
+                .HasConstraintName("FK_Pantalla_PantallaPadre");
+        });
+
+        modelBuilder.Entity<Rol>(entity =>
+        {
+            entity.ToTable("Rol");
+
+            entity.Property(e => e.Activo).HasDefaultValue(true);
+            entity.Property(e => e.Descripcion).HasMaxLength(500);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Nombre).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<RolPermiso>(entity =>
+        {
+            entity.ToTable("RolPermiso");
+
+            entity.HasIndex(e => e.PantallaId, "IX_RolPermiso_PantallaId");
+
+            entity.HasIndex(e => e.RolId, "IX_RolPermiso_RolId");
+
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Lectura).HasDefaultValue(true);
+
+            entity.HasOne(d => d.Pantalla).WithMany(p => p.RolPermisos)
+                .HasForeignKey(d => d.PantallaId)
+                .HasConstraintName("FK_RolPermiso_Pantalla");
+
+            entity.HasOne(d => d.Rol).WithMany(p => p.RolPermisos)
+                .HasForeignKey(d => d.RolId)
+                .HasConstraintName("FK_RolPermiso_Rol");
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.RolId).HasName("PK__Roles__F92302F1DCECE129");
+
+            entity.HasIndex(e => e.Nombre, "UQ__Roles__75E3EFCF2CF8E5D3").IsUnique();
+
+            entity.Property(e => e.Activo).HasDefaultValue(true);
+            entity.Property(e => e.Nombre).HasMaxLength(60);
+        });
+
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.ToTable("Usuario");
+
+            entity.HasIndex(e => e.Email, "IX_Usuario_Email").IsUnique();
+
+            entity.HasIndex(e => e.NombreUsuario, "IX_Usuario_NombreUsuario").IsUnique();
+
+            entity.Property(e => e.Activo).HasDefaultValue(true);
+            entity.Property(e => e.Apellido).HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Nombre).HasMaxLength(100);
+            entity.Property(e => e.NombreUsuario).HasMaxLength(100);
+            entity.Property(e => e.RefreshToken).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Usuario1>(entity =>
+        {
+            entity.HasKey(e => e.UsuarioId).HasName("PK__Usuarios__2B3DE7B8F925ED37");
+
+            entity.ToTable("Usuarios");
+
+            entity.HasIndex(e => e.Email, "UQ__Usuarios__A9D105349660851C").IsUnique();
+
+            entity.HasIndex(e => e.Usuario, "UQ__Usuarios__E3237CF7C29C2508").IsUnique();
+
+            entity.Property(e => e.Activo).HasDefaultValue(true);
+            entity.Property(e => e.Email).HasMaxLength(150);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.PasswordHash).HasMaxLength(300);
+            entity.Property(e => e.Usuario).HasMaxLength(60);
+        });
+
+        modelBuilder.Entity<UsuarioRol>(entity =>
+        {
+            entity.ToTable("UsuarioRol");
+
+            entity.HasIndex(e => e.RolId, "IX_UsuarioRol_RolId");
+
+            entity.HasIndex(e => e.UsuarioId, "IX_UsuarioRol_UsuarioId");
+
+            entity.Property(e => e.FechaAsignacion).HasDefaultValueSql("(getutcdate())");
+
+            entity.HasOne(d => d.Rol).WithMany(p => p.UsuarioRols)
+                .HasForeignKey(d => d.RolId)
+                .HasConstraintName("FK_UsuarioRol_Rol");
+
+            entity.HasOne(d => d.Usuario).WithMany(p => p.UsuarioRols)
+                .HasForeignKey(d => d.UsuarioId)
+                .HasConstraintName("FK_UsuarioRol_Usuario");
+        });
+
+        modelBuilder.Entity<UsuarioRole>(entity =>
+        {
+            entity.HasKey(e => e.UsuarioRolId).HasName("PK__UsuarioR__C869CDCA1EC74CD7");
+
+            entity.HasIndex(e => new { e.UsuarioId, e.RolId }, "UQ_Auth_UsuarioRoles").IsUnique();
+
+            entity.Property(e => e.FechaAsignacion).HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.HasOne(d => d.Rol).WithMany(p => p.UsuarioRoles)
+                .HasForeignKey(d => d.RolId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Auth_UsuarioRoles_Roles");
+
+            entity.HasOne(d => d.Usuario).WithMany(p => p.UsuarioRoles)
+                .HasForeignKey(d => d.UsuarioId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Auth_UsuarioRoles_Usuarios");
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

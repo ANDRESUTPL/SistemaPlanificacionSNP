@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SistemaPlanificacionSNP.Domain.Entities.Seguridad;
 
-public partial class UsuarioRol
+public partial class UsuarioRole
 {
     public int UsuarioRolId { get; set; }
 
@@ -13,7 +13,7 @@ public partial class UsuarioRol
 
     public DateTime FechaAsignacion { get; set; }
 
-    public virtual Rol Rol { get; set; } = null!;
+    public virtual Role Rol { get; set; } = null!;
 
-    public virtual Usuario Usuario { get; set; } = null!;
+    public virtual Usuario1 Usuario { get; set; } = null!;
 }
