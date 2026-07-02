@@ -6,9 +6,11 @@ var builder = WebApplication.CreateBuilder(args);
 // ==================== SERVICIOS ====================
 
 // HttpClientFactory para comunicación con APIs
+var apiGatewayBaseUrl = builder.Configuration["ApiGateway:BaseUrl"] ?? "https://localhost:52555";
+
 builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7000");
+    client.BaseAddress = new Uri(apiGatewayBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
