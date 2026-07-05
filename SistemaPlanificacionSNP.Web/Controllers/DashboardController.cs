@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Services;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
 {
@@ -49,7 +49,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planificacion/dashboard");
                 if (response == null)
                 {
-                    return Unauthorized();
+                    return StatusCode(503, new { success = false, message = "No fue posible conectar con el servicio de planificación." });
                 }
 
                 if (response.IsSuccessStatusCode)
@@ -58,12 +58,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     return Content(json, "application/json");
                 }
 
-                return NoContent();
+                var apiMessage = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                var message = apiMessage ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible obtener la informacion del dashboard.");
+                return StatusCode((int)response.StatusCode, new { success = false, message });
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetDashboardData: {ex.Message}", ex);
-                return BadRequest();
+                return StatusCode(500, new { success = false, message = "Error interno del servidor al cargar dashboard." });
             }
         }
 
@@ -75,12 +77,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/usuarios/menu/actual");
                 if (response == null)
                 {
-                    return Unauthorized(new { success = false, message = "No autenticado" });
+                    return StatusCode(503, new { success = false, message = "No fue posible conectar con el servicio de menú." });
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return StatusCode((int)response.StatusCode, new { success = false, message = "No fue posible obtener el menu" });
+                    var apiMessage = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                    var message = apiMessage ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible obtener el menu dinamico.");
+                    return StatusCode((int)response.StatusCode, new { success = false, message });
                 }
 
                 var json = await response.Content.ReadAsStringAsync();

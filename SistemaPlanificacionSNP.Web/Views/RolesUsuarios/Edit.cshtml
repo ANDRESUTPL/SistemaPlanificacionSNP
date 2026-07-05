@@ -1,0 +1,368 @@
+@model SistemaPlanificacionSNP.Web.Models.RolesUsuariosEditViewModel
+@using System.Text.Json
+
+@{
+    int cantidadPantallas = Model.PermisosPorPantalla.Count;
+    ViewData["Title"] = "Editar Roles de Usuario";
+}
+
+@section Styles {
+    <style>
+        .permisos-table-animating {
+            animation: permisosTableRefresh 220ms ease;
+        }
+
+        .permisos-count-pulse {
+            animation: permisosCountPulse 320ms ease;
+        }
+
+        .permisos-row-changed {
+            animation: permisosRowChanged 1200ms ease;
+        }
+
+        @@keyframes permisosTableRefresh {
+            0% { opacity: 0.55; transform: translateY(4px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @@keyframes permisosCountPulse {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        @@keyframes permisosRowChanged {
+            0% { background-color: rgba(59, 130, 246, 0.2); }
+            100% { background-color: transparent; }
+        }
+    </style>
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-user-tag me-2 text-primary"></i>Editar Roles de Usuario</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Asigna o retira roles segun el nivel de acceso requerido.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/seguridad/roles" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger border-0 border-start border-4 shadow-sm rounded-3 d-flex" role="alert">
+            <i class="fas fa-exclamation-circle mt-1 me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">No fue posible guardar cambios</h6>
+                <div asp-validation-summary="All" class="mb-0"></div>
+            </div>
+        </div>
+    }
+
+    <form method="post" asp-action="Edit" asp-route-id="@Model.UsuarioId" id="roles-edit-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="UsuarioId" />
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white pt-4 pb-3 border-bottom px-4">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-id-card me-2 text-primary"></i>Resumen del Usuario</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Usuario</div>
+                            <div class="fw-semibold text-dark">@Model.NombreUsuario</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nombre</div>
+                            <div class="fw-semibold text-dark">@Model.NombreCompleto</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Correo</div>
+                            <div class="fw-medium text-dark">@Model.Email</div>
+                        </div>
+
+                        <div>
+                            <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Estado</div>
+                            @if (Model.Activo)
+                            {
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success-subtle">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger-subtle">Inactivo</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-shield-alt me-2 text-primary"></i>Roles Disponibles</h5>
+                        <span class="badge rounded-pill text-bg-light border">@Model.RolesDisponibles.Count rol(es)</span>
+                    </div>
+
+                    <div class="card-body p-4">
+                        @if (Model.RolesDisponibles.Count == 0)
+                        {
+                            <div class="alert alert-warning mb-0 border-0 border-start border-4 shadow-sm rounded-3 d-flex" role="alert">
+                                <i class="fas fa-info-circle mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Sin catalogo de roles</h6>
+                                    <p class="mb-0">La API no devolvio roles para seleccion. Puedes volver y refrescar cuando el catalogo este disponible.</p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-3">
+                                @foreach (var rol in Model.RolesDisponibles)
+                                {
+                                    var isChecked = Model.SelectedRolIds.Contains(rol.RolId);
+                                    <div class="col-12 col-md-6">
+                                        <label class="w-100 p-3 border rounded-3 d-flex align-items-center justify-content-between" style="cursor: pointer;">
+                                            <span class="fw-medium text-dark">@rol.Nombre</span>
+                                            <input type="checkbox"
+                                                   name="SelectedRolIds"
+                                                   value="@rol.RolId"
+                                                   data-role-id="@rol.RolId"
+                                                   class="form-check-input ms-3 role-toggle"
+                                                   checked="@(isChecked ? "checked" : null)" />
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="card-footer bg-white border-top p-4 d-flex justify-content-end gap-2">
+                        <a href="/seguridad/roles" class="btn btn-outline-secondary px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-4" id="save-roles-btn">
+                            <i class="fas fa-save me-2"></i>Guardar asignacion
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-table me-2 text-primary"></i>Permisos Efectivos por Pantalla</h5>
+                        <span id="permisos-count-badge" class="badge rounded-pill text-bg-light border">@cantidadPantallas pantalla(s)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="permisos-empty-state" class="p-4 @(cantidadPantallas == 0 ? string.Empty : "d-none")">
+                            <div class="alert alert-warning mb-0 border-0 border-start border-4 shadow-sm rounded-3 d-flex" role="alert">
+                                <i class="fas fa-info-circle mt-1 me-3"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Sin matriz de permisos</h6>
+                                    <p class="mb-0">No hay permisos asociados a los roles seleccionados o la API aun no devuelve `RolPermiso` para estos roles.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="permisos-table-wrapper" class="table-responsive @(cantidadPantallas == 0 ? "d-none" : string.Empty)">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light bg-opacity-50">
+                                    <tr>
+                                        <th class="ps-4 border-0 text-xs text-muted fw-bold">PANTALLA</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">LECTURA</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">CREACION</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">EDICION</th>
+                                        <th class="pe-4 border-0 text-xs text-muted fw-bold text-center">ELIMINACION</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="permisos-matrix-body">
+                                    @foreach (var permiso in Model.PermisosPorPantalla)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 fw-medium">@permiso.PantallaNombre</td>
+                                            <td class="text-center">
+                                                <i class="fas @(permiso.Lectura ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i>
+                                            </td>
+                                            <td class="text-center">
+                                                <i class="fas @(permiso.Creacion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i>
+                                            </td>
+                                            <td class="text-center">
+                                                <i class="fas @(permiso.Edicion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i>
+                                            </td>
+                                            <td class="pe-4 text-center">
+                                                <i class="fas @(permiso.Eliminacion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rolesPermisos = @Html.Raw(JsonSerializer.Serialize(Model.RolesPermisosCliente));
+            const checkboxSelector = '.role-toggle';
+            const matrixBody = document.getElementById('permisos-matrix-body');
+            const emptyState = document.getElementById('permisos-empty-state');
+            const tableWrapper = document.getElementById('permisos-table-wrapper');
+            const countBadge = document.getElementById('permisos-count-badge');
+            const form = document.getElementById('roles-edit-form');
+            const saveButton = document.getElementById('save-roles-btn');
+            let previousMatrix = [];
+            let previousCount = Number(@Model.PermisosPorPantalla.Count);
+
+            function getSelectedRoleIds() {
+                return Array.from(document.querySelectorAll(checkboxSelector))
+                    .filter(cb => cb.checked)
+                    .map(cb => Number(cb.dataset.roleId));
+            }
+            function buildMatrix(selectedRoleIds) {
+                // Usamos || para asegurar compatibilidad si C# lo serializa como RolId o rolId
+                const selectedRoles = rolesPermisos.filter(r => selectedRoleIds.includes(r.RolId || r.rolId));
+                const pantallaMap = new Map();
+
+                selectedRoles.forEach(role => {
+                    const permisos = role.Permisos || role.permisos || [];
+
+                    permisos.forEach(permiso => {
+                        const pantallaId = permiso.PantallaId || permiso.pantallaId;
+                        const nombrePantalla = permiso.NombrePantalla || permiso.nombrePantalla || `Pantalla ${pantallaId}`;
+
+                        if (!pantallaMap.has(pantallaId)) {
+                            pantallaMap.set(pantallaId, {
+                                pantallaId: pantallaId,
+                                nombrePantalla: nombrePantalla,
+                                lectura: false,
+                                creacion: false,
+                                edicion: false,
+                                eliminacion: false
+                            });
+                        }
+
+                        const row = pantallaMap.get(pantallaId);
+                        // Aseguramos que la evaluación booleana tome las propiedades en PascalCase o camelCase
+                        row.lectura = row.lectura || Boolean(permiso.Lectura ?? permiso.lectura);
+                        row.creacion = row.creacion || Boolean(permiso.Creacion ?? permiso.creacion);
+                        row.edicion = row.edicion || Boolean(permiso.Edicion ?? permiso.edicion);
+                        row.eliminacion = row.eliminacion || Boolean(permiso.Eliminacion ?? permiso.eliminacion);
+                    });
+                });
+
+                return Array.from(pantallaMap.values()).sort((a, b) => a.pantallaId - b.pantallaId);
+            }
+            function iconCell(hasAccess, isLast) {
+                const lastClass = isLast ? ' pe-4' : '';
+                const icon = hasAccess ? 'fa-check-circle text-success' : 'fa-times-circle text-danger';
+                return `<td class="text-center${lastClass}"><i class="fas ${icon}"></i></td>`;
+            }
+
+            function matrixMap(matrix) {
+                return new Map(matrix.map(item => [item.pantallaId, item]));
+            }
+
+            function hasPermissionDiff(a, b) {
+                if (!a || !b) {
+                    return true;
+                }
+
+                return a.lectura !== b.lectura
+                    || a.creacion !== b.creacion
+                    || a.edicion !== b.edicion
+                    || a.eliminacion !== b.eliminacion
+                    || a.nombrePantalla !== b.nombrePantalla;
+            }
+
+            function getChangedScreenIds(prevMatrix, nextMatrix) {
+                const prev = matrixMap(prevMatrix);
+                const next = matrixMap(nextMatrix);
+                const allKeys = new Set([...prev.keys(), ...next.keys()]);
+                const changed = new Set();
+
+                allKeys.forEach(key => {
+                    const prevItem = prev.get(key);
+                    const nextItem = next.get(key);
+                    if (hasPermissionDiff(prevItem, nextItem)) {
+                        changed.add(key);
+                    }
+                });
+
+                return changed;
+            }
+
+            function renderMatrix(matrix, changedIds) {
+                countBadge.textContent = `${matrix.length} pantalla(s)`;
+
+                if (previousCount !== matrix.length) {
+                    countBadge.classList.remove('permisos-count-pulse');
+                    void countBadge.offsetWidth;
+                    countBadge.classList.add('permisos-count-pulse');
+                    previousCount = matrix.length;
+                }
+
+                if (matrix.length === 0) {
+                    matrixBody.innerHTML = '';
+                    tableWrapper.classList.add('d-none');
+                    emptyState.classList.remove('d-none');
+                    return;
+                }
+
+                const rowsHtml = matrix.map(item => `
+                    <tr class="${changedIds.has(item.pantallaId) ? 'permisos-row-changed' : ''}">
+                        <td class="ps-4 fw-medium">${item.nombrePantalla}</td>
+                        ${iconCell(item.lectura, false)}
+                        ${iconCell(item.creacion, false)}
+                        ${iconCell(item.edicion, false)}
+                        ${iconCell(item.eliminacion, true)}
+                    </tr>
+                `).join('');
+
+                matrixBody.innerHTML = rowsHtml;
+                emptyState.classList.add('d-none');
+                tableWrapper.classList.remove('d-none');
+                tableWrapper.classList.remove('permisos-table-animating');
+                void tableWrapper.offsetWidth;
+                tableWrapper.classList.add('permisos-table-animating');
+            }
+
+            function refreshMatrix(isInitialLoad = false) {
+                const selectedRoleIds = getSelectedRoleIds();
+                const matrix = buildMatrix(selectedRoleIds);
+                const changedIds = isInitialLoad ? new Set() : getChangedScreenIds(previousMatrix, matrix);
+                renderMatrix(matrix, changedIds);
+                previousMatrix = matrix;
+            }
+
+            document.querySelectorAll(checkboxSelector).forEach(cb => {
+                cb.addEventListener('change', () => refreshMatrix(false));
+            });
+
+            if (form && saveButton) {
+                form.addEventListener('submit', function (event) {
+                    const selectedRoleIds = getSelectedRoleIds();
+                    if (selectedRoleIds.length === 0) {
+                        const confirmed = window.confirm('Esta accion dejara al usuario sin roles asignados. Deseas continuar?');
+                        if (!confirmed) {
+                            event.preventDefault();
+                            return;
+                        }
+                    }
+
+                    saveButton.disabled = true;
+                    saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                });
+            }
+
+            refreshMatrix(true);
+        });
+    </script>
+}

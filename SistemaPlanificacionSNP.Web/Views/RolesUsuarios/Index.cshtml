@@ -1,0 +1,165 @@
+@model SistemaPlanificacionSNP.Web.Models.RolesUsuariosIndexViewModel
+
+@{
+    ViewData["Title"] = "Administracion de Roles";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-user-shield me-2 text-primary"></i>Administracion de Roles de Usuario</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Gestion de asignaciones de roles, filtros y control operativo de usuarios.</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="get" asp-action="Index" class="row g-3 align-items-end">
+                <div class="col-12 col-lg-4">
+                    <label class="form-label fw-medium">Buscar</label>
+                    <input type="text" name="buscar" value="@Model.Buscar" class="form-control" placeholder="Usuario, nombre o correo" />
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-3">
+                    <label class="form-label fw-medium">Estado</label>
+                    <select class="form-select" name="activo">
+                        <option value="">Todos</option>
+                        <option value="true" selected="@(Model.Activo == true)">Activos</option>
+                        <option value="false" selected="@(Model.Activo == false)">Inactivos</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-lg-3">
+                    <label class="form-label fw-medium">Rol</label>
+                    <select class="form-select" name="rolId">
+                        <option value="">Todos</option>
+                        @foreach (var rol in Model.RolesDisponibles)
+                        {
+                            <option value="@rol.RolId" selected="@(Model.RolId == rol.RolId)">@rol.Nombre</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3 col-lg-1">
+                    <label class="form-label fw-medium">Tamano</label>
+                    <select class="form-select" name="pageSize">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-3 col-lg-1 d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-1"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.RolesDisponibles.Count == 0)
+    {
+        <div class="alert alert-warning border-0 border-start border-4 shadow-sm rounded-3 d-flex" role="alert">
+            <i class="fas fa-exclamation-triangle mt-1 me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Catalogo de roles limitado</h6>
+                <p class="mb-0">No se recibio un catalogo completo de roles desde la API. Aun puedes visualizar y actualizar asignaciones con los roles disponibles en la respuesta actual.</p>
+            </div>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent pt-4 pb-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-users-cog me-2 text-primary"></i>Usuarios y Roles</h6>
+            <span class="badge rounded-pill text-bg-light border">@Model.TotalCount registro(s)</span>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light bg-opacity-50">
+                        <tr>
+                            <th class="ps-4 border-0 text-xs text-muted fw-bold">USUARIO</th>
+                            <th class="border-0 text-xs text-muted fw-bold">NOMBRE</th>
+                            <th class="border-0 text-xs text-muted fw-bold">ESTADO</th>
+                            <th class="border-0 text-xs text-muted fw-bold">ROLES</th>
+                            <th class="pe-4 border-0 text-xs text-muted fw-bold text-end">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Usuarios.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No se encontraron usuarios para los filtros aplicados.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var usuario in Model.Usuarios)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-semibold text-dark">@usuario.NombreUsuario</div>
+                                        <div class="text-muted" style="font-size: 0.85rem;">@usuario.Email</div>
+                                    </td>
+                                    <td>@usuario.NombreCompleto</td>
+                                    <td>
+                                        @if (usuario.Activo)
+                                        {
+                                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success-subtle">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger-subtle">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (usuario.Roles.Count == 0)
+                                        {
+                                            <span class="text-muted" style="font-size: 0.9rem;">Sin roles</span>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var rol in usuario.Roles)
+                                            {
+                                                <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info-subtle me-1 mb-1">@rol.Nombre</span>
+                                            }
+                                        }
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <a href="/seguridad/roles/@usuario.UsuarioId/editar" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fas fa-pen me-1"></i>Editar roles
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Paginacion de usuarios">
+            <ul class="pagination justify-content-end">
+                <li class="page-item @(Model.Page == 1 ? "disabled" : string.Empty)">
+                    <a class="page-link" asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-activo="@Model.Activo" asp-route-rolId="@Model.RolId" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize">Anterior</a>
+                </li>
+
+                @for (var i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : string.Empty)">
+                        <a class="page-link" asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-activo="@Model.Activo" asp-route-rolId="@Model.RolId" asp-route-page="@i" asp-route-pageSize="@Model.PageSize">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : string.Empty)">
+                    <a class="page-link" asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-activo="@Model.Activo" asp-route-rolId="@Model.RolId" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
