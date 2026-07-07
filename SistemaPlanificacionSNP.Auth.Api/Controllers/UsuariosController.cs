@@ -62,6 +62,26 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         }
 
         /// <summary>
+        /// Obtener todos los usuarios con sus roles y permisos en una sola consulta.
+        /// Endpoint aditivo para el modulo unificado de gestion de usuarios.
+        /// </summary>
+        [HttpGet("con-roles")]
+        public async Task<ActionResult<ApiResponse<List<UsuarioDto>>>> GetAllConRoles()
+        {
+            try
+            {
+                var usuarios = await _unitOfWork.Usuarios.GetAllUsersWithRolesAsync();
+                var usuariosDto = _mapper.Map<List<UsuarioDto>>(usuarios);
+                return Ok(ApiResponse<List<UsuarioDto>>.SuccessWith(usuariosDto, $"{usuariosDto.Count} usuarios con roles encontrados"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetAllConRoles: {ex.Message}", ex);
+                return StatusCode(500, ApiResponse<List<UsuarioDto>>.FailureWith("Error interno del servidor"));
+            }
+        }
+
+        /// <summary>
         /// Obtener usuario por ID
         /// </summary>
         [HttpGet("{id}")]

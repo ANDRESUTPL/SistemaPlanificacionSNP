@@ -1,0 +1,150 @@
+@model SistemaPlanificacionSNP.Web.Models.UsuarioDetailViewModel
+
+@{
+    ViewData["Title"] = "Detalle de Usuario";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-user me-2 text-primary"></i>Detalle de Usuario</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Consulta de datos, roles y permisos efectivos del usuario.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/seguridad/usuarios/@Model.UsuarioId/editar" class="btn btn-primary shadow-sm px-4 fw-medium">
+                <i class="fas fa-pen me-2"></i>Editar
+            </a>
+            <a href="/seguridad/usuarios" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+            <ul class="nav nav-tabs card-header-tabs" id="usuarioTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="datos-tab" data-bs-toggle="tab" data-bs-target="#datos-tab-pane" type="button" role="tab" aria-controls="datos-tab-pane" aria-selected="true">
+                        <i class="fas fa-id-card me-1"></i>Datos personales
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="permisos-tab" data-bs-toggle="tab" data-bs-target="#permisos-tab-pane" type="button" role="tab" aria-controls="permisos-tab-pane" aria-selected="false">
+                        <i class="fas fa-shield-alt me-1"></i>Permisos efectivos
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4 tab-content" id="usuarioTabsContent">
+            <div class="tab-pane fade show active" id="datos-tab-pane" role="tabpanel" aria-labelledby="datos-tab" tabindex="0">
+                <div class="row g-4">
+                    <div class="col-12 col-xl-6">
+                        <div class="card border h-100">
+                            <div class="card-header bg-white pt-4 pb-3 border-bottom px-4">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-user me-2 text-primary"></i>Datos generales</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="mb-3">
+                                    <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Usuario</div>
+                                    <div class="fw-semibold text-dark">@Model.NombreUsuario</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nombre completo</div>
+                                    <div class="fw-semibold text-dark">@Model.NombreCompleto</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Correo</div>
+                                    <div class="fw-medium text-dark">@Model.Email</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Estado</div>
+                                    @if (Model.Activo)
+                                    {
+                                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success-subtle">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger-subtle">Inactivo</span>
+                                    }
+                                </div>
+                                <div>
+                                    <div class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Fecha creacion</div>
+                                    <div class="fw-medium text-dark">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <div class="card border h-100">
+                            <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-user-tag me-2 text-primary"></i>Roles asignados</h5>
+                                <span class="badge rounded-pill text-bg-light border">@Model.Roles.Count rol(es)</span>
+                            </div>
+                            <div class="card-body p-4">
+                                @if (Model.Roles.Count == 0)
+                                {
+                                    <p class="text-muted mb-0">Este usuario no tiene roles asignados.</p>
+                                }
+                                else
+                                {
+                                    @foreach (var rol in Model.Roles)
+                                    {
+                                        <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info-subtle me-1 mb-1">@rol.Nombre</span>
+                                    }
+                                }
+                                <div class="mt-3">
+                                    <a href="/seguridad/usuarios?rolesUsuarioId=@Model.UsuarioId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="fas fa-shield-alt me-1"></i>Gestionar roles
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="permisos-tab-pane" role="tabpanel" aria-labelledby="permisos-tab" tabindex="0">
+                <div class="card border-0 shadow-sm mt-2">
+                    <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-table me-2 text-primary"></i>Permisos efectivos por pantalla</h5>
+                        <span class="badge rounded-pill text-bg-light border">@Model.PermisosPorPantalla.Count pantalla(s)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Model.PermisosPorPantalla.Count == 0)
+                        {
+                            <div class="p-4 text-muted">No hay permisos efectivos para mostrar.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light bg-opacity-50">
+                                        <tr>
+                                            <th class="ps-4 border-0 text-xs text-muted fw-bold">PANTALLA</th>
+                                            <th class="border-0 text-xs text-muted fw-bold text-center">LECTURA</th>
+                                            <th class="border-0 text-xs text-muted fw-bold text-center">CREACION</th>
+                                            <th class="border-0 text-xs text-muted fw-bold text-center">EDICION</th>
+                                            <th class="pe-4 border-0 text-xs text-muted fw-bold text-center">ELIMINACION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var permiso in Model.PermisosPorPantalla)
+                                        {
+                                            <tr>
+                                                <td class="ps-4 fw-medium">@permiso.PantallaNombre</td>
+                                                <td class="text-center"><i class="fas @(permiso.Lectura ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i></td>
+                                                <td class="text-center"><i class="fas @(permiso.Creacion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i></td>
+                                                <td class="text-center"><i class="fas @(permiso.Edicion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i></td>
+                                                <td class="pe-4 text-center"><i class="fas @(permiso.Eliminacion ? "fa-check-circle text-success" : "fa-times-circle text-danger")"></i></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,222 @@
+@model SistemaPlanificacionSNP.Web.Models.UsuarioCreateViewModel
+
+@{
+    ViewData["Title"] = "Crear Usuario";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-user-plus me-2 text-primary"></i>Crear Usuario</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Registro de nuevo usuario con datos de acceso y perfil.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/seguridad/usuarios" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger border-0 border-start border-4 shadow-sm rounded-3 d-flex" role="alert">
+            <i class="fas fa-exclamation-circle mt-1 me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">No fue posible crear el usuario</h6>
+                <div asp-validation-summary="All" class="mb-0"></div>
+            </div>
+        </div>
+    }
+
+    <form method="post" action="/seguridad/usuarios/crear" novalidate>
+        @Html.AntiForgeryToken()
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white pt-4 pb-3 border-bottom px-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-id-card me-2 text-primary"></i>Datos del Usuario</h5>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="NombreUsuario" class="form-label fw-medium"></label>
+                        <input asp-for="NombreUsuario" class="form-control" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="NombreUsuario" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="Email" class="form-label fw-medium"></label>
+                        <input asp-for="Email" class="form-control" maxlength="100" autocomplete="off" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="Password" class="form-label fw-medium"></label>
+                        <input asp-for="Password" type="password" class="form-control" minlength="8" autocomplete="new-password" id="passwordInput" />
+                        <div class="progress mt-2" style="height: 6px;">
+                            <div id="passwordStrengthBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <span id="passwordStrengthText" class="form-text">Fortaleza: pendiente.</span>
+                        <ul class="small text-muted mt-2 mb-0 ps-3" id="passwordRules">
+                            <li id="ruleLength">Minimo 8 caracteres</li>
+                            <li id="ruleUpper">Al menos una letra mayuscula</li>
+                            <li id="ruleLower">Al menos una letra minuscula</li>
+                            <li id="ruleNumber">Al menos un numero</li>
+                            <li id="ruleSpecial">Al menos un caracter especial</li>
+                        </ul>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label fw-medium" for="confirmPasswordInput">Confirmar contrasena</label>
+                        <input type="password" class="form-control" id="confirmPasswordInput" autocomplete="new-password" />
+                        <span id="confirmPasswordError" class="text-danger d-none">Las contrasenas no coinciden.</span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="Nombre" class="form-label fw-medium"></label>
+                        <input asp-for="Nombre" class="form-control" maxlength="100" autocomplete="off" />
+                        <span asp-validation-for="Nombre" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label asp-for="Apellido" class="form-label fw-medium"></label>
+                        <input asp-for="Apellido" class="form-control" maxlength="100" autocomplete="off" />
+                        <span asp-validation-for="Apellido" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-top p-4 d-flex justify-content-end gap-2">
+                <a href="/seguridad/usuarios" class="btn btn-outline-secondary px-4">Cancelar</a>
+                <button type="submit" class="btn btn-primary border shadow-sm px-4 fw-medium text-primary">
+                    <i class="fas fa-save me-2"></i>Crear usuario
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form[action="/seguridad/usuarios/crear"]');
+            const passwordInput = document.getElementById('passwordInput');
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+            const confirmPasswordError = document.getElementById('confirmPasswordError');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const strengthText = document.getElementById('passwordStrengthText');
+
+            if (!form || !passwordInput || !confirmPasswordInput || !confirmPasswordError || !strengthBar || !strengthText) {
+                return;
+            }
+
+            const rules = {
+                length: /.{8,}/,
+                upper: /[A-Z]/,
+                lower: /[a-z]/,
+                number: /\d/,
+                special: /[^A-Za-z0-9]/
+            };
+
+            const ruleElements = {
+                length: document.getElementById('ruleLength'),
+                upper: document.getElementById('ruleUpper'),
+                lower: document.getElementById('ruleLower'),
+                number: document.getElementById('ruleNumber'),
+                special: document.getElementById('ruleSpecial')
+            };
+
+            function updateRuleState(element, isValid) {
+                if (!element) {
+                    return;
+                }
+
+                element.classList.toggle('text-success', isValid);
+                element.classList.toggle('text-muted', !isValid);
+            }
+
+            function evaluatePassword() {
+                const value = passwordInput.value || '';
+                const checks = {
+                    length: rules.length.test(value),
+                    upper: rules.upper.test(value),
+                    lower: rules.lower.test(value),
+                    number: rules.number.test(value),
+                    special: rules.special.test(value)
+                };
+
+                updateRuleState(ruleElements.length, checks.length);
+                updateRuleState(ruleElements.upper, checks.upper);
+                updateRuleState(ruleElements.lower, checks.lower);
+                updateRuleState(ruleElements.number, checks.number);
+                updateRuleState(ruleElements.special, checks.special);
+
+                const passed = Object.values(checks).filter(Boolean).length;
+                const percent = Math.round((passed / 5) * 100);
+                strengthBar.style.width = `${percent}%`;
+
+                if (percent < 40) {
+                    strengthBar.className = 'progress-bar bg-danger';
+                    strengthText.textContent = 'Fortaleza: debil.';
+                } else if (percent < 80) {
+                    strengthBar.className = 'progress-bar bg-warning';
+                    strengthText.textContent = 'Fortaleza: media.';
+                } else {
+                    strengthBar.className = 'progress-bar bg-success';
+                    strengthText.textContent = 'Fortaleza: alta.';
+                }
+
+                return checks;
+            }
+
+            function validateConfirmPassword() {
+                const password = passwordInput.value || '';
+                const confirmPassword = confirmPasswordInput.value || '';
+                const match = password.length > 0 && password === confirmPassword;
+
+                confirmPasswordError.classList.toggle('d-none', match || confirmPassword.length === 0);
+                confirmPasswordInput.classList.toggle('is-invalid', !match && confirmPassword.length > 0);
+                confirmPasswordInput.classList.toggle('is-valid', match);
+
+                return match;
+            }
+
+            passwordInput.addEventListener('input', function () {
+                evaluatePassword();
+                validateConfirmPassword();
+            });
+
+            confirmPasswordInput.addEventListener('input', validateConfirmPassword);
+
+            form.addEventListener('submit', function (event) {
+                const checks = evaluatePassword();
+                const allPasswordRulesPassed = Object.values(checks).every(Boolean);
+                const passwordsMatch = validateConfirmPassword();
+
+                if (allPasswordRulesPassed && passwordsMatch) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const details = [];
+                if (!allPasswordRulesPassed) {
+                    details.push('La contrasena no cumple todas las reglas de seguridad.');
+                }
+                if (!passwordsMatch) {
+                    details.push('La confirmacion de contrasena no coincide.');
+                }
+
+                Swal.fire({
+                    title: 'Revisa la contrasena',
+                    html: details.join('<br>'),
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido'
+                });
+            });
+        });
+    </script>
+}

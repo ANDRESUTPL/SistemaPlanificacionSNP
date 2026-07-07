@@ -49,6 +49,12 @@ async function loadDynamicMenu() {
 function renderMenu(menuItems, parentElement = null) {
     if (!menuItems || menuItems.length === 0) return;
 
+    const filteredMenuItems = menuItems.filter(item => {
+        const ruta = (item.ruta || '').toLowerCase();
+        // Fase de unificacion: ocultamos la pantalla legacy de roles en el sidebar.
+        return ruta !== '/seguridad/roles';
+    });
+
     const container = parentElement || document.getElementById('menu-container');
     if (!container) return;
 
@@ -59,7 +65,7 @@ function renderMenu(menuItems, parentElement = null) {
     const ul = document.createElement('ul');
     ul.className = 'nav flex-column';
 
-    menuItems.forEach(item => {
+    filteredMenuItems.forEach(item => {
         const hasSubitems = item.subpantallas && item.subpantallas.length > 0;
         
         const li = document.createElement('li');
