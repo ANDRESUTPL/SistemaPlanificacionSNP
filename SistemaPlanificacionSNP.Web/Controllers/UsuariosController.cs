@@ -602,7 +602,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             return usuarios
                 .Where(u => u != null)
                 .SelectMany(u => u.Roles ?? Enumerable.Empty<RolApiDto>())
-                .Where(r => r != null && r.RolId > 0)
+                .Where(r => r != null && r.RolId > 0 && r.Activo)
                 .GroupBy(r => r.RolId)
                 .Select(g => g.First())
                 .OrderBy(r => r.Nombre)

@@ -365,16 +365,23 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 foreach (var rolId in asignarRolesDto.RolIds)
                 {
                     var rol = await rolRepo.GetByIdAsync(rolId);
-                    if (rol != null)
+                    if (rol == null)
                     {
-                        usuario.UsuarioRols.Add(new UsuarioRol
-                        {
-                            UsuarioId = usuarioId,
-                            RolId = rolId,
-                            Rol = rol
-                        });
-                        rolesNuevos.Add(rol);
+                        return BadRequest(ApiResponse<string>.FailureWith($"El rol con ID {rolId} no existe"));
                     }
+
+                    if (!rol.Activo)
+                    {
+                        return BadRequest(ApiResponse<string>.FailureWith($"El rol '{rol.Nombre}' está inactivo y no puede asignarse"));
+                    }
+
+                    usuario.UsuarioRols.Add(new UsuarioRol
+                    {
+                        UsuarioId = usuarioId,
+                        RolId = rolId,
+                        Rol = rol
+                    });
+                    rolesNuevos.Add(rol);
                 }
 
                 await _unitOfWork.Usuarios.UpdateAsync(usuario);

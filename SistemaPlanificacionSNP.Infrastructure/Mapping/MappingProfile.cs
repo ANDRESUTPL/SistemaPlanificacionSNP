@@ -1,4 +1,5 @@
 using AutoMapper;
+using System.Linq;
 using SistemaPlanificacionSNP.Domain.Entities.Seguridad;
 using SistemaPlanificacionSNP.Domain.Entities.Parametrizacion;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
@@ -15,8 +16,15 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
         public MappingProfile()
         {
             // ==================== USUARIO ====================           
-            CreateMap<UsuarioDto, Usuario>();
-            CreateMap<Usuario, UsuarioDto>();
+            CreateMap<UsuarioDto, Usuario>()
+                .ForMember(dest => dest.UsuarioRols, opt => opt.Ignore());
+
+            CreateMap<Usuario, UsuarioDto>()
+                .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.UsuarioRols.Select(ur => ur.Rol)));
+
+            CreateMap<UsuarioRol, RolDto>()
+                .ConvertUsing((src, _, context) => context.Mapper.Map<RolDto>(src.Rol));
+
             CreateMap<UsuarioCreateDto, Usuario>()
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Se asigna en el controller
 
@@ -28,7 +36,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
 
             // ==================== ROL ====================
             CreateMap<Rol, RolDto>()
-                .ForMember(dest => dest.Permisos, opt => opt.MapFrom(src => src.RolPermisos.Select(rp => rp.Pantalla)));
+                .ForMember(dest => dest.Permisos, opt => opt.MapFrom(src => src.RolPermisos));
 
             CreateMap<RolCreateUpdateDto, Rol>()
                 .ForMember(dest => dest.RolId, opt => opt.Ignore())
@@ -36,6 +44,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
 
             // ==================== ROL PERMISO ====================
             CreateMap<RolPermiso, RolPermisoDto>();
+            CreateMap<RolPermiso, PermisoDto>()
+                .ForMember(dest => dest.PermisoId, opt => opt.MapFrom(src => src.RolPermisoId))
+                .ForMember(dest => dest.CodigoPermiso, opt => opt.MapFrom(src => $"PANTALLA_{src.PantallaId}"))
+                .ForMember(dest => dest.NombrePantalla, opt => opt.MapFrom(src => src.Pantalla != null ? src.Pantalla.Nombre : string.Empty));
 
             // ==================== PANTALLA Y MENÚ ====================
             CreateMap<Pantalla, MenuPermisoDto>()

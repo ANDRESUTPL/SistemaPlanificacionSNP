@@ -38,6 +38,7 @@ namespace SistemaPlanificacionSNP.Infrastructure
             // Servicios
             services.AddScoped<IPasswordHashService, PasswordHashService>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
+            services.AddScoped<IMenuService, MenuService>();
 
             return services;
         }

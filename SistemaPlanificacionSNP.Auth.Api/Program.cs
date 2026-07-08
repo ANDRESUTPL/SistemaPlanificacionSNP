@@ -26,7 +26,7 @@ internal class Program
 		var jwtSection = builder.Configuration.GetSection("Jwt");
 		var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings
 		{
-			SecretKey = "super-secret-key-change-in-production-this-must-be-at-least-32-chars",
+			SecretKey = "eG95U3VyZ3BKSFFXbTV6S2RzN3Z3YlhjTjVuN3BYM2I4Y0RvY0E0bXpVbz0",
 			Issuer = "SistemaPlanificacionSNP",
 			Audience = "SistemaPlanificacionSNP",
 			ExpirationMinutes = 60,
@@ -71,6 +71,7 @@ internal class Program
 		// Servicios de negocio
 		builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 		builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+		builder.Services.AddScoped<IMenuService, MenuService>();
 
 		// Patrón Repository y Unit of Work
 		builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -102,7 +103,7 @@ internal class Program
 					{
 						if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
 						{
-							context.Response.Headers.Add("Token-Expired", "true");
+							context.Response.Headers.Append("Token-Expired", "true");
 						}
 						return Task.CompletedTask;
 					},

@@ -31,18 +31,12 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
             return await _dbSet.FindAsync(id);
         }
 
-        /// <summary>
-        /// Obtiene todas las entidades
-        /// </summary>
-        public virtual async Task<IEnumerable<T>> GetAllAsync()
-        {
-            return await _dbSet.ToListAsync();
-        }
+		
 
-        /// <summary>
-        /// Busca entidades que cumplan con el predicado
-        /// </summary>
-        public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+		/// <summary>
+		/// Busca entidades que cumplan con el predicado
+		/// </summary>
+		public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
             return await _dbSet.Where(predicate).ToListAsync();
         }

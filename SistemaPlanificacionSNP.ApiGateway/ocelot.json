@@ -1,20 +1,32 @@
 {
   "Routes": [
     {
+      "DownstreamPathTemplate": "/api/usuarios/menu/actual",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52555
+        }
+      ],
+      "UpstreamPathTemplate": "/api/usuarios/menu/actual",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
       "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7001
+          "Port": 52555
         }
       ],
       "UpstreamPathTemplate": "/api/auth/{everything}",
-      "UpstreamHttpMethod": [ "POST", "GET", "PUT", "DELETE" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
+      "UpstreamHttpMethod": [ "POST", "GET", "PUT", "DELETE" ]
     },
     {
       "DownstreamPathTemplate": "/api/usuarios/{everything}",
@@ -36,12 +48,28 @@
       }
     },
     {
+      "DownstreamPathTemplate": "/api/roles/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ],
+      "UpstreamPathTemplate": "/api/roles/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
       "DownstreamPathTemplate": "/api/parametrizacion/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7002
+          "Port": 52560
         }
       ],
       "UpstreamPathTemplate": "/api/parametrizacion/{everything}",
@@ -57,7 +85,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7003
+          "Port": 52561
         }
       ],
       "UpstreamPathTemplate": "/api/macroplanificacion/{everything}",
@@ -73,7 +101,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7004
+          "Port": 52562
         }
       ],
       "UpstreamPathTemplate": "/api/planificacion/{everything}",
@@ -89,7 +117,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 7005
+          "Port": 52563
         }
       ],
       "UpstreamPathTemplate": "/api/controlcalidad/{everything}",
@@ -101,11 +129,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:7000",
-    "ServiceDiscoveryProvider": {
-      "Host": "localhost",
-      "Port": 8500,
-      "Type": "Consul"
-    }
+    "BaseUrl": "https://localhost:52554"
   }
 }

@@ -52,7 +52,7 @@ function renderMenu(menuItems, parentElement = null) {
     const filteredMenuItems = menuItems.filter(item => {
         const ruta = (item.ruta || '').toLowerCase();
         // Fase de unificacion: ocultamos la pantalla legacy de roles en el sidebar.
-        return ruta !== '/seguridad/roles';
+        return ruta !== '/seguridad/roles' && ruta !== '/seguridad/catalogo-roles';
     });
 
     const container = parentElement || document.getElementById('menu-container');
