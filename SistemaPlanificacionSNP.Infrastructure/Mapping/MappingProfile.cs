@@ -4,6 +4,7 @@ using SistemaPlanificacionSNP.Domain.Entities.Seguridad;
 using SistemaPlanificacionSNP.Domain.Entities.Parametrizacion;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
 using SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
+using SistemaPlanificacionSNP.Domain.Entities.ControlCalidad;
 using PlanificacionInstitucional = SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
 
 namespace SistemaPlanificacionSNP.Infrastructure.Mapping
@@ -85,6 +86,29 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.EntidadPublicaId, opt => opt.Ignore())
                 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
                 .ForMember(dest => dest.Activo, opt => opt.Ignore());
+
+            // ==================== CONTROL CALIDAD ====================
+            CreateMap<Revisione, RevisioneDto>()
+                .ForMember(dest => dest.Auditorias, opt => opt.MapFrom(src => src.Auditoria));
+
+            CreateMap<RevisioneCreateDto, Revisione>()
+                .ForMember(dest => dest.RevisionId, opt => opt.Ignore())
+                .ForMember(dest => dest.Auditoria, opt => opt.Ignore());
+
+            CreateMap<RevisioneUpdateDto, Revisione>()
+                .ForMember(dest => dest.RevisionId, opt => opt.Ignore())
+                .ForMember(dest => dest.CodigoRevision, opt => opt.Ignore())
+                .ForMember(dest => dest.Auditoria, opt => opt.Ignore());
+
+            CreateMap<Auditoria, AuditoriaDto>();
+            CreateMap<AuditoriaCreateDto, Auditoria>()
+                .ForMember(dest => dest.AuditoriaId, opt => opt.Ignore())
+                .ForMember(dest => dest.Revision, opt => opt.Ignore());
+            CreateMap<AuditoriaUpdateDto, Auditoria>()
+                .ForMember(dest => dest.AuditoriaId, opt => opt.Ignore())
+                .ForMember(dest => dest.RevisionId, opt => opt.Ignore())
+                .ForMember(dest => dest.Responsable, opt => opt.Ignore())
+                .ForMember(dest => dest.Revision, opt => opt.Ignore());
         }
     }
 }
