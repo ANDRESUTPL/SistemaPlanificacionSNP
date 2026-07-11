@@ -80,7 +80,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/macroplanificacion/{everything}",
+      "DownstreamPathTemplate": "/api/planesnacionales",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -88,7 +88,23 @@
           "Port": 52552
         }
       ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/{everything}",
+      "UpstreamPathTemplate": "/api/macroplanificacion/planesnacionales",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/planesnacionales/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52552
+        }
+      ],
+      "UpstreamPathTemplate": "/api/macroplanificacion/planesnacionales/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
@@ -96,7 +112,51 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/planificacion/{everything}",
+      "DownstreamPathTemplate": "/api/objetivosestrategicos",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52552
+        }
+      ],
+      "UpstreamPathTemplate": "/api/macroplanificacion/objetivosestrategicos",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/objetivosestrategicos/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52552
+        }
+      ],
+      "UpstreamPathTemplate": "/api/macroplanificacion/objetivosestrategicos/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52552
+        }
+      ],
+      "UpstreamPathTemplate": "/api/macroplanificacion/health",
+      "UpstreamHttpMethod": [ "GET" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -110,6 +170,34 @@
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       }
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52560
+        }
+      ],
+      "UpstreamPathTemplate": "/api/planificacioninstitucional/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 52560
+        }
+      ],
+      "UpstreamPathTemplate": "/api/planificacioninstitucional/health",
+      "UpstreamHttpMethod": [ "GET" ]
     },
     {
       "DownstreamPathTemplate": "/api/controlcalidad/{everything}",

@@ -5,6 +5,7 @@ using SistemaPlanificacionSNP.Domain.Entities.Parametrizacion;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
 using SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
 using SistemaPlanificacionSNP.Domain.Entities.ControlCalidad;
+using SistemaPlanificacionSNP.Domain.Entities.MacroPlanificacion;
 using PlanificacionInstitucional = SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
 
 namespace SistemaPlanificacionSNP.Infrastructure.Mapping
@@ -64,6 +65,28 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
                 .ForMember(dest => dest.ObjetivosEstrategicos, opt => opt.Ignore());
 
+            // ==================== PLANIFICACION DB-FIRST ====================
+            CreateMap<PlanesEstrategico, PlanesEstrategicoReadDto>();
+
+            CreateMap<PlanesEstrategico, PlanesEstrategicoDetailDto>()
+                .ForMember(dest => dest.Proyectos, opt => opt.MapFrom(src => src.ProyectosInversions));
+
+            CreateMap<PlanesEstrategicoCreateDto, PlanesEstrategico>()
+                .ForMember(dest => dest.PlanEstrategicoId, opt => opt.Ignore())
+                .ForMember(dest => dest.ProyectosInversions, opt => opt.Ignore())
+                .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore());
+
+            CreateMap<ProyectosInversion, ProyectosInversionReadDto>();
+
+            CreateMap<ProyectosInversion, ProyectosInversionDetailDto>()
+                .ForMember(dest => dest.EntidadPlan, opt => opt.MapFrom(src => src.PlanEstrategico.Entidad))
+                .ForMember(dest => dest.PeriodoInicioPlan, opt => opt.MapFrom(src => src.PlanEstrategico.PeriodoInicio))
+                .ForMember(dest => dest.PeriodoFinPlan, opt => opt.MapFrom(src => src.PlanEstrategico.PeriodoFin));
+
+            CreateMap<ProyectosInversionCreateDto, ProyectosInversion>()
+                .ForMember(dest => dest.ProyectoInversionId, opt => opt.Ignore())
+                .ForMember(dest => dest.PlanEstrategico, opt => opt.Ignore());
+
             // ==================== OBJETIVO ESTRATÉGICO ====================
             CreateMap<ObjetivoEstrategico, ObjetivoEstrategicoDto>();
 
@@ -109,6 +132,37 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.RevisionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Responsable, opt => opt.Ignore())
                 .ForMember(dest => dest.Revision, opt => opt.Ignore());
+
+            // ==================== MACRO PLANIFICACION ====================
+            CreateMap<PlanesNacionalesDesarrollo, MacroPlanNacionalDto>();
+
+            CreateMap<PlanesNacionalesDesarrollo, MacroPlanNacionalDetalleDto>()
+                .ForMember(dest => dest.Objetivos, opt => opt.MapFrom(src => src.ObjetivosEstrategicos));
+
+            CreateMap<MacroPlanNacionalCreateDto, PlanesNacionalesDesarrollo>()
+                .ForMember(dest => dest.PlanNacionalId, opt => opt.Ignore())
+                .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+                .ForMember(dest => dest.ObjetivosEstrategicos, opt => opt.Ignore());
+
+            CreateMap<MacroPlanNacionalUpdateDto, PlanesNacionalesDesarrollo>()
+                .ForMember(dest => dest.PlanNacionalId, opt => opt.Ignore())
+                .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+                .ForMember(dest => dest.ObjetivosEstrategicos, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((_, _, srcMember) => srcMember != null));
+
+            CreateMap<ObjetivosEstrategico, MacroObjetivoEstrategicoDto>();
+
+            CreateMap<MacroObjetivoEstrategicoCreateDto, ObjetivosEstrategico>()
+                .ForMember(dest => dest.ObjetivoEstrategicoId, opt => opt.Ignore())
+                .ForMember(dest => dest.PlanNacional, opt => opt.Ignore());
+
+            CreateMap<MacroObjetivoEstrategicoUpdateDto, ObjetivosEstrategico>()
+                .ForMember(dest => dest.ObjetivoEstrategicoId, opt => opt.Ignore())
+                .ForMember(dest => dest.PlanNacionalId, opt => opt.Ignore())
+                .ForMember(dest => dest.PlanNacional, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((_, _, srcMember) => srcMember != null));
         }
     }
 }
