@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Net.Http.Headers;
 
 namespace SistemaPlanificacionSNP.Web.Services
 {
@@ -13,62 +12,24 @@ namespace SistemaPlanificacionSNP.Web.Services
         Task<T?> PutAsync<T>(string endpoint, object? data = null);
         Task<bool> DeleteAsync(string endpoint);
         Task<string?> GetStringAsync(string endpoint);
-        Task<HttpResponseMessage?> SendAsync(HttpMethod method, string endpoint, object? data = null);
     }
 
     public class ApiClient : IApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly IAuthService _authService;
         private readonly ILogger<ApiClient> _logger;
 
-        public ApiClient(HttpClient httpClient, IAuthService authService, ILogger<ApiClient> logger)
+        public ApiClient(HttpClient httpClient, ILogger<ApiClient> logger)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public async Task<HttpResponseMessage?> SendAsync(HttpMethod method, string endpoint, object? data = null)
-        {
-            try
-            {
-                using var request = new HttpRequestMessage(method, endpoint);
-                var token = _authService.GetAccessToken();
-
-                if (!string.IsNullOrWhiteSpace(token))
-                {
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
-
-                if (data != null)
-                {
-                    request.Content = new StringContent(
-                        JsonSerializer.Serialize(data),
-                        System.Text.Encoding.UTF8,
-                        "application/json"
-                    );
-                }
-
-                return await _httpClient.SendAsync(request);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in SendAsync: {ex.Message}", ex);
-                return null;
-            }
         }
 
         public async Task<T?> GetAsync<T>(string endpoint)
         {
             try
             {
-                var response = await SendAsync(HttpMethod.Get, endpoint);
-                if (response == null)
-                {
-                    return default;
-                }
-
+                var response = await _httpClient.GetAsync(endpoint);
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
@@ -89,12 +50,11 @@ namespace SistemaPlanificacionSNP.Web.Services
         {
             try
             {
-                var response = await SendAsync(HttpMethod.Post, endpoint, data);
-                if (response == null)
-                {
-                    return default;
-                }
+                var content = data != null 
+                    ? new StringContent(JsonSerializer.Serialize(data), System.Text.Encoding.UTF8, "application/json")
+                    : null;
 
+                var response = await _httpClient.PostAsync(endpoint, content);
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
@@ -115,12 +75,11 @@ namespace SistemaPlanificacionSNP.Web.Services
         {
             try
             {
-                var response = await SendAsync(HttpMethod.Put, endpoint, data);
-                if (response == null)
-                {
-                    return default;
-                }
+                var content = data != null
+                    ? new StringContent(JsonSerializer.Serialize(data), System.Text.Encoding.UTF8, "application/json")
+                    : null;
 
+                var response = await _httpClient.PutAsync(endpoint, content);
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
@@ -141,12 +100,7 @@ namespace SistemaPlanificacionSNP.Web.Services
         {
             try
             {
-                var response = await SendAsync(HttpMethod.Delete, endpoint);
-                if (response == null)
-                {
-                    return false;
-                }
-
+                var response = await _httpClient.DeleteAsync(endpoint);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
@@ -160,13 +114,7 @@ namespace SistemaPlanificacionSNP.Web.Services
         {
             try
             {
-                var response = await SendAsync(HttpMethod.Get, endpoint);
-                if (response == null || !response.IsSuccessStatusCode)
-                {
-                    return null;
-                }
-
-                return await response.Content.ReadAsStringAsync();
+                return await _httpClient.GetStringAsync(endpoint);
             }
             catch (Exception ex)
             {

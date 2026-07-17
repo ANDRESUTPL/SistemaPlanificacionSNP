@@ -38,22 +38,6 @@ namespace SistemaPlanificacionSNP.Infrastructure
             // Servicios
             services.AddScoped<IPasswordHashService, PasswordHashService>();
             services.AddScoped<IAuditoriaService, AuditoriaService>();
-            services.AddScoped<IMenuService, MenuService>();
-
-            return services;
-        }
-
-        /// <summary>
-        /// Registra servicios específicos del módulo de MacroPlanificación.
-        /// Requiere que MacroPlanificacionDbContext sea registrado por la API.
-        /// </summary>
-        public static IServiceCollection AddMacroPlanificacionServices(this IServiceCollection services)
-        {
-            services.AddScoped<IPlanesNacionalesDesarrolloRepository, PlanesNacionalesDesarrolloRepository>();
-            services.AddScoped<IObjetivosEstrategicoRepository, ObjetivosEstrategicoRepository>();
-            services.AddScoped<IMacroPlanificacionUnitOfWork, MacroPlanificacionUnitOfWork>();
-            services.AddScoped<IMacroPlanNacionalService, MacroPlanNacionalService>();
-            services.AddScoped<IMacroObjetivoEstrategicoService, MacroObjetivoEstrategicoService>();
 
             return services;
         }

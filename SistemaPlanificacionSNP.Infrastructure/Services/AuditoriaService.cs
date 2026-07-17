@@ -49,7 +49,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 Descripcion = descripcion
             };
 
-            _context.AuditoriaTransaccionals.Add(auditoria);
+            _context.Auditorias.Add(auditoria);
             await _context.SaveChangesAsync();
         }
 

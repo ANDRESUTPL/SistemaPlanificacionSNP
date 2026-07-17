@@ -1,19 +1,43 @@
 // API Configuration
-const WEB_BASE_URL = '';
+const API_GATEWAY_URL = 'https://localhost:7000';
+
+// Utility functions
+function getAuthToken() {
+    return localStorage.getItem('accessToken');
+}
+
+function setAuthToken(accessToken, refreshToken) {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+}
+
+function clearAuthData() {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('usuario');
+}
 
 async function makeRequest(endpoint, options = {}) {
+    const token = getAuthToken();
+    
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
     };
 
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
-        const response = await fetch(`${WEB_BASE_URL}${endpoint}`, {
+        const response = await fetch(`${API_GATEWAY_URL}${endpoint}`, {
             ...options,
             headers
         });
 
         if (response.status === 401) {
+            // Token expirado
+            clearAuthData();
             window.location.href = '/account/login';
             return null;
         }
@@ -32,7 +56,7 @@ async function makeRequest(endpoint, options = {}) {
 // Menu loading
 async function loadDynamicMenu() {
     try {
-        const response = await makeRequest('/Dashboard/GetMenuActual', {
+        const response = await makeRequest('/api/usuarios/menu/actual', {
             method: 'GET'
         });
 
@@ -49,12 +73,6 @@ async function loadDynamicMenu() {
 function renderMenu(menuItems, parentElement = null) {
     if (!menuItems || menuItems.length === 0) return;
 
-    const filteredMenuItems = menuItems.filter(item => {
-        const ruta = (item.ruta || '').toLowerCase();
-        // Fase de unificacion: ocultamos la pantalla legacy de roles en el sidebar.
-        return ruta !== '/seguridad/roles' && ruta !== '/seguridad/catalogo-roles';
-    });
-
     const container = parentElement || document.getElementById('menu-container');
     if (!container) return;
 
@@ -65,7 +83,7 @@ function renderMenu(menuItems, parentElement = null) {
     const ul = document.createElement('ul');
     ul.className = 'nav flex-column';
 
-    filteredMenuItems.forEach(item => {
+    menuItems.forEach(item => {
         const hasSubitems = item.subpantallas && item.subpantallas.length > 0;
         
         const li = document.createElement('li');
@@ -110,13 +128,35 @@ function renderMenu(menuItems, parentElement = null) {
 
 // User info loading
 async function loadUserInfo() {
-    // El nombre de usuario ya se renderiza desde el servidor en _Layout.
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+
+        // Obtener info del JWT si está disponible
+        const parts = token.split('.');
+        if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            const userName = payload.unique_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'Usuario';
+            document.getElementById('usuarioNombre').textContent = userName;
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+    }
 }
 
 // Logout function
 async function logout() {
     if (confirm('¿Deseas cerrar sesión?')) {
-        window.location.href = '/account/logout';
+        try {
+            await makeRequest('/api/auth/logout', {
+                method: 'POST'
+            });
+        } catch (error) {
+            console.error('Error logout:', error);
+        } finally {
+            clearAuthData();
+            window.location.href = '/account/login';
+        }
     }
 }
 

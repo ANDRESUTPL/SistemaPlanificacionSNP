@@ -87,7 +87,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 }
 
                 // Generar tokens
-                var accessToken = _tokenGenerator.GenerateAccessToken(usuarioConRoles, usuarioConRoles.UsuarioRols.Select(ur => ur.Rol).ToList());
+                var accessToken = _tokenGenerator.GenerateAccessToken(usuarioConRoles, usuarioConRoles.UsuarioRoles.Select(ur => ur.Rol).ToList());
                 var refreshToken = _tokenGenerator.GenerateRefreshToken();
                 var tokenExpiration = _tokenGenerator.GetTokenExpiration(accessToken);
 
@@ -176,7 +176,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 }
 
                 // Generar nuevo access token
-                var newAccessToken = _tokenGenerator.GenerateAccessToken(usuarioConRoles, usuarioConRoles.UsuarioRols.Select(ur => ur.Rol).ToList());
+                var newAccessToken = _tokenGenerator.GenerateAccessToken(usuarioConRoles, usuarioConRoles.UsuarioRoles.Select(ur => ur.Rol).ToList());
                 var newRefreshToken = _tokenGenerator.GenerateRefreshToken();
                 var tokenExpiration = _tokenGenerator.GetTokenExpiration(newAccessToken);
 

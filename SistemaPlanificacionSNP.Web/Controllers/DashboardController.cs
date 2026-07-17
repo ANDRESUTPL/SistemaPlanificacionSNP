@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Services;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
 {
@@ -10,11 +10,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
     public class DashboardController : Controller
     {
         private readonly IApiClient _apiClient;
+        private readonly IAuthService _authService;
         private readonly ILogger<DashboardController> _logger;
+        private const string ApiGatewayUrl = "https://localhost:7000";
 
-        public DashboardController(IApiClient apiClient, ILogger<DashboardController> logger)
+        public DashboardController(IApiClient apiClient, IAuthService authService, ILogger<DashboardController> logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -46,54 +49,30 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         {
             try
             {
-                var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planificacion/dashboard");
-                if (response == null)
+                var token = _authService.GetAccessToken();
+                if (string.IsNullOrEmpty(token))
                 {
-                    return StatusCode(503, new { success = false, message = "No fue posible conectar con el servicio de planificación." });
+                    return Unauthorized();
                 }
 
-                if (response.IsSuccessStatusCode)
+                using (var client = new HttpClient())
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    return Content(json, "application/json");
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                    var response = await client.GetAsync($"{ApiGatewayUrl}/api/planificacion/dashboard");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        return Content(json, "application/json");
+                    }
                 }
 
-                var apiMessage = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                var message = apiMessage ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible obtener la informacion del dashboard.");
-                return StatusCode((int)response.StatusCode, new { success = false, message });
+                return NoContent();
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetDashboardData: {ex.Message}", ex);
-                return StatusCode(500, new { success = false, message = "Error interno del servidor al cargar dashboard." });
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetMenuActual()
-        {
-            try
-            {
-                var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/usuarios/menu/actual");
-                if (response == null)
-                {
-                    return StatusCode(503, new { success = false, message = "No fue posible conectar con el servicio de menú." });
-                }
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var apiMessage = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                    var message = apiMessage ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible obtener el menu dinamico.");
-                    return StatusCode((int)response.StatusCode, new { success = false, message });
-                }
-
-                var json = await response.Content.ReadAsStringAsync();
-                return Content(json, "application/json");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in GetMenuActual: {ex.Message}", ex);
-                return StatusCode(500, new { success = false, message = "Error interno del servidor" });
+                return BadRequest();
             }
         }
     }

@@ -1,32 +1,20 @@
 {
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/usuarios/menu/actual",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52555
-        }
-      ],
-      "UpstreamPathTemplate": "/api/usuarios/menu/actual",
-      "UpstreamHttpMethod": [ "GET" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
       "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52555
+          "Port": 7001
         }
       ],
       "UpstreamPathTemplate": "/api/auth/{everything}",
-      "UpstreamHttpMethod": [ "POST", "GET", "PUT", "DELETE" ]
+      "UpstreamHttpMethod": [ "POST", "GET", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
     },
     {
       "DownstreamPathTemplate": "/api/usuarios/{everything}",
@@ -34,7 +22,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52555
+          "Port": 7001
         }
       ],
       "UpstreamPathTemplate": "/api/usuarios/{everything}",
@@ -48,28 +36,12 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/roles/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52555
-        }
-      ],
-      "UpstreamPathTemplate": "/api/roles/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
       "DownstreamPathTemplate": "/api/parametrizacion/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52562
+          "Port": 7002
         }
       ],
       "UpstreamPathTemplate": "/api/parametrizacion/{everything}",
@@ -80,31 +52,15 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/planesnacionales",
+      "DownstreamPathTemplate": "/api/macroplanificacion/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52552
+          "Port": 7003
         }
       ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/planesnacionales",
-      "UpstreamHttpMethod": [ "GET", "POST" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/planesnacionales/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52552
-        }
-      ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/planesnacionales/{everything}",
+      "UpstreamPathTemplate": "/api/macroplanificacion/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
@@ -112,56 +68,12 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/objetivosestrategicos",
+      "DownstreamPathTemplate": "/api/planificacion/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52552
-        }
-      ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/objetivosestrategicos",
-      "UpstreamHttpMethod": [ "GET", "POST" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/objetivosestrategicos/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52552
-        }
-      ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/objetivosestrategicos/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/health",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52552
-        }
-      ],
-      "UpstreamPathTemplate": "/api/macroplanificacion/health",
-      "UpstreamHttpMethod": [ "GET" ]
-    },
-    {
-      "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52560
+          "Port": 7004
         }
       ],
       "UpstreamPathTemplate": "/api/planificacion/{everything}",
@@ -172,40 +84,12 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52560
-        }
-      ],
-      "UpstreamPathTemplate": "/api/planificacioninstitucional/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/health",
-      "DownstreamScheme": "https",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 52560
-        }
-      ],
-      "UpstreamPathTemplate": "/api/planificacioninstitucional/health",
-      "UpstreamHttpMethod": [ "GET" ]
-    },
-    {
       "DownstreamPathTemplate": "/api/controlcalidad/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 52565
+          "Port": 7005
         }
       ],
       "UpstreamPathTemplate": "/api/controlcalidad/{everything}",
@@ -217,6 +101,11 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:52554"
+    "BaseUrl": "https://localhost:7000",
+    "ServiceDiscoveryProvider": {
+      "Host": "localhost",
+      "Port": 8500,
+      "Type": "Consul"
+    }
   }
 }

@@ -16,10 +16,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         Task<Usuario?> GetByNombreUsuarioAsync(string nombreUsuario);
         Task<Usuario?> GetByEmailAsync(string email);
         Task<Usuario?> GetWithRolesAsync(int usuarioId);
-
-        Task<List<Usuario?>> GetAllUsersWithRolesAsync();
-
-		Task<IEnumerable<Usuario>> GetActivosAsync();
+        Task<IEnumerable<Usuario>> GetActivosAsync();
         Task<bool> ExisteNombreUsuarioAsync(string nombreUsuario);
         Task<bool> ExisteEmailAsync(string email);
     }
@@ -46,22 +43,14 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         public async Task<Usuario?> GetWithRolesAsync(int usuarioId)
         {
             return await _dbSet
-                .Include(u => u.UsuarioRols)
+                .Include(u => u.UsuarioRoles)
                     .ThenInclude(ur => ur.Rol)
                         .ThenInclude(r => r.RolPermisos)
                             .ThenInclude(rp => rp.Pantalla)
                 .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId);
         }
-		public async Task<List<Usuario?>> GetAllUsersWithRolesAsync()
-		{
-			return await _dbSet
-				.Include(u => u.UsuarioRols)
-					.ThenInclude(ur => ur.Rol)
-						.ThenInclude(r => r.RolPermisos)
-                        .ThenInclude(p => p.Pantalla)
-				.ToListAsync();
-		}
-		public async Task<IEnumerable<Usuario>> GetActivosAsync()
+
+        public async Task<IEnumerable<Usuario>> GetActivosAsync()
         {
             return await _dbSet
                 .Where(u => u.Activo)

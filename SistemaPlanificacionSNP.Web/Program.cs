@@ -1,17 +1,14 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using SistemaPlanificacionSNP.Web.Services;
-using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==================== SERVICIOS ====================
 
 // HttpClientFactory para comunicación con APIs
-var apiGatewayBaseUrl = builder.Configuration["ApiGateway:BaseUrl"] ?? "https://localhost:52555";
-
 builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
 {
-    client.BaseAddress = new Uri(apiGatewayBaseUrl);
+    client.BaseAddress = new Uri("https://localhost:7000");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
@@ -63,62 +60,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Middleware personalizado para verificar expiración de token
-app.Use(async (context, next) =>
+// Middleware
+if (!app.Environment.IsDevelopment())
 {
-	var token = context.Request.Cookies["accessToken"];
-
-	if (!string.IsNullOrEmpty(token) && context.User?.Identity?.IsAuthenticated == true)
-	{
-		try
-		{
-			var parts = token.Split('.');
-			if (parts.Length == 3)
-			{
-				// 1. CORRECCIÓN BASE64URL: Adaptar el payload de JWT a Base64 estándar
-				var payloadStr = parts[1].Replace('-', '+').Replace('_', '/');
-				switch (payloadStr.Length % 4)
-				{
-					case 2: payloadStr += "=="; break;
-					case 3: payloadStr += "="; break;
-				}
-
-				var payload = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(
-					System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(payloadStr))
-				);
-
-				if (payload != null && payload.TryGetValue("exp", out var expObj))
-				{
-					if (long.TryParse(expObj.ToString(), out var exp))
-					{
-						var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-						if (now > exp)
-						{
-							// 2. CORRECCIÓN BUCLE: ¡Cerrar la sesión de la cookie principal de ASP.NET Core!
-							await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-							// 3. CORRECCIÓN COOKIES: Asegurar el borrado forzando el Path base
-							var cookieOptions = new CookieOptions { Path = "/" };
-							context.Response.Cookies.Delete("accessToken", cookieOptions);
-							context.Response.Cookies.Delete("refreshToken", cookieOptions);
-
-							// Redirigir al login
-							context.Response.Redirect("/Account/Login");
-							return; // Importante: detener la ejecución aquí
-						}
-					}
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			// Opcional: Agrega un log aquí para saber si falla la decodificación en el futuro
-			// Console.WriteLine($"Error procesando token: {ex.Message}");
-		}
-	}
-
-	await next();
-});
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

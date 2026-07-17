@@ -1,128 +1,99 @@
-@model SistemaPlanificacionSNP.Web.Models.UserProfileViewModel
+@model UserProfileViewModel
 
 @{
     ViewData["Title"] = "Mi Perfil";
 }
 
-<!-- Contenedor fluido para aprovechar todo el ancho -->
-<div class="container-fluid p-0">
-
-    <!-- Encabezado de la página -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
-        <div>
-            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-user-circle me-2 text-primary"></i>Perfil de Usuario</h3>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">Gestión de información personal y credenciales de acceso.</p>
-        </div>
-        <div class="mt-3 mt-md-0 d-flex gap-2">
-            <a href="javascript:history.back()" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Volver
-            </a>
-        </div>
-    </div>
-
-    <div class="row g-4">
-
-        <!-- Columna Izquierda (Resumen del Perfil) -->
-        <div class="col-12 col-xl-4 col-xxl-3">
-            <div class="card border-0 shadow-sm h-100 overflow-hidden" style="transition: transform 0.25s ease, box-shadow 0.25s ease;">
-                <!-- Banner Superior de la Tarjeta Lateral -->
-                <div style="height: 120px; background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);"></div>
-
-                <div class="card-body text-center position-relative pb-4">
-                    <!-- Avatar superpuesto -->
-                    <div class="bg-white rounded-circle p-1 shadow-sm mx-auto mb-3" style="width: 140px; height: 140px; margin-top: -70px;">
-                        <div class="w-100 h-100 rounded-circle d-flex align-items-center justify-content-center text-primary" style="background-color: #eff6ff; font-size: 4rem;">
-                            <i class="fas fa-user"></i>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-circle"></i> Perfil de Usuario</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h5 class="mb-3">Información Personal</h5>
                         </div>
                     </div>
 
-                    <h4 class="fw-bold text-dark mb-1">@Model.Nombre @Model.Apellido</h4>
-                    <p class="text-muted mb-3" style="font-size: 0.9rem;">ID de Sistema: #@Model.UsuarioId</p>
-
-                    <div class="mb-4">
-                        <span class="badge rounded-pill @(Model.Activo ? "bg-success text-success border-success-subtle" : "bg-danger text-danger border-danger-subtle") bg-opacity-10 border px-4 py-2 fw-medium" style="font-size: 0.85rem;">
-                            <i class="fas @(Model.Activo ? "fa-check-circle" : "fa-times-circle") me-2"></i>
-                            @(Model.Activo ? "Estado: Activo" : "Estado: Inactivo")
-                        </span>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">ID de Usuario</p>
+                            <p class="fw-bold">@Model.UsuarioId</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Nombre de Usuario</p>
+                            <p class="fw-bold">@Model.NombreUsuario</p>
+                        </div>
                     </div>
 
-                    <div class="d-grid mt-4 pt-4 border-top border-light-subtle">
-                        <a href="/account/ChangePassword" class="btn btn-primary rounded-pill shadow-sm fw-medium py-2">
-                            <i class="fas fa-lock me-2"></i> Cambiar Contraseña
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">Email</p>
+                            <p class="fw-bold">@Model.Email</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Estado</p>
+                            <p class="fw-bold">
+                                @if (Model.Activo)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactivo</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">Nombre</p>
+                            <p class="fw-bold">@Model.Nombre</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="text-muted">Apellido</p>
+                            <p class="fw-bold">@Model.Apellido</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <p class="text-muted">Fecha de Creación</p>
+                            <p class="fw-bold">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                        </div>
+                    </div>
+
+                    @if (Model.Roles.Any())
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p class="text-muted">Roles Asignados</p>
+                                <div>
+                                    @foreach (var rol in Model.Roles)
+                                    {
+                                        <span class="badge bg-info me-2">@rol</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <hr>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="/" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                        <a href="/account/change-password" class="btn btn-warning">
+                            <i class="fas fa-key"></i> Cambiar Contraseña
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Columna Derecha (Detalles Completos) -->
-        <div class="col-12 col-xl-8 col-xxl-9">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex align-items-center">
-                    <div class="rounded-3 p-2 d-flex align-items-center justify-content-center me-3" style="background-color: #eff6ff; color: #3b82f6;">
-                        <i class="fas fa-address-card fs-5"></i>
-                    </div>
-                    <h5 class="mb-0 fw-bold text-dark">Información Detallada</h5>
-                </div>
-
-                <div class="card-body p-4 p-xl-5">
-
-                    <div class="row g-4">
-                        <!-- Sección 1: Credenciales -->
-                        <div class="col-12">
-                            <h6 class="text-uppercase text-muted fw-bold mb-3 pb-2 border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">
-                                <i class="fas fa-shield-alt me-2"></i> Credenciales de Acceso
-                            </h6>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="p-3 rounded-3 bg-light bg-opacity-50 border border-light-subtle">
-                                        <div class="text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Nombre de Usuario</div>
-                                        <div class="text-dark fw-bold" style="font-size: 1.1rem;">@Model.NombreUsuario</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 rounded-3 bg-light bg-opacity-50 border border-light-subtle">
-                                        <div class="text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Correo Electrónico Principal</div>
-                                        <div class="text-dark fw-medium">@Model.Email</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sección 2: Datos Personales -->
-                        <div class="col-12 mt-5">
-                            <h6 class="text-uppercase text-muted fw-bold mb-3 pb-2 border-bottom" style="font-size: 0.75rem; letter-spacing: 1px;">
-                                <i class="fas fa-id-badge me-2"></i> Datos Personales
-                            </h6>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="p-3 rounded-3 bg-light bg-opacity-50 border border-light-subtle h-100">
-                                        <div class="text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Nombres Completos</div>
-                                        <div class="text-dark fw-medium" style="font-size: 1.05rem;">@Model.Nombre</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 rounded-3 bg-light bg-opacity-50 border border-light-subtle h-100">
-                                        <div class="text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Apellidos Completos</div>
-                                        <div class="text-dark fw-medium" style="font-size: 1.05rem;">@Model.Apellido</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="p-3 rounded-3 bg-light bg-opacity-50 border border-light-subtle">
-                                        <div class="text-muted fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px; text-transform: uppercase;">Fecha de Registro en el Sistema</div>
-                                        <div class="text-dark fw-medium d-flex align-items-center">
-                                            <i class="far fa-calendar-alt text-muted me-2"></i>
-                                            @Model.FechaCreacion.ToString("dd 'de' MMMM 'de' yyyy, HH:mm")
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
     </div>
 </div>
