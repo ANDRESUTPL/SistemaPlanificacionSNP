@@ -135,8 +135,8 @@
                     </ul>
                 </div>
             }
-
-            <form method="post" asp-action="Login" id="loginForm">
+         
+            <form method="post" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" id="loginForm">
                 @Html.AntiForgeryToken()
 
                 <div class="form-group">

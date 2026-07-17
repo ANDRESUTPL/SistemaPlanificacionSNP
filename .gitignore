@@ -141,3 +141,6 @@ PublishProfiles/
 .env.local
 wwwroot/lib/
 
+*.rar
+*.zip
+

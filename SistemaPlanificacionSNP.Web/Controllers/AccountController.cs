@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Models;
 using SistemaPlanificacionSNP.Web.Services;
+using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -14,7 +16,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         private readonly IApiClient _apiClient;
         private readonly IAuthService _authService;
         private readonly ILogger<AccountController> _logger;
-        private const string ApiGatewayUrl = "https://localhost:7000";
 
         public AccountController(IApiClient apiClient, IAuthService authService, ILogger<AccountController> logger)
         {
@@ -52,16 +53,46 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             {
                 // Llamar a API de login
                 var loginDto = new { model.NombreUsuario, model.Password, model.Recuerdame };
-                var response = await _apiClient.PostAsync<JsonElement>($"{ApiGatewayUrl}/api/auth/login", loginDto);
+                var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/login", loginDto);
 
-                if (response.ValueKind == JsonValueKind.Undefined || response.ValueKind == JsonValueKind.Null)
+                if (response == null)
                 {
                     ModelState.AddModelError(string.Empty, "Error de conexión con el servidor");
                     return View(model);
                 }
 
+                if (!response.IsSuccessStatusCode)
+                {
+                    var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                    ModelState.AddModelError(
+                        string.Empty,
+                        apiError ?? ApiHttpErrorHelper.BuildStatusMessage(
+                            response.StatusCode,
+                            "No fue posible iniciar sesion.",
+                            unauthorizedMessage: "Usuario o contrasena incorrectos."));
+                    return View(model);
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    ModelState.AddModelError(string.Empty, "Respuesta vacía del servidor de autenticación");
+                    return View(model);
+                }
+
+                var loginResult = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (loginResult.ValueKind == JsonValueKind.Undefined || loginResult.ValueKind == JsonValueKind.Null)
+                {
+                    ModelState.AddModelError(string.Empty, "Respuesta inválida del servidor");
+                    return View(model);
+                }
+
                 // Parsear respuesta
-                var data = response.GetProperty("data");
+                var data = loginResult.GetProperty("data");
                 var usuario = data.GetProperty("usuario");
                 var accessToken = data.GetProperty("accessToken").GetString();
                 var refreshToken = data.GetProperty("refreshToken").GetString();
@@ -110,7 +141,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 _logger.LogInformation($"User {nombreUsuario} logged in successfully");
 
                 return LocalRedirect(returnUrl ?? "/");
-            }
+                //return RedirectToAction("Index", "Dashboard");
+			}
             catch (Exception ex)
             {
                 _logger.LogError($"Error in Login: {ex.Message}", ex);
@@ -119,24 +151,27 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             }
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpGet]
         [Authorize]
         public async Task<IActionResult> Logout()
         {
+            return await ExecuteLogoutAsync();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        [ActionName("Logout")]
+        public async Task<IActionResult> LogoutPost()
+        {
+            return await ExecuteLogoutAsync();
+        }
+
+        private async Task<IActionResult> ExecuteLogoutAsync()
+        {
             try
             {
-                // Llamar a API de logout
-                var token = _authService.GetAccessToken();
-                if (!string.IsNullOrEmpty(token))
-                {
-                    // Pasar token en header Authorization
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-                        await client.PostAsync($"{ApiGatewayUrl}/api/auth/logout", null);
-                    }
-                }
+                await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/logout");
 
                 _authService.ClearAuthData();
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -176,45 +211,46 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
             try
             {
-                var token = _authService.GetAccessToken();
-                if (string.IsNullOrEmpty(token))
+                var changeDto = new
                 {
+                    model.PasswordActual,
+                    model.PasswordNueva,
+                    model.PasswordConfirmar
+                };
+
+                var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/cambiar-password", changeDto);
+                if (response == null)
+                {
+                    ModelState.AddModelError(string.Empty, "No fue posible conectar con el servidor. Intenta nuevamente.");
+                    return View(model);
+                }
+
+                if (response.IsSuccessStatusCode)
+                {
+                    ViewBag.Success = "Contraseña actualizada exitosamente";
+                    _logger.LogInformation($"User {User?.Identity?.Name} changed password");
+                    return View();
+                }
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    TempData["Warning"] = "Tu sesión expiró. Inicia sesión nuevamente para continuar.";
+                    _authService.ClearAuthData();
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     return RedirectToAction(nameof(Login));
                 }
 
-                using (var client = new HttpClient())
+                if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-                    var changeDto = new
-                    {
-                        model.PasswordActual,
-                        model.PasswordNueva,
-                        model.PasswordConfirmar
-                    };
-
-                    var content = new StringContent(
-                        JsonSerializer.Serialize(changeDto),
-                        System.Text.Encoding.UTF8,
-                        "application/json"
-                    );
-
-                    var response = await client.PostAsync(
-                        $"{ApiGatewayUrl}/api/auth/cambiar-password",
-                        content
-                    );
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        ViewBag.Success = "Contraseña actualizada exitosamente";
-                        _logger.LogInformation($"User {User?.Identity?.Name} changed password");
-                        return View();
-                    }
-                    else
-                    {
-                        ModelState.AddModelError(string.Empty, "Error al cambiar la contraseña");
-                        return View(model);
-                    }
+                    ModelState.AddModelError(string.Empty, "No tienes permisos para cambiar esta contraseña.");
+                    return View(model);
                 }
+
+                var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                ModelState.AddModelError(
+                    string.Empty,
+                    apiError ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "Error al cambiar la contrasena"));
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -236,46 +272,64 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     return RedirectToAction(nameof(Login));
                 }
 
-                var token = _authService.GetAccessToken();
-                if (string.IsNullOrEmpty(token))
+                var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/usuarios/{userId}");
+                if (response == null)
                 {
+                    TempData["Error"] = "No fue posible obtener tu perfil por un error de conexión.";
+                    return RedirectToAction("Index", "Dashboard");
+                }
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    TempData["Warning"] = "Tu sesión expiró. Inicia sesión nuevamente para continuar.";
+                    _authService.ClearAuthData();
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     return RedirectToAction(nameof(Login));
                 }
 
-                using (var client = new HttpClient())
+                if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-                    var response = await client.GetAsync($"{ApiGatewayUrl}/api/usuarios/{userId}");
+                    TempData["Error"] = "No tienes permisos para visualizar la información del perfil.";
+                    return RedirectToAction(nameof(AccessDenied));
+                }
 
-                    if (response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
+                {
+                    var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                    TempData["Error"] = apiError ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible cargar la informacion de perfil.");
+                    return RedirectToAction("Index", "Dashboard");
+                }
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var data = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("data", out var userElement))
                     {
-                        var json = await response.Content.ReadAsStringAsync();
-                        var data = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("data", out var userElement))
+                        var model = new UserProfileViewModel
                         {
-                            var model = new UserProfileViewModel
-                            {
-                                UsuarioId = userElement.GetProperty("usuarioId").GetInt32(),
-                                NombreUsuario = userElement.GetProperty("nombreUsuario").GetString() ?? "",
-                                Email = userElement.GetProperty("email").GetString() ?? "",
-                                Nombre = userElement.GetProperty("nombre").GetString() ?? "",
-                                Apellido = userElement.GetProperty("apellido").GetString() ?? "",
-                                Activo = userElement.GetProperty("activo").GetBoolean(),
-                                FechaCreacion = userElement.GetProperty("fechaCreacion").GetDateTime()
-                            };
+                            UsuarioId = userElement.GetProperty("usuarioId").GetInt32(),
+                            NombreUsuario = userElement.GetProperty("nombreUsuario").GetString() ?? "",
+                            Email = userElement.GetProperty("email").GetString() ?? "",
+                            Nombre = userElement.GetProperty("nombre").GetString() ?? "",
+                            Apellido = userElement.GetProperty("apellido").GetString() ?? "",
+                            Activo = userElement.GetProperty("activo").GetBoolean(),
+                            FechaCreacion = userElement.GetProperty("fechaCreacion").GetDateTime()
+                        };
 
-                            return View(model);
-                        }
+                        return View(model);
                     }
                 }
 
-                return RedirectToAction(nameof(Login));
+                TempData["Warning"] = "No fue posible procesar la respuesta del perfil.";
+                return RedirectToAction("Index", "Dashboard");
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in Profile: {ex.Message}", ex);
-                return RedirectToAction(nameof(Login));
+                TempData["Error"] = "Ocurrió un error inesperado al cargar el perfil.";
+                return RedirectToAction("Index", "Dashboard");
             }
         }
 

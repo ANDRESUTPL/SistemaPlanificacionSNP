@@ -21,6 +21,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPasswordHashService _passwordService;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IMenuService _menuService;
         private readonly IMapper _mapper;
         private readonly ILogger<UsuariosController> _logger;
 
@@ -28,12 +29,14 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
             IUnitOfWork unitOfWork,
             IPasswordHashService passwordService,
             IAuditoriaService auditoriaService,
+            IMenuService menuService,
             IMapper mapper,
             ILogger<UsuariosController> logger)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
             _auditoriaService = auditoriaService ?? throw new ArgumentNullException(nameof(auditoriaService));
+            _menuService = menuService ?? throw new ArgumentNullException(nameof(menuService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -46,13 +49,34 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         {
             try
             {
-                var usuarios = await _unitOfWork.Usuarios.GetAllAsync();
-                var usuariosDto = _mapper.Map<List<UsuarioDto>>(usuarios);
+				//GetAllUsersWithRolesAsync				
+				var usuarios = await _unitOfWork.Usuarios.GetAllUsersWithRolesAsync();
+				var usuariosDto = _mapper.Map<List<UsuarioDto>>(usuarios);
                 return Ok(ApiResponse<List<UsuarioDto>>.SuccessWith(usuariosDto, $"{usuariosDto.Count} usuarios encontrados"));
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in GetAll: {ex.Message}", ex);
+                return StatusCode(500, ApiResponse<List<UsuarioDto>>.FailureWith("Error interno del servidor"));
+            }
+        }
+
+        /// <summary>
+        /// Obtener todos los usuarios con sus roles y permisos en una sola consulta.
+        /// Endpoint aditivo para el modulo unificado de gestion de usuarios.
+        /// </summary>
+        [HttpGet("con-roles")]
+        public async Task<ActionResult<ApiResponse<List<UsuarioDto>>>> GetAllConRoles()
+        {
+            try
+            {
+                var usuarios = await _unitOfWork.Usuarios.GetAllUsersWithRolesAsync();
+                var usuariosDto = _mapper.Map<List<UsuarioDto>>(usuarios);
+                return Ok(ApiResponse<List<UsuarioDto>>.SuccessWith(usuariosDto, $"{usuariosDto.Count} usuarios con roles encontrados"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetAllConRoles: {ex.Message}", ex);
                 return StatusCode(500, ApiResponse<List<UsuarioDto>>.FailureWith("Error interno del servidor"));
             }
         }
@@ -293,116 +317,19 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                     return Unauthorized(ApiResponse<List<MenuPermisoDto>>.FailureWith("Token inválido"));
                 }
 
-                // Obtener usuario con roles
-                var usuario = await _unitOfWork.Usuarios.GetWithRolesAsync(userId);
-                if (usuario == null)
-                {
-                    return NotFound(ApiResponse<List<MenuPermisoDto>>.FailureWith("Usuario no encontrado"));
-                }
-
-                // Obtener todas las pantallas del sistema
-                var repo = _unitOfWork.GetRepository<Pantalla>();
-                var pantallas = await repo.FindAsync(p => p.Activo);
-
-                // Obtener permisos del usuario basados en sus roles
-                var permisosUsuario = new Dictionary<int, PermisoDto>();
-
-                foreach (var usuarioRol in usuario.UsuarioRoles)
-                {
-                    foreach (var permiso in usuarioRol.Rol.RolPermisos)
-                    {
-                        // Tomar el permiso más permisivo si ya existe
-                        if (!permisosUsuario.ContainsKey(permiso.PantallaId))
-                        {
-                            permisosUsuario[permiso.PantallaId] = new PermisoDto
-                            {
-                                PermisoId = permiso.RolPermisoId,
-                                PantallaId = permiso.PantallaId,
-                                CodigoPermiso = permiso.Pantalla.Nombre,
-                                NombrePantalla = permiso.Pantalla.Nombre,
-                                Lectura = permiso.Lectura,
-                                Creacion = permiso.Creacion,
-                                Edicion = permiso.Edicion,
-                                Eliminacion = permiso.Eliminacion
-                            };
-                        }
-                        else
-                        {
-                            // Combinar permisos (OR lógico)
-                            permisosUsuario[permiso.PantallaId].Lectura |= permiso.Lectura;
-                            permisosUsuario[permiso.PantallaId].Creacion |= permiso.Creacion;
-                            permisosUsuario[permiso.PantallaId].Edicion |= permiso.Edicion;
-                            permisosUsuario[permiso.PantallaId].Eliminacion |= permiso.Eliminacion;
-                        }
-                    }
-                }
-
-                // Construir árbol de menú (solo pantallas donde usuario tiene lectura)
-                var menuRaiz = BuildMenuTree(
-                    pantallas.Where(p => p.PantallaPadrId == null).ToList(),
-                    pantallas,
-                    permisosUsuario
-                );
+                var menuRaiz = await _menuService.ObtenerMenuParaUsuarioAsync(userId);
 
                 return Ok(ApiResponse<List<MenuPermisoDto>>.SuccessWith(menuRaiz, "Menú obtenido"));
+            }
+            catch (InvalidOperationException)
+            {
+                return NotFound(ApiResponse<List<MenuPermisoDto>>.FailureWith("Usuario no encontrado"));
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error in ObtenerMenuActual: {ex.Message}", ex);
                 return StatusCode(500, ApiResponse<List<MenuPermisoDto>>.FailureWith("Error interno del servidor"));
             }
-        }
-
-        /// <summary>
-        /// Construir árbol de menú recursivamente
-        /// </summary>
-        private List<MenuPermisoDto> BuildMenuTree(
-            List<Pantalla> pantallasActuales,
-            IEnumerable<Pantalla> todasPantallas,
-            Dictionary<int, PermisoDto> permisosUsuario)
-        {
-            var menu = new List<MenuPermisoDto>();
-
-            foreach (var pantalla in pantallasActuales.OrderBy(p => p.Orden))
-            {
-                // Solo incluir si el usuario tiene al menos permiso de lectura
-                if (!permisosUsuario.TryGetValue(pantalla.PantallaId, out var permiso) || !permiso.Lectura)
-                {
-                    continue;
-                }
-
-                var menuItem = new MenuPermisoDto
-                {
-                    PantallaId = pantalla.PantallaId,
-                    Nombre = pantalla.Nombre,
-                    Icono = pantalla.Icono,
-                    Ruta = pantalla.Ruta,
-                    PantallaPadreId = pantalla.PantallaPadrId,
-                    Orden = pantalla.Orden,
-                    RolPermisos = new List<RolPermisoDto>
-                    {
-                        new RolPermisoDto
-                        {
-                            RolPermisoId = permiso.PermisoId,
-                            RolId = 0,
-                            PantallaId = permiso.PantallaId,
-                            Lectura = permiso.Lectura,
-                            Creacion = permiso.Creacion,
-                            Edicion = permiso.Edicion,
-                            Eliminacion = permiso.Eliminacion
-                        }
-                    },
-                    Subpantallas = BuildMenuTree(
-                        pantalla.PantallasHijas.ToList(),
-                        todasPantallas,
-                        permisosUsuario
-                    )
-                };
-
-                menu.Add(menuItem);
-            }
-
-            return menu;
         }
 
         /// <summary>
@@ -431,23 +358,30 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 var rolRepo = _unitOfWork.GetRepository<Rol>();
 
                 // Remover roles actuales
-                usuario.UsuarioRoles.Clear();
+                usuario.UsuarioRols.Clear();
 
                 // Agregar nuevos roles
                 var rolesNuevos = new List<Rol>();
                 foreach (var rolId in asignarRolesDto.RolIds)
                 {
                     var rol = await rolRepo.GetByIdAsync(rolId);
-                    if (rol != null)
+                    if (rol == null)
                     {
-                        usuario.UsuarioRoles.Add(new UsuarioRol
-                        {
-                            UsuarioId = usuarioId,
-                            RolId = rolId,
-                            Rol = rol
-                        });
-                        rolesNuevos.Add(rol);
+                        return BadRequest(ApiResponse<string>.FailureWith($"El rol con ID {rolId} no existe"));
                     }
+
+                    if (!rol.Activo)
+                    {
+                        return BadRequest(ApiResponse<string>.FailureWith($"El rol '{rol.Nombre}' está inactivo y no puede asignarse"));
+                    }
+
+                    usuario.UsuarioRols.Add(new UsuarioRol
+                    {
+                        UsuarioId = usuarioId,
+                        RolId = rolId,
+                        Rol = rol
+                    });
+                    rolesNuevos.Add(rol);
                 }
 
                 await _unitOfWork.Usuarios.UpdateAsync(usuario);

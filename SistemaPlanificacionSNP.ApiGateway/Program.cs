@@ -16,7 +16,9 @@ builder.Configuration
 
 // Obtener configuración JWT desde appsettings
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSection["SecretKey"] ?? throw new InvalidOperationException("SecretKey no configurada");
+var secretKey = jwtSection["SecretKey"]
+    ?? jwtSection["Key"]
+    ?? throw new InvalidOperationException("Jwt SecretKey/Key no configurada");
 var issuer = jwtSection["Issuer"] ?? "SistemaPlanificacionSNP";
 var audience = jwtSection["Audience"] ?? "SistemaPlanificacionSNP";
 
@@ -45,7 +47,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
                 {
-                    context.Response.Headers.Add("Token-Expired", "true");
+                    context.Response.Headers.Append("Token-Expired", "true");
                 }
                 return Task.CompletedTask;
             },

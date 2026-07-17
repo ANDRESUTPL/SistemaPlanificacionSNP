@@ -43,14 +43,19 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(hash))
                 throw new ArgumentException("El hash no puede estar vacío", nameof(hash));
 
-            try
-            {
-                return BC.Verify(password, hash);
-            }
-            catch
-            {
-                return false;
-            }
-        }
+			try
+			{			
+				string cleanPassword = password.Trim();
+				string cleanHash = hash.Trim();
+
+				bool response = BC.Verify(cleanPassword, cleanHash);
+				return response;
+			}
+			catch (Exception ex)
+			{				
+				Console.WriteLine($"Error real en BCrypt: {ex.Message}");
+				throw; // Relanzamos el error temporalmente para que estalle en tu consola y lo leas
+			}
+		}
     }
 }
