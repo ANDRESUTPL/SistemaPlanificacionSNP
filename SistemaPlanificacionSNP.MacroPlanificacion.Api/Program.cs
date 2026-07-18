@@ -5,6 +5,7 @@ using SistemaPlanificacionSNP.Infrastructure;
 using SistemaPlanificacionSNP.Infrastructure.Data;
 using SistemaPlanificacionSNP.Infrastructure.JWT;
 using SistemaPlanificacionSNP.Infrastructure.Mapping;
+using SistemaPlanificacionSNP.Infrastructure.Services; // NECESARIO PARA LOS SERVICIOS
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,30 +15,31 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 var jwtSettings = ResolveJwtSettings(builder.Configuration);
 
+// 1. REGISTRO DE BASE DE DATOS
 builder.Services.AddDbContext<MacroPlanificacionDbContext>(options =>
 {
-	options.UseSqlServer(
-		connectionString,
-		sqlOptions =>
-		{
-			sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
-			sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
-		});
-
-	if (builder.Environment.IsDevelopment())
+	options.UseSqlServer(connectionString, sqlOptions =>
 	{
-		options.EnableDetailedErrors();
-		options.EnableSensitiveDataLogging();
-	}
+		sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+		sqlOptions.EnableRetryOnFailure(3);
+	});
 });
 
+// 2. REGISTRO DE REPOSITORIOS Y UNIT OF WORK (Extension de Infraestructura)
+builder.Services.AddMacroPlanificacionServices();
+
+// 3. REGISTRO EXPLÍCITO DE SERVICIOS (LA SOLUCIÓN AL ERROR)
+builder.Services.AddScoped<IMacroPlanNacionalService, MacroPlanNacionalService>();
+builder.Services.AddScoped<IMacroObjetivoEstrategicoService, MacroObjetivoEstrategicoService>();
+
+// 4. AUTOMAPPER
 builder.Services.AddAutoMapper(config =>
 {
 	config.AddProfile<MappingProfile>();
 });
 
+// 5. JWT Y AUTENTICACIÓN
 builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddMacroPlanificacionServices();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 	.AddJwtBearer(options =>
@@ -77,8 +79,7 @@ builder.Services.AddSwaggerGen(options =>
 	options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
 	{
 		Title = "MacroPlanificación API - Sistema de Planificación SNP",
-		Version = "v1",
-		Description = "API para gestión de planes nacionales y objetivos estratégicos"
+		Version = "v1"
 	});
 
 	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme

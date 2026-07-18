@@ -13,7 +13,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.UnitOfWork
     /// </summary>
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AuthDbContext _context;
         private IDbContextTransaction? _transaction;
         private Dictionary<Type, object>? _repositories;
 
@@ -21,7 +21,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.UnitOfWork
         private IAuditoriaRepository? _auditoriaRepository;
         private IPlanificacionRepository? _planificacionRepository;
 
-        public UnitOfWork(ApplicationDbContext context)
+        public UnitOfWork(AuthDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }

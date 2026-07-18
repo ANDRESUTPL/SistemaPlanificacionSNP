@@ -23,7 +23,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
     /// </summary>
     public class AuditoriaRepository : Repository<AuditoriaTransaccional>, IAuditoriaRepository
     {
-        public AuditoriaRepository(ApplicationDbContext context) : base(context)
+        public AuditoriaRepository(AuthDbContext context) : base(context)
         {
         }
 

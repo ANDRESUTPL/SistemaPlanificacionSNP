@@ -1,0 +1,190 @@
+﻿@model SistemaPlanificacionSNP.Web.Models.ReporteEjecutivoViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Dashboard Ejecutivo y Reportería";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-chart-pie me-2 text-primary"></i>Evaluación y Reportería</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Visión gerencial de la ejecución de programas y proyectos de inversión.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <button class="btn btn-outline-secondary border shadow-sm px-4 fw-medium" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Imprimir Reporte
+            </button>
+            <a href="/evaluacion/avances" class="btn btn-secondary border shadow-sm px-4 fw-medium">
+                <i class="fas fa-tasks me-2"></i>Ir a Carga de Avances
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Resumen (KPIs) -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="text-muted text-uppercase tracking-wider text-xs fw-bold">Total Proyectos</div>
+                        <div class="text-primary"><i class="fas fa-project-diagram"></i></div>
+                    </div>
+                    <h2 class="mb-0 fw-bolder text-dark">@Model.TotalProyectos</h2>
+                    <div class="mt-auto pt-3">
+                        <span class="text-success text-sm fw-medium"><i class="fas fa-arrow-up"></i> @Model.ProyectosEnEjecucion en ejecución</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="text-muted text-uppercase tracking-wider text-xs fw-bold">Inversión Nacional Asignada</div>
+                        <div class="text-warning"><i class="fas fa-money-bill-wave"></i></div>
+                    </div>
+                    <h3 class="mb-0 fw-bolder text-dark">@Model.PresupuestoTotal.ToString("C0")</h3>
+                    <div class="mt-auto pt-3">
+                        <span class="text-muted text-sm fw-medium">Presupuesto inicial codificado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 4px solid #10b981 !important;">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="text-muted text-uppercase tracking-wider text-xs fw-bold">Presupuesto Ejecutado</div>
+                        <div class="text-success"><i class="fas fa-check-double"></i></div>
+                    </div>
+                    <h3 class="mb-0 fw-bolder text-dark">@Model.PresupuestoEjecutado.ToString("C0")</h3>
+                    <div class="mt-auto pt-3">
+                        <span class="text-success text-sm fw-medium"><i class="fas fa-chart-line"></i> Pagado / Devengado</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm bg-primary text-white">
+                <div class="card-body p-4 d-flex flex-column text-center justify-content-center">
+                    <div class="text-white-50 text-uppercase tracking-wider text-xs fw-bold mb-2">Avance Global Promedio</div>
+                    <div class="display-4 fw-bolder mb-2">@Model.PorcentajeAvanceGlobal.ToString("0.0")%</div>
+                    <div class="progress bg-white bg-opacity-25 mt-2" style="height: 6px;">
+                        <div class="progress-bar bg-white" style="width: @Model.PorcentajeAvanceGlobal.ToString("0")%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4">
+        <!-- Gráfico de Estados (Doughnut) -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white pt-4 pb-0 border-0">
+                    <h6 class="fw-bold text-dark mb-0">Distribución de Proyectos por Estado</h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                    @if (Model.ValoresEstado.Count == 0)
+                    {
+                        <div class="text-muted text-center"><i class="fas fa-folder-open display-4 mb-2 opacity-50"></i><p>Sin datos para graficar</p></div>
+                    }
+                    else
+                    {
+                        <canvas id="estadoChart"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Presupuesto por Plan (Bar) -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white pt-4 pb-0 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">Top Inversión por Plan Institucional (Millones USD)</h6>
+                </div>
+                <div class="card-body" style="min-height: 300px;">
+                    @if (Model.ValoresPresupuesto.Count == 0)
+                    {
+                        <div class="text-muted text-center py-5"><i class="fas fa-chart-bar display-4 mb-2 opacity-50"></i><p>Sin datos para graficar</p></div>
+                    }
+                    else
+                    {
+                        <canvas id="presupuestoChart"></canvas>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            // Gráfico Doughnut (Estados)
+            const estadoLabels = @Html.Raw(JsonSerializer.Serialize(Model.EtiquetasEstado));
+            const estadoData = @Html.Raw(JsonSerializer.Serialize(Model.ValoresEstado));
+
+            if (estadoData.length > 0) {
+                new Chart(document.getElementById('estadoChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: estadoLabels,
+                        datasets: [{
+                            data: estadoData,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico Bar (Presupuesto)
+            const presLabels = @Html.Raw(JsonSerializer.Serialize(Model.EtiquetasEntidad));
+            const presDataRaw = @Html.Raw(JsonSerializer.Serialize(Model.ValoresPresupuesto));
+            // Convertimos a millones para mejor lectura en la gráfica
+            const presData = presDataRaw.map(v => (v / 1000000).toFixed(2));
+
+            if (presData.length > 0) {
+                new Chart(document.getElementById('presupuestoChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: presLabels,
+                        datasets: [{
+                            label: 'Presupuesto Asignado (M)',
+                            data: presData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)', // Primary transparent
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDashOffset: 2 } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

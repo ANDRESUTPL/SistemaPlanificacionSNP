@@ -27,9 +27,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
     /// </summary>
     public class AuditoriaService : IAuditoriaService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AuthDbContext _context;
 
-        public AuditoriaService(ApplicationDbContext context)
+        public AuditoriaService(AuthDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }

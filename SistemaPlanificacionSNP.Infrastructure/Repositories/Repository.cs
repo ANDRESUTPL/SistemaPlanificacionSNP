@@ -14,10 +14,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
     /// </summary>
     public class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly ApplicationDbContext _context;
+        protected readonly AuthDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public Repository(ApplicationDbContext context)
+        public Repository(AuthDbContext context)
         {
             _context = context;
             _dbSet = context.Set<T>();

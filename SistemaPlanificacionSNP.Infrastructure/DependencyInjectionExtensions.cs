@@ -7,55 +7,78 @@ using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
 
 namespace SistemaPlanificacionSNP.Infrastructure
 {
-    /// <summary>
-    /// Extensiones para registrar servicios de infraestructura en DI
-    /// </summary>
-    public static class DependencyInjectionExtensions
-    {
-        /// <summary>
-        /// Registra todos los servicios de infraestructura
-        /// </summary>
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, string connectionString)
-        {
-            // DbContext
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(connectionString, sqlOptions =>
-                {
-                    sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
-                    sqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
-                })
-            );
+	/// <summary>
+	/// Extensiones para registrar servicios de infraestructura en DI
+	/// separadas por Microservicio
+	/// </summary>
+	public static class DependencyInjectionExtensions
+	{
+		/// <summary>
+		/// Registra servicios ESPECÍFICOS para el microservicio de Autenticación/Seguridad (Auth.Api)
+		/// </summary>
+		public static IServiceCollection AddAuthInfrastructureServices(this IServiceCollection services, string connectionString)
+		{
+			// DbContext de Seguridad
+			services.AddDbContext<AuthDbContext>(options =>
+			options.UseSqlServer(connectionString, sqlOptions =>
+			{
+				sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+				sqlOptions.EnableRetryOnFailure(3);
+			})
+		);
 
-            // Repositorios
-            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-            services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
-            services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
+			// Repositorios de Seguridad
+			services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+			services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+			services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 
-            // Unit of Work
-            services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+			// Este repositorio de Planificacion parece legado en el Auth, 
+			// pero lo dejamos por si la lógica actual del UnitOfWork de Auth lo requiere.
+			services.AddScoped<IPlanificacionRepository, PlanificacionRepository>();
 
-            // Servicios
-            services.AddScoped<IPasswordHashService, PasswordHashService>();
-            services.AddScoped<IAuditoriaService, AuditoriaService>();
-            services.AddScoped<IMenuService, MenuService>();
+			// Unit of Work de Seguridad
+			services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
 
-            return services;
-        }
+			// Servicios Base
+			services.AddScoped<IPasswordHashService, PasswordHashService>();
+			services.AddScoped<IAuditoriaService, AuditoriaService>();
+			services.AddScoped<IMenuService, MenuService>();
 
-        /// <summary>
-        /// Registra servicios específicos del módulo de MacroPlanificación.
-        /// Requiere que MacroPlanificacionDbContext sea registrado por la API.
-        /// </summary>
-        public static IServiceCollection AddMacroPlanificacionServices(this IServiceCollection services)
-        {
-            services.AddScoped<IPlanesNacionalesDesarrolloRepository, PlanesNacionalesDesarrolloRepository>();
-            services.AddScoped<IObjetivosEstrategicoRepository, ObjetivosEstrategicoRepository>();
-            services.AddScoped<IMacroPlanificacionUnitOfWork, MacroPlanificacionUnitOfWork>();
-            services.AddScoped<IMacroPlanNacionalService, MacroPlanNacionalService>();
-            services.AddScoped<IMacroObjetivoEstrategicoService, MacroObjetivoEstrategicoService>();
+			return services;
+		}
 
-            return services;
-        }
-    }
+		/// <summary>
+		/// Registra servicios ESPECÍFICOS del módulo de MacroPlanificación.
+		/// Requiere que MacroPlanificacionDbContext sea registrado en el Program.cs de su API.
+		/// </summary>
+		public static IServiceCollection AddMacroPlanificacionServices(this IServiceCollection services)
+		{
+			services.AddScoped<IPlanesNacionalesDesarrolloRepository, PlanesNacionalesDesarrolloRepository>();
+			services.AddScoped<IObjetivosEstrategicoRepository, ObjetivosEstrategicoRepository>();
+			services.AddScoped<IMacroPlanificacionUnitOfWork, MacroPlanificacionUnitOfWork>();
+
+			// Nota: Estos servicios deberían estar idealmente en Application o registrados directamente en el API.
+			// Los dejo aquí para no romper tu arquitectura actual.
+			// services.AddScoped<IMacroPlanNacionalService, MacroPlanNacionalService>();
+			// services.AddScoped<IMacroObjetivoEstrategicoService, MacroObjetivoEstrategicoService>();
+
+			return services;
+		}
+
+		/// <summary>
+		/// Registra servicios ESPECÍFICOS del módulo de Parametrización.
+		/// </summary>
+		public static IServiceCollection AddParametrizacionServices(this IServiceCollection services, string connectionString)
+		{
+			// REGISTRA EL CONTEXTO CORRECTO PARA ESTE MICROSERVICIO
+			services.AddDbContext<ParametrizacionDbContext>(options =>
+				options.UseSqlServer(connectionString, sqlOptions =>
+				{
+					sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+					sqlOptions.EnableRetryOnFailure(3);
+				})
+			);
+			return services;
+		}
+	}
 }

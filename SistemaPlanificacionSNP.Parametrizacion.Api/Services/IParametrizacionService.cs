@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaPlanificacionSNP.Domain.Entities.Parametrizacion;
 using SistemaPlanificacionSNP.Infrastructure.Data;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
-using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
+
 
 namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 {
@@ -22,14 +22,13 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 	public class ParametrizacionService : IParametrizacionService
 	{
-		private readonly ApplicationDbContext _context;
-		private readonly IUnitOfWork _unitOfWork;
+		private readonly ParametrizacionDbContext _context;
 		private readonly IMapper _mapper;
 
-		public ParametrizacionService(ApplicationDbContext context, IUnitOfWork unitOfWork, IMapper mapper)
+		// Inyectamos nuestro nuevo ParametrizacionDbContext
+		public ParametrizacionService(ParametrizacionDbContext context, IMapper mapper)
 		{
 			_context = context ?? throw new ArgumentNullException(nameof(context));
-			_unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 			_mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 		}
 
@@ -37,8 +36,7 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 		public async Task<List<CatalogoDto>> GetCatalogosAsync()
 		{
-			// Usamos ApplicationDbContext directamente para poder hacer .Include
-			var catalogos = await _context.Set<Catalogo>()
+			var catalogos = await _context.Catalogos
 				.Include(c => c.Items.Where(i => i.Activo).OrderBy(i => i.Orden))
 				.OrderBy(c => c.Nombre)
 				.ToListAsync();
@@ -48,7 +46,7 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 		public async Task<CatalogoDto?> GetCatalogoByCodigoAsync(string codigo)
 		{
-			var catalogo = await _context.Set<Catalogo>()
+			var catalogo = await _context.Catalogos
 				.Include(c => c.Items.Where(i => i.Activo).OrderBy(i => i.Orden))
 				.FirstOrDefaultAsync(c => c.Codigo == codigo);
 
@@ -57,9 +55,7 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 		public async Task<CatalogoDto> CreateCatalogoAsync(CatalogoCreateDto dto)
 		{
-			var repo = _unitOfWork.GetRepository<Catalogo>();
-
-			if (await repo.AnyAsync(c => c.Codigo == dto.Codigo))
+			if (await _context.Catalogos.AnyAsync(c => c.Codigo == dto.Codigo))
 			{
 				throw new InvalidOperationException("Ya existe un catálogo con este código.");
 			}
@@ -68,18 +64,15 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 			catalogo.FechaCreacion = DateTime.UtcNow;
 			catalogo.Activo = true;
 
-			await repo.AddAsync(catalogo);
-			await _unitOfWork.SaveChangesAsync();
+			await _context.Catalogos.AddAsync(catalogo);
+			await _context.SaveChangesAsync();
 
 			return _mapper.Map<CatalogoDto>(catalogo);
 		}
 
 		public async Task<ItemCatalogoDto> CreateItemCatalogoAsync(ItemCatalogoCreateDto dto)
 		{
-			var catalogoRepo = _unitOfWork.GetRepository<Catalogo>();
-			var itemRepo = _unitOfWork.GetRepository<ItemCatalogo>();
-
-			if (!await catalogoRepo.AnyAsync(c => c.CatalogoId == dto.CatalogoId))
+			if (!await _context.Catalogos.AnyAsync(c => c.CatalogoId == dto.CatalogoId))
 			{
 				throw new InvalidOperationException("El catálogo padre no existe.");
 			}
@@ -88,8 +81,8 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 			item.FechaCreacion = DateTime.UtcNow;
 			item.Activo = true;
 
-			await itemRepo.AddAsync(item);
-			await _unitOfWork.SaveChangesAsync();
+			await _context.ItemsCatalogo.AddAsync(item);
+			await _context.SaveChangesAsync();
 
 			return _mapper.Map<ItemCatalogoDto>(item);
 		}
@@ -98,28 +91,27 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 		public async Task<List<PeriodoPlanificacionDto>> GetPeriodosAsync()
 		{
-			var repo = _unitOfWork.GetRepository<PeriodoPlanificacion>();
-			// Obtenemos todos y los ordenamos en memoria para simplificar (o crear método en repo)
-			var periodos = await repo.FindAsync(p => true);
-			return _mapper.Map<List<PeriodoPlanificacionDto>>(periodos.OrderByDescending(p => p.FechaInicio));
+			var periodos = await _context.PeriodosPlanificacion
+				.OrderByDescending(p => p.FechaInicio)
+				.ToListAsync();
+
+			return _mapper.Map<List<PeriodoPlanificacionDto>>(periodos);
 		}
 
 		public async Task<PeriodoPlanificacionDto> CreatePeriodoAsync(PeriodoPlanificacionCreateUpdateDto dto)
 		{
-			var repo = _unitOfWork.GetRepository<PeriodoPlanificacion>();
-
 			var periodo = _mapper.Map<PeriodoPlanificacion>(dto);
 			periodo.FechaCreacion = DateTime.UtcNow;
 
-			await repo.AddAsync(periodo);
-			await _unitOfWork.SaveChangesAsync();
+			await _context.PeriodosPlanificacion.AddAsync(periodo);
+			await _context.SaveChangesAsync();
 
 			return _mapper.Map<PeriodoPlanificacionDto>(periodo);
 		}
 
 		public async Task<List<EntidadPublicaDto>> GetEntidadesAsync()
 		{
-			var entidades = await _context.Set<EntidadPublica>()
+			var entidades = await _context.EntidadesPublicas
 				.Include(e => e.PeriodoPlanificacion)
 				.OrderBy(e => e.Nombre)
 				.ToListAsync();
@@ -129,19 +121,15 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 
 		public async Task<EntidadPublicaDto> CreateEntidadAsync(EntidadPublicaCreateUpdateDto dto)
 		{
-			var repo = _unitOfWork.GetRepository<EntidadPublica>();
-
 			var entidad = _mapper.Map<EntidadPublica>(dto);
 			entidad.FechaCreacion = DateTime.UtcNow;
 			entidad.Activo = true;
 
-			// Nota: Si el DTO no envía PeriodoPlanificacionId y Codigo, asegúrate de asignarlos
-			// aquí antes de guardar, ya que la base de datos los requerirá.
-			if (entidad.PeriodoPlanificacionId == 0) entidad.PeriodoPlanificacionId = 1; // Valor por defecto si aplica
+			if (entidad.PeriodoPlanificacionId == 0) entidad.PeriodoPlanificacionId = 1;
 			if (string.IsNullOrEmpty(entidad.Codigo)) entidad.Codigo = Guid.NewGuid().ToString().Substring(0, 8);
 
-			await repo.AddAsync(entidad);
-			await _unitOfWork.SaveChangesAsync();
+			await _context.EntidadesPublicas.AddAsync(entidad);
+			await _context.SaveChangesAsync();
 
 			return _mapper.Map<EntidadPublicaDto>(entidad);
 		}

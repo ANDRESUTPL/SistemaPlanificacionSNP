@@ -1,0 +1,181 @@
+﻿@model SistemaPlanificacionSNP.Web.Models.MacroPlanNacionalDetalleApiDto
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Estructura del Plan Nacional";
+    var nuevoObjetivo = new SistemaPlanificacionSNP.Web.Models.ObjetivoMacroCreateViewModel { PlanNacionalId = Model.PlanNacionalId };
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-sitemap me-2 text-primary"></i>Estructura del Plan Nacional</h3>
+            <p class="text-muted mb-0 text-uppercase tracking-wider text-xs fw-bold">PND-@Model.PlanNacionalId</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/macroplanificacion/planes" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Panel Izquierdo: Datos del Plan -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4 pb-4 border-bottom">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle mb-3" style="width: 80px; height: 80px; color: #3b82f6;">
+                            <i class="fas fa-flag fs-1"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">@Model.Nombre</h5>
+                        <div class="badge bg-light text-dark border px-3 py-2 mt-2 text-sm">
+                            <i class="far fa-calendar-alt me-1 text-muted"></i> Período: @Model.PeriodoInicio - @Model.PeriodoFin
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-muted text-xs text-uppercase fw-bold tracking-wider mb-1">Estado de Formulación</label>
+                        <div>
+                            @if (Model.Estado == "Borrador")
+                            {
+                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-1 fs-6">@Model.Estado</span>
+                            }
+                            else
+                            {
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-1 fs-6">@Model.Estado</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-muted text-xs text-uppercase fw-bold tracking-wider mb-1">Total Objetivos Trazados</label>
+                        <div class="fs-1 fw-bolder text-primary">@Model.Objetivos.Count</div>
+                    </div>
+
+                    <div class="alert alert-primary bg-opacity-10 border-0 text-sm mt-auto mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Estos objetivos serán los pilares para que las Entidades Públicas alineen sus Planes Institucionales (PEI).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Arbol de Objetivos Macro -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm mb-4 h-100">
+                <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-bullseye me-2 text-primary"></i>Objetivos Estratégicos Nacionales</h5>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">
+                        <i class="fas fa-plus me-1"></i> Agregar Objetivo
+                    </button>
+                </div>
+                <div class="card-body p-4 bg-light bg-opacity-50">
+
+                    @if (Model.Objetivos.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <div class="display-1 text-muted opacity-25 mb-3"><i class="fas fa-project-diagram"></i></div>
+                            <h5 class="text-muted fw-bold">No hay objetivos definidos</h5>
+                            <p class="text-muted">Comienza agregando el primer objetivo estratégico nacional.</p>
+                            <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">Agregar Ahora</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row g-3">
+                            @foreach (var obj in Model.Objetivos.OrderBy(o => o.Codigo))
+                            {
+                                <div class="col-12">
+                                    <div class="card border border-light-subtle shadow-sm hover-shadow transition-all">
+                                        <div class="card-body p-3 d-flex align-items-start">
+                                            <div class="me-3 mt-1">
+                                                <div class="rounded-3 bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; font-size: 0.9rem;">
+                                                    @obj.Codigo
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="fw-bold text-dark mb-1 lh-base" style="font-size: 1.05rem;">@obj.Nombre</h6>
+                                                @if (!string.IsNullOrWhiteSpace(obj.Descripcion))
+                                                {
+                                                    <p class="text-muted text-sm mb-0 mt-2 border-start border-2 border-primary ps-2 bg-light p-2 rounded-end">@obj.Descripcion</p>
+                                                }
+                                            </div>
+                                            <div class="ms-3 text-end">
+                                                <span class="badge bg-light text-secondary border d-block mb-1">ID: @obj.ObjetivoEstrategicoId</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear Objetivo -->
+<div class="modal fade" id="addObjetivoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-bullseye me-2 text-primary"></i>Nuevo Objetivo Nacional</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="/macroplanificacion/planes/objetivos/crear">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="PlanNacionalId" value="@nuevoObjetivo.PlanNacionalId" />
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center mb-4">
+                        <i class="fas fa-info-circle text-info fs-5 me-3"></i>
+                        <span class="text-sm">Al agregar un objetivo al plan <strong>@Model.Nombre</strong>, este quedará disponible para que todas las entidades públicas puedan alinearse a él.</span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-medium text-sm">Código Corto</label>
+                            <input type="text" name="Codigo" class="form-control fw-bold text-primary bg-light" required placeholder="Ej. O1, EJE-1" style="text-transform: uppercase;" />
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label fw-medium text-sm">Enunciado del Objetivo</label>
+                            <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Garantizar el derecho a la salud integral..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium text-sm">Descripción / Alcance (Opcional)</label>
+                            <textarea name="Descripcion" class="form-control" rows="3" placeholder="Detalles o lineamientos específicos para la ejecución de este objetivo..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Objetivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        transform: translateY(-2px);
+    }
+
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const swalSuccess = @Html.Raw(JsonSerializer.Serialize((string?)ViewBag.SwalSuccess));
+            const swalWarning = @Html.Raw(JsonSerializer.Serialize((string?)ViewBag.SwalWarning));
+
+            if (swalSuccess) Swal.fire({ title: '¡Guardado!', text: swalSuccess, icon: 'success', confirmButtonText: 'Continuar' });
+            if (swalWarning) Swal.fire({ title: 'Alerta', text: swalWarning, icon: 'warning', confirmButtonText: 'Revisar' });
+        });
+    </script>
+}

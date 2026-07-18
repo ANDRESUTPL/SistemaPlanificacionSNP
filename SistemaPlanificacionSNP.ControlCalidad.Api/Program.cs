@@ -14,43 +14,25 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
 	?? throw new InvalidOperationException("Cadena de conexión 'DefaultConnection' no configurada");
 
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings
-{
-	SecretKey = "eG95U3VyZ3BKSFFXbTV6S2RzN3Z3YlhjTjVuN3BYM2I4Y0RvY0E0bXpVbz0",
-	Issuer = "SistemaPlanificacionSNP",
-	Audience = "SistemaPlanificacionSNP",
-	ExpirationMinutes = 60,
-	RefreshTokenExpirationDays = 7
-};
+var jwtSettings = ResolveJwtSettings(builder.Configuration);
 
+// 1. SOLUCIÓN AL ERROR: Registrar el DbContext de Control de Calidad
 builder.Services.AddDbContext<ControlCalidadDbContext>(options =>
 {
 	options.UseSqlServer(connectionString, sqlOptions =>
 	{
 		sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
-		sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
+		sqlOptions.EnableRetryOnFailure(3);
 	});
-
-	if (builder.Environment.IsDevelopment())
-	{
-		options.EnableDetailedErrors();
-		options.EnableSensitiveDataLogging();
-	}
 });
 
 builder.Services.AddAutoMapper(config =>
 {
 	config.AddProfile<MappingProfile>();
 });
-
 builder.Services.AddSingleton(jwtSettings);
-builder.Services.AddScoped<IControlCalidadUnitOfWork, ControlCalidadUnitOfWork>();
-builder.Services.AddScoped<IRevisioneRepository, RevisioneRepository>();
-builder.Services.AddScoped<IControlCalidadAuditoriaRepository, ControlCalidadAuditoriaRepository>();
-builder.Services.AddScoped<IRevisioneControlCalidadService, RevisioneControlCalidadService>();
-builder.Services.AddScoped<IAuditoriaControlCalidadService, AuditoriaControlCalidadService>();
 
+// 2. Autenticación JWT (Dejamos solo una configuración)
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 	.AddJwtBearer(options =>
 	{
@@ -65,7 +47,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			ValidateLifetime = true,
 			ClockSkew = TimeSpan.Zero
 		};
+
+		options.Events = new JwtBearerEvents
+		{
+			OnAuthenticationFailed = context =>
+			{
+				if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+				{
+					context.Response.Headers.Append("Token-Expired", "true");
+				}
+				return Task.CompletedTask;
+			}
+		};
 	});
+
+// 3. Inyección de Dependencias del módulo
+builder.Services.AddScoped<IControlCalidadUnitOfWork, ControlCalidadUnitOfWork>();
+builder.Services.AddScoped<IRevisioneRepository, RevisioneRepository>();
+builder.Services.AddScoped<IControlCalidadAuditoriaRepository, ControlCalidadAuditoriaRepository>();
+builder.Services.AddScoped<IRevisioneControlCalidadService, RevisioneControlCalidadService>();
+builder.Services.AddScoped<IAuditoriaControlCalidadService, AuditoriaControlCalidadService>();
 
 builder.Services.AddAuthorization();
 
@@ -162,3 +163,28 @@ app.MapControllers();
 app.MapGet("/health", () => new { status = "healthy", service = "ControlCalidad", timestamp = DateTime.UtcNow });
 
 app.Run();
+
+static JwtSettings ResolveJwtSettings(IConfiguration configuration)
+{
+	var section = configuration.GetSection("Jwt");
+	var secret = section["SecretKey"] ?? section["Key"];
+	var issuer = section["Issuer"];
+	var audience = section["Audience"];
+
+	var expiration = ParseInt(section["ExpirationMinutes"]) ?? ParseInt(section["ExpireMinutes"]) ?? 60;
+	var refreshDays = ParseInt(section["RefreshTokenExpirationDays"]) ?? ParseInt(section["RefreshTokenExpireDays"]) ?? 7;
+
+	if (string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(audience))
+		throw new InvalidOperationException("La configuración JWT es incompleta");
+
+	return new JwtSettings { SecretKey = secret, Issuer = issuer, Audience = audience, ExpirationMinutes = expiration, RefreshTokenExpirationDays = refreshDays };
+}
+
+static int? ParseInt(string? value)
+{
+	if (int.TryParse(value, out var parsed))
+	{
+		return parsed;
+	}
+	return null;
+}

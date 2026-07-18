@@ -29,7 +29,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
     /// </summary>
     public class UsuarioRepository : Repository<Usuario>, IUsuarioRepository
     {
-        public UsuarioRepository(ApplicationDbContext context) : base(context)
+        public UsuarioRepository(AuthDbContext context) : base(context)
         {
         }
 

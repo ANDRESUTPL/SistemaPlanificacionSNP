@@ -10,7 +10,14 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public DateTime FechaCreacion { get; set; }
     }
 
-    public class MacroPlanNacionalDetalleDto : MacroPlanNacionalDto
+
+	public class MacroPlanNacionalResumenApiDto
+	{
+		public int TotalPlanes { get; set; }
+		public int TotalObjetivos { get; set; }
+	}
+
+	public class MacroPlanNacionalDetalleDto : MacroPlanNacionalDto
     {
         public List<MacroObjetivoEstrategicoDto> Objetivos { get; set; } = new();
     }

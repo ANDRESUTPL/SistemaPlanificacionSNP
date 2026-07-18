@@ -1,0 +1,110 @@
+﻿@model SistemaPlanificacionSNP.Web.Models.PlanEstrategicoCreateViewModel
+
+@{
+    ViewData["Title"] = "Nuevo Plan Estratégico Institucional (PEI)";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-file-contract text-primary me-2"></i>Apertura de PEI</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Registro de inicio para el ciclo de planificación de una institución.</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/planificacion/institucional" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex align-items-center">
+                    <div class="rounded-3 p-2 d-flex align-items-center justify-content-center me-3" style="background-color: #eff6ff; color: #3b82f6;">
+                        <i class="fas fa-landmark fs-5"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold text-dark">Información del Plan</h5>
+                </div>
+                <div class="card-body p-4 p-xl-5">
+                    <form method="post" action="/planificacion/institucional/crear" id="formCreatePEI">
+                        @Html.AntiForgeryToken()
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger border-0 border-start border-4 border-danger shadow-sm rounded-3 mb-4 d-flex" role="alert">
+                                <i class="fas fa-exclamation-circle mt-1 me-3 fs-5 text-danger"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-danger">Revisa los campos</h6>
+                                    <div asp-validation-summary="All" class="text-danger small mb-0 ps-3"></div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mb-4">
+                            <label asp-for="Entidad" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Entidad Pública Responsable <span class="text-danger">*</span></label>
+                            @if (Model.EntidadesDisponibles.Count > 0)
+                            {
+                                <select asp-for="Entidad" class="form-select form-select-lg">
+                                    <option value="">-- Seleccione la Institución --</option>
+                                    @foreach (var ent in Model.EntidadesDisponibles.OrderBy(e => e.Nombre))
+                                    {
+                                        <option value="@ent.Nombre">@ent.Nombre (@ent.Sigla)</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <input asp-for="Entidad" class="form-control form-control-lg" placeholder="Ej. Ministerio de Salud" autocomplete="off" />
+                                <div class="form-text text-warning"><i class="fas fa-exclamation-triangle"></i> El catálogo de instituciones no está disponible, ingrese el nombre manualmente.</div>
+                            }
+                            <span asp-validation-for="Entidad" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-12 col-md-6">
+                                <label asp-for="PeriodoInicio" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Año de Inicio <span class="text-danger">*</span></label>
+                                <input asp-for="PeriodoInicio" class="form-control form-control-lg" type="number" />
+                                <span asp-validation-for="PeriodoInicio" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label asp-for="PeriodoFin" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Año de Fin <span class="text-danger">*</span></label>
+                                <input asp-for="PeriodoFin" class="form-control form-control-lg" type="number" />
+                                <span asp-validation-for="PeriodoFin" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center rounded-3 p-3">
+                            <i class="fas fa-info-circle text-info fs-4 me-3"></i>
+                            <div class="text-sm text-info-emphasis">
+                                Este PEI se creará en estado <strong>Borrador</strong>. Podrás formular los Proyectos de Inversión en el siguiente paso.
+                            </div>
+                        </div>
+
+                        <hr class="border-light-subtle my-5">
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-secondary px-5 rounded-pill shadow-sm" id="btnSubmit">
+                                <i class="fas fa-save me-2"></i>Guardar y Continuar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        document.getElementById('formCreatePEI').addEventListener('submit', function(e) {
+            if ($(this).valid()) {
+                const btn = document.getElementById('btnSubmit');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+            }
+        });
+    </script>
+}

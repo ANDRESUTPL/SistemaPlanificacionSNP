@@ -1,0 +1,20 @@
+# .copilotignore
+
+# Entorno .NET
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+*.user
+
+# Entorno Frontend (Angular, React, etc.)
+**/node_modules/
+**/dist/
+**/build/
+.angular/ 
+.next/    
+
+# Logs y bases de datos locales
+**/*.log
+**/*.sql
+**/*.sqlite3

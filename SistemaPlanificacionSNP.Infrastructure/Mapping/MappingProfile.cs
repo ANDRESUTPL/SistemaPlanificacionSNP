@@ -163,6 +163,33 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.PlanNacional, opt => opt.Ignore())
                 .ForAllMembers(opt =>
                     opt.Condition((_, _, srcMember) => srcMember != null));
-        }
+
+			CreateMap<EntidadPublicaCreateUpdateDto, EntidadPublica>()
+			 .ForMember(dest => dest.EntidadPublicaId, opt => opt.Ignore())
+			 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+			 .ForMember(dest => dest.Activo, opt => opt.Ignore());
+
+			// ==================== PARAMETRIZACIÓN (AGREGADOS) ====================
+			CreateMap<Catalogo, CatalogoDto>();
+			CreateMap<CatalogoCreateDto, Catalogo>()
+				.ForMember(dest => dest.CatalogoId, opt => opt.Ignore())
+				.ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+				.ForMember(dest => dest.Activo, opt => opt.Ignore());
+			CreateMap<CatalogoUpdateDto, Catalogo>();
+
+			CreateMap<ItemCatalogo, ItemCatalogoDto>();
+			CreateMap<ItemCatalogoCreateDto, ItemCatalogo>()
+				.ForMember(dest => dest.ItemCatalogoId, opt => opt.Ignore())
+				.ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
+				.ForMember(dest => dest.Activo, opt => opt.Ignore());
+			CreateMap<ItemCatalogoUpdateDto, ItemCatalogo>();
+
+			CreateMap<PeriodoPlanificacion, PeriodoPlanificacionDto>();
+			CreateMap<PeriodoPlanificacionCreateUpdateDto, PeriodoPlanificacion>()
+				.ForMember(dest => dest.PeriodoPlanificacionId, opt => opt.Ignore())
+				.ForMember(dest => dest.FechaCreacion, opt => opt.Ignore());
+
+			CreateMap<MacroPlanNacionalResumenDto, MacroPlanNacionalResumenApiDto>().ReverseMap();
+		}
     }
 }

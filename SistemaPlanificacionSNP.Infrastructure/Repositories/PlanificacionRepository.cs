@@ -23,7 +23,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
     /// </summary>
     public class PlanificacionRepository : Repository<PlanEstrategicoInstitucional>, IPlanificacionRepository
     {
-        public PlanificacionRepository(ApplicationDbContext context) : base(context)
+        public PlanificacionRepository(AuthDbContext context) : base(context)
         {
         }
 

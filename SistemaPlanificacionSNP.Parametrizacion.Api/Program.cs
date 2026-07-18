@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SistemaPlanificacionSNP.Infrastructure;
+using SistemaPlanificacionSNP.Infrastructure.Data;
 using SistemaPlanificacionSNP.Infrastructure.JWT;
 using SistemaPlanificacionSNP.Infrastructure.Mapping;
 using SistemaPlanificacionSNP.Parametrizacion.Api.Services;
@@ -14,10 +15,15 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 var jwtSettings = ResolveJwtSettings(builder.Configuration);
 
-// Registra DbContext (ApplicationDbContext), Repositorios, UnitOfWork y Servicios Base
-builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.AddDbContext<ParametrizacionDbContext>(options =>
+{
+	options.UseSqlServer(connectionString, sqlOptions =>
+	{
+		sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+		sqlOptions.EnableRetryOnFailure(3);
+	});
+});
 
-// Registra los servicios específicos de esta API
 builder.Services.AddScoped<IParametrizacionService, ParametrizacionService>();
 
 builder.Services.AddAutoMapper(config =>
@@ -64,14 +70,12 @@ builder.Services.AddSwaggerGen(options =>
 	options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
 	{
 		Title = "Parametrización API - Sistema de Planificación SNP",
-		Version = "v1",
-		Description = "API para gestión de catálogos, periodos y entidades públicas"
+		Version = "v1"
 	});
 
-	// Configuración para poder ingresar el Token JWT en Swagger
 	options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
 	{
-		Description = "JWT Authorization header usando el esquema Bearer. Escribe 'Bearer ' seguido de tu token.",
+		Description = "JWT Authorization header usando el esquema Bearer.",
 		Name = "Authorization",
 		In = Microsoft.OpenApi.Models.ParameterLocation.Header,
 		Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
@@ -114,7 +118,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI(c =>
 	{
 		c.SwaggerEndpoint("/swagger/v1/swagger.json", "Parametrización API v1");
-		// ¡ESTA ES LA LÍNEA MÁGICA QUE SOLUCIONA TU ERROR DE CARGA EN LA RAÍZ!
 		c.RoutePrefix = string.Empty;
 	});
 }
@@ -132,33 +135,19 @@ app.Run();
 static JwtSettings ResolveJwtSettings(IConfiguration configuration)
 {
 	var section = configuration.GetSection("Jwt");
-
 	var secret = section["SecretKey"] ?? section["Key"];
 	var issuer = section["Issuer"];
 	var audience = section["Audience"];
 
-	var expiration = ParseInt(section["ExpirationMinutes"])
-		?? ParseInt(section["ExpireMinutes"])
-		?? 60;
-
-	var refreshDays = ParseInt(section["RefreshTokenExpirationDays"])
-		?? ParseInt(section["RefreshTokenExpireDays"])
-		?? 7;
+	var expiration = ParseInt(section["ExpirationMinutes"]) ?? ParseInt(section["ExpireMinutes"]) ?? 60;
+	var refreshDays = ParseInt(section["RefreshTokenExpirationDays"]) ?? ParseInt(section["RefreshTokenExpireDays"]) ?? 7;
 
 	if (string.IsNullOrWhiteSpace(secret) || string.IsNullOrWhiteSpace(issuer) || string.IsNullOrWhiteSpace(audience))
-	{
-		throw new InvalidOperationException("La configuración JWT es incompleta en appsettings");
-	}
+		throw new InvalidOperationException("La configuración JWT es incompleta");
 
-	return new JwtSettings
-	{
-		SecretKey = secret,
-		Issuer = issuer,
-		Audience = audience,
-		ExpirationMinutes = expiration,
-		RefreshTokenExpirationDays = refreshDays
-	};
+	return new JwtSettings { SecretKey = secret, Issuer = issuer, Audience = audience, ExpirationMinutes = expiration, RefreshTokenExpirationDays = refreshDays };
 }
+
 
 static int? ParseInt(string? value)
 {

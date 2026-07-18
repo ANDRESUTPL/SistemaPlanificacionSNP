@@ -19,14 +19,14 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
     [Authorize]
     public class RolesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AuthDbContext _context;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IAuditoriaService _auditoriaService;
         private readonly IMapper _mapper;
         private readonly ILogger<RolesController> _logger;
 
         public RolesController(
-            ApplicationDbContext context,
+            AuthDbContext context,
             IUnitOfWork unitOfWork,
             IAuditoriaService auditoriaService,
             IMapper mapper,

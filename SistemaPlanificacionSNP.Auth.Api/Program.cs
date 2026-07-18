@@ -36,7 +36,7 @@ internal class Program
 		// ==================== SERVICIOS DE INFRAESTRUCTURA ====================
 
 		// Entity Framework DbContext
-		builder.Services.AddDbContext<ApplicationDbContext>(options =>
+		builder.Services.AddDbContext<AuthDbContext>(options =>
 		{
 			options.UseSqlServer(
 				connectionString,
@@ -54,7 +54,6 @@ internal class Program
 			}
 		}
 		);
-
 		// AutoMapper
 		//builder.Services.AddAutoMapper(typeof(MappingProfile));
 		//builder.Services.AddAutoMapper(typeof(Program).Assembly);
@@ -175,7 +174,7 @@ internal class Program
 		using (var scope = app.Services.CreateScope())
 		{
 			var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-			var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+			var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 			var autoMigrate = builder.Configuration.GetValue<bool>("DatabaseMigration:AutoMigrateOnStartup");
 
 			try
