@@ -164,11 +164,6 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForAllMembers(opt =>
                     opt.Condition((_, _, srcMember) => srcMember != null));
 
-			CreateMap<EntidadPublicaCreateUpdateDto, EntidadPublica>()
-			 .ForMember(dest => dest.EntidadPublicaId, opt => opt.Ignore())
-			 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
-			 .ForMember(dest => dest.Activo, opt => opt.Ignore());
-
 			// ==================== PARAMETRIZACIÓN (AGREGADOS) ====================
 			CreateMap<Catalogo, CatalogoDto>();
 			CreateMap<CatalogoCreateDto, Catalogo>()

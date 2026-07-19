@@ -47,11 +47,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
 			{			
 				string cleanPassword = password.Trim();
 				string cleanHash = hash.Trim();
-                //Patricio cambiar
-				//bool response = BC.Verify(cleanPassword, cleanHash);
-				//return response;
-
-                return true;
+                bool response = BC.Verify(cleanPassword, cleanHash);
+                return response;
 			}
 			catch (Exception ex)
 			{				

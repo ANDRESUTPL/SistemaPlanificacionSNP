@@ -181,3 +181,7 @@ static int? ParseInt(string? value)
 
 	return null;
 }
+
+public partial class Program
+{
+}

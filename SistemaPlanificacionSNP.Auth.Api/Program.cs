@@ -10,7 +10,7 @@ using SistemaPlanificacionSNP.Infrastructure.Services;
 using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
 using System.Text;
 
-internal class Program
+public partial class Program
 {
 	private static void Main(string[] args)
 	{
@@ -21,6 +21,7 @@ internal class Program
 		// Obtener cadena de conexión
 		var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
 			?? throw new InvalidOperationException("Cadena de conexión 'DefaultConnection' no configurada");
+		var databaseProvider = builder.Configuration.GetValue<string>("DatabaseProvider") ?? "SqlServer";
 
 		// Obtener configuración JWT
 		var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -38,14 +39,21 @@ internal class Program
 		// Entity Framework DbContext
 		builder.Services.AddDbContext<AuthDbContext>(options =>
 		{
-			options.UseSqlServer(
-				connectionString,
-				sqlOptions =>
-				{
-					sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
-					sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
-				}
-			);
+			if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
+			{
+				options.UseSqlite(connectionString);
+			}
+			else
+			{
+				options.UseSqlServer(
+					connectionString,
+					sqlOptions =>
+					{
+						sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+						sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
+					}
+				);
+			}
 
 			if (builder.Environment.IsDevelopment())
 			{

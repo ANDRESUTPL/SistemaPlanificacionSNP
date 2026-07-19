@@ -13,17 +13,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
 	?? throw new InvalidOperationException("Cadena de conexión 'DefaultConnection' no configurada");
+var databaseProvider = builder.Configuration["DatabaseProvider"]?.Trim();
 
 var jwtSettings = ResolveJwtSettings(builder.Configuration);
 
 // 1. SOLUCIÓN AL ERROR: Registrar el DbContext de Control de Calidad
 builder.Services.AddDbContext<ControlCalidadDbContext>(options =>
 {
-	options.UseSqlServer(connectionString, sqlOptions =>
+	if (string.Equals(databaseProvider, "Sqlite", StringComparison.OrdinalIgnoreCase))
 	{
-		sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
-		sqlOptions.EnableRetryOnFailure(3);
-	});
+		options.UseSqlite(connectionString);
+	}
+	else
+	{
+		options.UseSqlServer(connectionString, sqlOptions =>
+		{
+			sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+			sqlOptions.EnableRetryOnFailure(3);
+		});
+	}
 });
 
 builder.Services.AddAutoMapper(config =>
@@ -187,4 +195,8 @@ static int? ParseInt(string? value)
 		return parsed;
 	}
 	return null;
+}
+
+public partial class Program
+{
 }

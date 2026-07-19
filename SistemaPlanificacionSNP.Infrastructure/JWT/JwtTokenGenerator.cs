@@ -51,6 +51,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.JWT
                 foreach (var rol in roles)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, rol.Nombre));
+                    claims.Add(new Claim("role", rol.Nombre));
                     
                     // Agregar permisos específicos del rol
                     foreach (var permiso in rol.RolPermisos)
