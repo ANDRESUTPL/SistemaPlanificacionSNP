@@ -62,10 +62,7 @@ public partial class Program
 			}
 		}
 		);
-		// AutoMapper
-		//builder.Services.AddAutoMapper(typeof(MappingProfile));
-		//builder.Services.AddAutoMapper(typeof(Program).Assembly);
-
+		
 		builder.Services.AddAutoMapper(config =>
 		{
 			config.AddProfile<MappingProfile>(); // Reemplaza MappingProfile con el nombre exacto de tu clase si es diferente
@@ -236,9 +233,7 @@ public partial class Program
 			});
 		}
 
-		// HTTPS redirection
-		//app.UseHttpsRedirection();
-
+	
 		// CORS
 		app.UseCors("AllowFrontend");
 
