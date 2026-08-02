@@ -53,7 +53,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             {
                 // Llamar a API de login
                 var loginDto = new { model.NombreUsuario, model.Password, model.Recuerdame };
-                //var response = await _apiClient.SendAsync(HttpMethod.Post, ConstanteAPI.URL_AUT + "/api/auth/login", loginDto);
                 var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/login", loginDto);
 
                 if (response == null)

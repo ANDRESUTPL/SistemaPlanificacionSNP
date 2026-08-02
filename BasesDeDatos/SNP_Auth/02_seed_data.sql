@@ -36,10 +36,10 @@ VALUES
 SET IDENTITY_INSERT [dbo].[Rol] OFF;
 
 -- =====================================================================
--- 3. INSERTAR USUARIO SUPER ADMIN
+-- 3. INSERTAR USUARIO SUPER ADMIN Admin123
 -- =====================================================================
 -- Nota: Este hash corresponde a la contraseña por defecto de tu sistema
-DECLARE @DefaultPasswordHash NVARCHAR(MAX) = '$2a$12$IRuK7pfP95addxH4k9nQhOReDzSZeRAyGoYd6hzG3.7q/4JitBBJi'; 
+DECLARE @DefaultPasswordHash NVARCHAR(MAX) = '$2a$12$ueevcvKK6ZmxkJyZY3UvFuX4cmSELjFFxHbyV6CTJAo3BIMxvMbka'; 
 
 SET IDENTITY_INSERT [dbo].[Usuario] ON;
 
