@@ -53,6 +53,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             {
                 // Llamar a API de login
                 var loginDto = new { model.NombreUsuario, model.Password, model.Recuerdame };
+                //var response = await _apiClient.SendAsync(HttpMethod.Post, ConstanteAPI.URL_AUT + "/api/auth/login", loginDto);
                 var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/login", loginDto);
 
                 if (response == null)
@@ -140,8 +141,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
                 _logger.LogInformation($"User {nombreUsuario} logged in successfully");
 
-                return LocalRedirect(returnUrl ?? "/");
-                //return RedirectToAction("Index", "Dashboard");
+				if (string.IsNullOrEmpty(returnUrl) || returnUrl == "/" || returnUrl.Equals("/SNPWeb/", StringComparison.OrdinalIgnoreCase))
+				{
+					return RedirectToAction("Index", "Dashboard");
+				}
+				return LocalRedirect(returnUrl);
 			}
             catch (Exception ex)
             {
@@ -171,7 +175,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         {
             try
             {
-                await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/logout");
+                await _apiClient.SendAsync(HttpMethod.Post, ConstanteAPI.URL_AUT + "/api/auth/logout");
 
                 _authService.ClearAuthData();
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -218,7 +222,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     model.PasswordConfirmar
                 };
 
-                var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/cambiar-password", changeDto);
+                var response = await _apiClient.SendAsync(HttpMethod.Post, ConstanteAPI.URL_AUT + "/api/auth/cambiar-password", changeDto);
                 if (response == null)
                 {
                     ModelState.AddModelError(string.Empty, "No fue posible conectar con el servidor. Intenta nuevamente.");

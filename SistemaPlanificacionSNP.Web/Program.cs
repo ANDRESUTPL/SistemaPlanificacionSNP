@@ -31,9 +31,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-    });
+		//options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+		//options.Cookie.SameSite = SameSiteMode.Strict;
+		options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+		options.Cookie.SameSite = SameSiteMode.Lax;
+	});
 
 // Autorización
 builder.Services.AddAuthorization();
@@ -53,10 +55,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+		policy.WithOrigins("https://181.39.23.39", "http://181.39.23.39", "http://localhost:52555", "http://localhost:3000", "https://localhost:7010", "http://localhost:5000", "http://localhost:52550")
+			   .AllowAnyMethod()
+			   .AllowAnyHeader()
+			   .AllowCredentials();
+	});
 });
 
 // ==================== APLICACIÓN ====================
@@ -68,59 +71,59 @@ app.Use(async (context, next) =>
 {
 	var token = context.Request.Cookies["accessToken"];
 
-	if (!string.IsNullOrEmpty(token) && context.User?.Identity?.IsAuthenticated == true)
-	{
-		try
-		{
-			var parts = token.Split('.');
-			if (parts.Length == 3)
-			{
-				// 1. CORRECCIÓN BASE64URL: Adaptar el payload de JWT a Base64 estándar
-				var payloadStr = parts[1].Replace('-', '+').Replace('_', '/');
-				switch (payloadStr.Length % 4)
-				{
-					case 2: payloadStr += "=="; break;
-					case 3: payloadStr += "="; break;
-				}
+	//if (!string.IsNullOrEmpty(token) && context.User?.Identity?.IsAuthenticated == true)
+	//{
+	//	try
+	//	{
+	//		var parts = token.Split('.');
+	//		if (parts.Length == 3)
+	//		{
+	//			// 1. CORRECCIÓN BASE64URL: Adaptar el payload de JWT a Base64 estándar
+	//			var payloadStr = parts[1].Replace('-', '+').Replace('_', '/');
+	//			switch (payloadStr.Length % 4)
+	//			{
+	//				case 2: payloadStr += "=="; break;
+	//				case 3: payloadStr += "="; break;
+	//			}
 
-				var payload = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(
-					System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(payloadStr))
-				);
+	//			var payload = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(
+	//				System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(payloadStr))
+	//			);
 
-				if (payload != null && payload.TryGetValue("exp", out var expObj))
-				{
-					if (long.TryParse(expObj.ToString(), out var exp))
-					{
-						var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-						if (now > exp)
-						{
-							// 2. CORRECCIÓN BUCLE: ¡Cerrar la sesión de la cookie principal de ASP.NET Core!
-							await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+	//			if (payload != null && payload.TryGetValue("exp", out var expObj))
+	//			{
+	//				if (long.TryParse(expObj.ToString(), out var exp))
+	//				{
+	//					var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+	//					if (now > exp)
+	//					{
+	//						// 2. CORRECCIÓN BUCLE: ¡Cerrar la sesión de la cookie principal de ASP.NET Core!
+	//						await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-							// 3. CORRECCIÓN COOKIES: Asegurar el borrado forzando el Path base
-							var cookieOptions = new CookieOptions { Path = "/" };
-							context.Response.Cookies.Delete("accessToken", cookieOptions);
-							context.Response.Cookies.Delete("refreshToken", cookieOptions);
+	//						// 3. CORRECCIÓN COOKIES: Asegurar el borrado forzando el Path base
+	//						var cookieOptions = new CookieOptions { Path = "/" };
+	//						context.Response.Cookies.Delete("accessToken", cookieOptions);
+	//						context.Response.Cookies.Delete("refreshToken", cookieOptions);
 
-							// Redirigir al login
-							context.Response.Redirect("/Account/Login");
-							return; // Importante: detener la ejecución aquí
-						}
-					}
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			// Opcional: Agrega un log aquí para saber si falla la decodificación en el futuro
-			// Console.WriteLine($"Error procesando token: {ex.Message}");
-		}
-	}
+	//						// Redirigir al login
+	//						context.Response.Redirect("/Account/Login");
+	//						return; // Importante: detener la ejecución aquí
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//	catch (Exception ex)
+	//	{
+	//		// Opcional: Agrega un log aquí para saber si falla la decodificación en el futuro
+	//		// Console.WriteLine($"Error procesando token: {ex.Message}");
+	//	}
+	//}
 
 	await next();
 });
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -130,43 +133,43 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Middleware personalizado para verificar expiración de token
-app.Use(async (context, next) =>
-{
-    var token = context.Request.Cookies["accessToken"];
+//// Middleware personalizado para verificar expiración de token
+//app.Use(async (context, next) =>
+//{
+//    var token = context.Request.Cookies["accessToken"];
     
-    if (!string.IsNullOrEmpty(token) && context.User?.Identity?.IsAuthenticated == true)
-    {
-        try
-        {
-            var parts = token.Split('.');
-            if (parts.Length == 3)
-            {
-                var payload = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(
-                    System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(parts[1]))
-                );
+//    //if (!string.IsNullOrEmpty(token) && context.User?.Identity?.IsAuthenticated == true)
+//    //{
+//    //    try
+//    //    {
+//    //        var parts = token.Split('.');
+//    //        if (parts.Length == 3)
+//    //        {
+//    //            var payload = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(
+//    //                System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(parts[1]))
+//    //            );
 
-                if (payload != null && payload.TryGetValue("exp", out var expObj))
-                {
-                    if (long.TryParse(expObj.ToString(), out var exp))
-                    {
-                        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        if (now > exp)
-                        {
-                            context.Response.Cookies.Delete("accessToken");
-                            context.Response.Cookies.Delete("refreshToken");
-                            context.Response.Redirect("/Account/Login");
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-        catch { }
-    }
+//    //            if (payload != null && payload.TryGetValue("exp", out var expObj))
+//    //            {
+//    //                if (long.TryParse(expObj.ToString(), out var exp))
+//    //                {
+//    //                    var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+//    //                    if (now > exp)
+//    //                    {
+//    //                        context.Response.Cookies.Delete("accessToken");
+//    //                        context.Response.Cookies.Delete("refreshToken");
+//    //                        context.Response.Redirect("/Account/Login");
+//    //                        return;
+//    //                    }
+//    //                }
+//    //            }
+//    //        }
+//    //    }
+//    //    catch { }
+//    //}
 
-    await next();
-});
+//    await next();
+//});
 
 app.MapControllerRoute(
     name: "default",

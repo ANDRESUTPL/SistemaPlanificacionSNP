@@ -168,7 +168,7 @@ public partial class Program
 		{
 			options.AddPolicy("AllowFrontend", policy =>
 			{
-				policy.WithOrigins("http://localhost:3000", "https://localhost:7010", "http://localhost:5000", "http://localhost:52550")
+				policy.WithOrigins("https://181.39.23.39", "http://181.39.23.39", "http://localhost:52555", "http://localhost:3000", "https://localhost:7010", "http://localhost:5000", "http://localhost:52550")
 					  .AllowAnyMethod()
 					  .AllowAnyHeader()
 					  .AllowCredentials();
@@ -237,7 +237,7 @@ public partial class Program
 		}
 
 		// HTTPS redirection
-		app.UseHttpsRedirection();
+		//app.UseHttpsRedirection();
 
 		// CORS
 		app.UseCors("AllowFrontend");

@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 using BC = BCrypt.Net.BCrypt;
 
 namespace SistemaPlanificacionSNP.Infrastructure.Services
@@ -45,16 +44,14 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
 
 			try
 			{			
-				string cleanPassword = password.Trim();
-				string cleanHash = hash.Trim();
-                bool response = BC.Verify(cleanPassword, cleanHash);
-                return true;
-                //return response;
-			}
+                string cleanPassword = password.Trim();
+                string cleanHash = hash.Trim();
+                return BC.Verify(cleanPassword, cleanHash);
+            }
 			catch (Exception ex)
 			{				
 				Console.WriteLine($"Error real en BCrypt: {ex.Message}");
-				throw; // Relanzamos el error temporalmente para que estalle en tu consola y lo leas
+                throw;
 			}
 		}
     }

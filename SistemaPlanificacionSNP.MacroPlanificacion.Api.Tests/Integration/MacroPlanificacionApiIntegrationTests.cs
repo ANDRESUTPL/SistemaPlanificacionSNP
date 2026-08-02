@@ -149,6 +149,7 @@ public sealed class MacroPlanificacionApiWebApplicationFactory : WebApplicationF
 
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<MacroPlanificacionDbContext>();
             services.RemoveAll<DbContextOptions<MacroPlanificacionDbContext>>();
             services.RemoveAll<IConfigureOptions<DbContextOptions<MacroPlanificacionDbContext>>>();
 
@@ -168,9 +169,13 @@ public sealed class MacroPlanificacionApiWebApplicationFactory : WebApplicationF
             });
 
             services.AddSingleton(_connection);
-            services.AddDbContext<MacroPlanificacionDbContext, SqliteMacroPlanificacionDbContextForIntegration>((provider, options) =>
+            services.AddScoped<MacroPlanificacionDbContext>(provider =>
             {
-                options.UseSqlite(provider.GetRequiredService<SqliteConnection>());
+                var options = new DbContextOptionsBuilder<MacroPlanificacionDbContext>()
+                    .UseSqlite(provider.GetRequiredService<SqliteConnection>())
+                    .Options;
+
+                return new SqliteMacroPlanificacionDbContextForIntegration(options);
             });
         });
     }
