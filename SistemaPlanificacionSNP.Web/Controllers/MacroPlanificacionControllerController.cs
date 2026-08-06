@@ -4,6 +4,8 @@ using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Models;
 using SistemaPlanificacionSNP.Web.Services;
 using System.Text.Json;
+using ClosedXML.Excel;
+using System.IO;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
 {
@@ -186,5 +188,83 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			return RedirectToAction(nameof(Detalle), new { id = model.PlanNacionalId });
 		}
-	}
+
+        [HttpGet("exportar")]
+        public async Task<IActionResult> ExportarExcel(string? buscar)
+        {
+            try
+            {
+                // Obtenemos los datos desde la API
+                var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planesnacionales");
+                var planes = new List<MacroPlanNacionalApiDto>();
+
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("data", out var dataElement) &&
+                        dataElement.TryGetProperty("data", out var itemsElement))
+                    {
+                        planes = JsonSerializer.Deserialize<List<MacroPlanNacionalApiDto>>(
+                            itemsElement.GetRawText(),
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                }
+
+                // Aplicamos el mismo filtro en memoria que existe en el Index
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    var term = buscar.Trim().ToLower();
+                    planes = planes.Where(p => p.Nombre.ToLower().Contains(term)).ToList();
+                }
+
+                // Crear el archivo Excel
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("PlanesNacionales");
+
+                // Cabeceras
+                var currentRow = 1;
+                worksheet.Cell(currentRow, 1).Value = "ID";
+                worksheet.Cell(currentRow, 2).Value = "Nombre del Plan";
+                worksheet.Cell(currentRow, 3).Value = "Periodo Inicio";
+                worksheet.Cell(currentRow, 4).Value = "Periodo Fin";
+                worksheet.Cell(currentRow, 5).Value = "Estado";
+
+                // Formato de la cabecera
+                var headerRange = worksheet.Range(1, 1, 1, 5);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                // Filas de datos
+                foreach (var plan in planes)
+                {
+                    currentRow++;
+                    worksheet.Cell(currentRow, 1).Value = $"PND-{plan.PlanNacionalId}";
+                    worksheet.Cell(currentRow, 2).Value = plan.Nombre;
+                    worksheet.Cell(currentRow, 3).Value = plan.PeriodoInicio;
+                    worksheet.Cell(currentRow, 4).Value = plan.PeriodoFin;
+                    worksheet.Cell(currentRow, 5).Value = plan.Estado;
+                }
+
+                // Ajustar el ancho de las columnas automáticamente
+                worksheet.Columns().AdjustToContents();
+
+                // Convertir a MemoryStream para retornar el archivo
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+
+                string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                string fileName = $"PlanesNacionales_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                return File(content, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al exportar a Excel en MacroPlanificacion: {ex.Message}");
+                TempData["Warning"] = "Ocurrió un error al intentar generar el archivo Excel.";
+                return RedirectToAction(nameof(Index), new { buscar });
+            }
+        }
+    }
 }
