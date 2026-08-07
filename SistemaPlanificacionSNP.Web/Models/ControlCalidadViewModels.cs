@@ -64,6 +64,16 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public string? Observaciones { get; set; }
 	}
 
+	public class RevisionEditViewModel : RevisionCreateViewModel
+	{
+		[Required]
+		public int RevisionId { get; set; }
+
+		[Display(Name = "Fecha de la Revisión")]
+		[Required(ErrorMessage = "La fecha de la revisión es obligatoria.")]
+		public DateTime FechaRevision { get; set; }
+	}
+
 	public class AuditoriaCreateViewModel
 	{
 		[Required]
@@ -76,5 +86,15 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Display(Name = "Resultado / Dictamen")]
 		[Required(ErrorMessage = "Debe seleccionar un resultado.")]
 		public string Resultado { get; set; } = string.Empty; // Conforme, No Conforme, Observado
+	}
+
+	public class AuditoriaEditViewModel : AuditoriaCreateViewModel
+	{
+		[Required]
+		public int AuditoriaId { get; set; }
+
+		[Display(Name = "Fecha de Registro")]
+		[Required(ErrorMessage = "La fecha de registro es obligatoria.")]
+		public DateTime FechaRegistro { get; set; }
 	}
 }

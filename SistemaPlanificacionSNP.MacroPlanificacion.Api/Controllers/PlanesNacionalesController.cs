@@ -28,6 +28,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "PlanesNacionales.Lectura")]
         public async Task<ActionResult<ApiPaginatedResponse<MacroPlanNacionalDto>>> GetAll([FromQuery] MacroPlanNacionalQueryDto query)
         {
             try
@@ -46,6 +47,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Policy = "PlanesNacionales.Lectura")]
         public async Task<ActionResult<ApiResponse<MacroPlanNacionalDto>>> GetById(int id)
         {
             try
@@ -66,6 +68,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpGet("{id:int}/jerarquia")]
+        [Authorize(Policy = "PlanesNacionales.Lectura")]
         public async Task<ActionResult<ApiResponse<MacroPlanNacionalDetalleDto>>> GetJerarquia(int id)
         {
             try
@@ -86,6 +89,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpGet("resumen")]
+        [Authorize(Policy = "PlanesNacionales.Lectura")]
         public async Task<ActionResult<ApiResponse<MacroPlanNacionalResumenDto>>> GetResumen()
         {
             try
@@ -101,6 +105,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpPost("crear")]
+        [Authorize(Policy = "PlanesNacionales.Creacion")]
         public async Task<ActionResult<ApiResponse<MacroPlanNacionalDto>>> Create([FromBody] MacroPlanNacionalCreateDto dto)
         {
             try
@@ -124,6 +129,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Policy = "PlanesNacionales.Edicion")]
         public async Task<ActionResult<ApiResponse<MacroPlanNacionalDto>>> Update(int id, [FromBody] MacroPlanNacionalUpdateDto dto)
         {
             try
@@ -149,6 +155,7 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Policy = "PlanesNacionales.Eliminacion")]
         public async Task<ActionResult<ApiResponse<string>>> Delete(int id)
         {
             try

@@ -70,7 +70,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 		};
 	});
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy("PlanesNacionales.Lectura", policy =>
+		policy.RequireClaim("Lectura_13", "true"));
+	options.AddPolicy("PlanesNacionales.Creacion", policy =>
+		policy.RequireClaim("Creacion_13", "true"));
+	options.AddPolicy("PlanesNacionales.Edicion", policy =>
+		policy.RequireClaim("Edicion_13", "true"));
+	options.AddPolicy("PlanesNacionales.Eliminacion", policy =>
+		policy.RequireClaim("Eliminacion_13", "true"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

@@ -7,6 +7,9 @@ namespace SistemaPlanificacionSNP.PlanificacionInstitucional.Api.Validators
     {
         public PlanesEstrategicoCreateDtoValidator()
         {
+            RuleFor(x => x.EntidadPublicaId)
+                .GreaterThan(0).WithMessage("La entidad pública es requerida");
+
             RuleFor(x => x.Entidad)
                 .NotEmpty().WithMessage("La entidad es requerida")
                 .MaximumLength(200).WithMessage("La entidad no puede superar 200 caracteres");
@@ -28,6 +31,10 @@ namespace SistemaPlanificacionSNP.PlanificacionInstitucional.Api.Validators
     {
         public PlanesEstrategicoUpdateDtoValidator()
         {
+            RuleFor(x => x.EntidadPublicaId)
+                .GreaterThan(0).When(x => x.EntidadPublicaId.HasValue)
+                .WithMessage("EntidadPublicaId inválido");
+
             RuleFor(x => x.Entidad)
                 .MaximumLength(200).When(x => !string.IsNullOrWhiteSpace(x.Entidad))
                 .WithMessage("La entidad no puede superar 200 caracteres");

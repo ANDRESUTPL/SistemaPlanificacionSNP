@@ -26,8 +26,10 @@ public partial class PlanificacionInstitucionalDbContext : DbContext
 			entity.ToTable("PlanesEstrategicos");
 
 			entity.HasIndex(e => e.PeriodoPlanificacionId, "IX_PlanesEstrategicos_PeriodoPlanificacionId");
+			entity.HasIndex(e => e.EntidadPublicaId, "IX_PlanesEstrategicos_EntidadPublicaId");
 
 			entity.Property(e => e.Entidad).HasMaxLength(200);
+			entity.Property(e => e.EntidadPublicaId).IsRequired(false);
 			entity.Property(e => e.Estado).HasMaxLength(30);
 			entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(sysutcdatetime())");
 			entity.Property(e => e.PeriodoPlanificacionId).IsRequired(false);

@@ -81,6 +81,7 @@ BEGIN
     CREATE TABLE dbo.PlanesEstrategicos (
         PlanEstrategicoId INT IDENTITY(1,1) PRIMARY KEY,
         Entidad NVARCHAR(200) NOT NULL,
+        EntidadPublicaId INT NULL,
         PeriodoPlanificacionId INT NULL,
         PeriodoInicio INT NOT NULL,
         PeriodoFin INT NOT NULL,
@@ -99,6 +100,18 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX IX_PlanesEstrategicos_PeriodoPlanificacionId
         ON dbo.PlanesEstrategicos(PeriodoPlanificacionId);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = N'IX_PlanesEstrategicos_EntidadPublicaId'
+      AND object_id = OBJECT_ID(N'dbo.PlanesEstrategicos')
+)
+BEGIN
+    CREATE INDEX IX_PlanesEstrategicos_EntidadPublicaId
+        ON dbo.PlanesEstrategicos(EntidadPublicaId);
 END;
 GO
 

@@ -62,7 +62,7 @@ public partial class Program
 			}
 		}
 		);
-		
+
 		builder.Services.AddAutoMapper(config =>
 		{
 			config.AddProfile<MappingProfile>(); // Reemplaza MappingProfile con el nombre exacto de tu clase si es diferente
@@ -233,7 +233,7 @@ public partial class Program
 			});
 		}
 
-	
+
 		// CORS
 		app.UseCors("AllowFrontend");
 

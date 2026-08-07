@@ -1,14 +1,14 @@
-﻿@model SistemaPlanificacionSNP.Web.Models.PlanEstrategicoCreateViewModel
+@model SistemaPlanificacionSNP.Web.Models.PlanEstrategicoEditViewModel
 
 @{
-    ViewData["Title"] = "Nuevo Plan Estratégico Institucional (PEI)";
+    ViewData["Title"] = "Editar Plan Estratégico Institucional";
 }
 
 <div class="container-fluid p-0">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
         <div>
-            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-file-contract text-primary me-2"></i>Apertura de PEI</h3>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">Registro de inicio para el ciclo de planificación de una institución.</p>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-pen-to-square text-primary me-2"></i>Editar PEI</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Actualiza la configuración del Plan Estratégico Institucional.</p>
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">
             <a href="/planificacion/institucional" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
@@ -27,8 +27,9 @@
                     <h5 class="mb-0 fw-bold text-dark">Información del Plan</h5>
                 </div>
                 <div class="card-body p-4 p-xl-5">
-                    <form method="post" action="/planificacion/institucional/crear" id="formCreatePEI">
+                    <form method="post" action="/planificacion/institucional/@Model.PlanEstrategicoId/editar" id="formEditPEI">
                         @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="PlanEstrategicoId" />
 
                         @if (!ViewData.ModelState.IsValid)
                         {
@@ -86,18 +87,22 @@
                             <div class="form-text" id="periodoPreview">Seleccione un período para derivar automáticamente los años del PEI.</div>
                         </div>
 
-                        <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center rounded-3 p-3">
-                            <i class="fas fa-info-circle text-info fs-4 me-3"></i>
-                            <div class="text-sm text-info-emphasis">
-                                Este PEI se creará en estado <strong>Borrador</strong>. Podrás formular los Proyectos de Inversión en el siguiente paso.
-                            </div>
+                        <div class="mb-4">
+                            <label asp-for="Estado" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Estado del Plan <span class="text-danger">*</span></label>
+                            <select asp-for="Estado" class="form-select form-select-lg">
+                                <option value="Borrador">Borrador</option>
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                            <span asp-validation-for="Estado" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                         </div>
 
                         <hr class="border-light-subtle my-5">
 
                         <div class="d-flex justify-content-end gap-2">
+                            <a href="/planificacion/institucional" class="btn btn-outline-secondary px-5 rounded-pill">Cancelar</a>
                             <button type="submit" class="btn btn-secondary px-5 rounded-pill shadow-sm" id="btnSubmit">
-                                <i class="fas fa-save me-2"></i>Guardar y Continuar
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
                             </button>
                         </div>
                     </form>
@@ -108,8 +113,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
     <script>
         function actualizarResumenPeriodo() {
             const select = document.getElementById('periodoSelect');
@@ -117,8 +121,8 @@
             if (!select || !preview) return;
 
             const option = select.options[select.selectedIndex];
-            const inicio = option?.getAttribute('data-inicio');
-            const fin = option?.getAttribute('data-fin');
+            const inicio = option ? option.getAttribute('data-inicio') : null;
+            const fin = option ? option.getAttribute('data-fin') : null;
 
             if (inicio && fin) {
                 preview.textContent = `Rango derivado del período: ${inicio} - ${fin}.`;
@@ -131,11 +135,13 @@
         document.getElementById('periodoSelect')?.addEventListener('change', actualizarResumenPeriodo);
         actualizarResumenPeriodo();
 
-        document.getElementById('formCreatePEI').addEventListener('submit', function(e) {
-            if ($(this).valid()) {
+        document.getElementById('formEditPEI')?.addEventListener('submit', function () {
+            if (typeof $ !== 'undefined' && $(this).valid()) {
                 const btn = document.getElementById('btnSubmit');
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
+                }
             }
         });
     </script>

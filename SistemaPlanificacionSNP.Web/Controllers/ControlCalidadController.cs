@@ -142,6 +142,90 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 		}
 
+		[HttpGet("{id:int}/editar")]
+		public async Task<IActionResult> EditarRevision(int id)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/revisiones/{id}");
+				if (response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+				{
+					TempData["Warning"] = "Revisión no encontrada.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				if (response?.IsSuccessStatusCode != true)
+				{
+					TempData["Warning"] = "No fue posible cargar la revisión para edición.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				var envelope = JsonSerializer.Deserialize<ApiEnvelope<RevisioneApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+				if (envelope?.Data == null)
+				{
+					TempData["Warning"] = "No fue posible cargar la revisión para edición.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var model = new RevisionEditViewModel
+				{
+					RevisionId = envelope.Data.RevisionId,
+					CodigoRevision = envelope.Data.CodigoRevision,
+					Modulo = envelope.Data.Modulo,
+					Estado = envelope.Data.Estado,
+					Observaciones = envelope.Data.Observaciones,
+					FechaRevision = envelope.Data.FechaRevision
+				};
+
+				return View(model);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando edición de revisión: {ex.Message}");
+				TempData["Warning"] = "No fue posible cargar la revisión para edición.";
+				return RedirectToAction(nameof(Index));
+			}
+		}
+
+		[HttpPost("{id:int}/editar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EditarRevision(int id, RevisionEditViewModel model)
+		{
+			if (id != model.RevisionId)
+			{
+				return BadRequest();
+			}
+
+			if (!ModelState.IsValid)
+			{
+				return View(model);
+			}
+
+			try
+			{
+				var payload = new { model.Modulo, model.Estado, model.FechaRevision, model.Observaciones };
+				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/revisiones/{id}", payload);
+
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Revisión actualizada exitosamente.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar la revisión.");
+				ModelState.AddModelError(string.Empty, errorMsg);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error actualizando revisión: {ex.Message}");
+				ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+			}
+
+			return View(model);
+		}
+
 		[HttpPost("auditorias/crear")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearAuditoria(AuditoriaCreateViewModel model)
@@ -174,6 +258,95 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return RedirectToAction(nameof(Detalle), new { id = model.RevisionId });
+		}
+
+		[HttpGet("{revisionId:int}/auditorias/{auditoriaId:int}/editar")]
+		public async Task<IActionResult> EditarAuditoria(int revisionId, int auditoriaId)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/auditorias/{auditoriaId}");
+				if (response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+				{
+					TempData["Warning"] = "Auditoría no encontrada.";
+					return RedirectToAction(nameof(Detalle), new { id = revisionId });
+				}
+
+				if (response?.IsSuccessStatusCode != true)
+				{
+					TempData["Warning"] = "No fue posible cargar la auditoría para edición.";
+					return RedirectToAction(nameof(Detalle), new { id = revisionId });
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				var envelope = JsonSerializer.Deserialize<ApiEnvelope<AuditoriaApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+				if (envelope?.Data == null)
+				{
+					TempData["Warning"] = "No fue posible cargar la auditoría para edición.";
+					return RedirectToAction(nameof(Detalle), new { id = revisionId });
+				}
+
+				if (envelope.Data.RevisionId != revisionId)
+				{
+					TempData["Warning"] = "La auditoría no pertenece a la revisión indicada.";
+					return RedirectToAction(nameof(Detalle), new { id = revisionId });
+				}
+
+				var model = new AuditoriaEditViewModel
+				{
+					AuditoriaId = envelope.Data.AuditoriaId,
+					RevisionId = envelope.Data.RevisionId,
+					Tipo = envelope.Data.Tipo,
+					Resultado = envelope.Data.Resultado,
+					FechaRegistro = envelope.Data.FechaRegistro
+				};
+
+				return View(model);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando edición de auditoría: {ex.Message}");
+				TempData["Warning"] = "No fue posible cargar la auditoría para edición.";
+				return RedirectToAction(nameof(Detalle), new { id = revisionId });
+			}
+		}
+
+		[HttpPost("{revisionId:int}/auditorias/{auditoriaId:int}/editar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EditarAuditoria(int revisionId, int auditoriaId, AuditoriaEditViewModel model)
+		{
+			if (revisionId != model.RevisionId || auditoriaId != model.AuditoriaId)
+			{
+				return BadRequest();
+			}
+
+			if (!ModelState.IsValid)
+			{
+				return View(model);
+			}
+
+			try
+			{
+				var payload = new { model.Tipo, model.Resultado, model.FechaRegistro };
+				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/auditorias/{auditoriaId}", payload);
+
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Auditoría actualizada exitosamente.";
+					return RedirectToAction(nameof(Detalle), new { id = revisionId });
+				}
+
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar la auditoría.");
+				ModelState.AddModelError(string.Empty, errorMsg);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error actualizando auditoría: {ex.Message}");
+				ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+			}
+
+			return View(model);
 		}
 
 

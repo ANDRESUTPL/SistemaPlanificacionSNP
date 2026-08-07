@@ -48,10 +48,10 @@ SET IDENTITY_INSERT [dbo].[ObjetivosEstrategico] OFF;
 PRINT 'Insertando Datos de Planificación Institucional (PEI y Proyectos)...';
 
 SET IDENTITY_INSERT [dbo].[PlanesEstrategicos] ON;
-INSERT INTO [dbo].[PlanesEstrategicos] ([PlanEstrategicoId], [Entidad], [PeriodoPlanificacionId], [PeriodoInicio], [PeriodoFin], [Estado], [FechaCreacion])
+INSERT INTO [dbo].[PlanesEstrategicos] ([PlanEstrategicoId], [Entidad], [EntidadPublicaId], [PeriodoPlanificacionId], [PeriodoInicio], [PeriodoFin], [Estado], [FechaCreacion])
 VALUES 
-(1, 'Ministerio de Salud Pública (MSP)', 1, 2026, 2030, 'Aprobado', SYSUTCDATETIME()),
-(2, 'Ministerio de Educación (MINEDUC)', 1, 2026, 2030, 'Borrador', SYSUTCDATETIME());
+(1, 'Ministerio de Salud Pública (MSP)', 1, 1, 2026, 2030, 'Aprobado', SYSUTCDATETIME()),
+(2, 'Ministerio de Educación (MINEDUC)', 2, 1, 2026, 2030, 'Borrador', SYSUTCDATETIME());
 SET IDENTITY_INSERT [dbo].[PlanesEstrategicos] OFF;
 
 SET IDENTITY_INSERT [dbo].[ProyectosInversion] ON;

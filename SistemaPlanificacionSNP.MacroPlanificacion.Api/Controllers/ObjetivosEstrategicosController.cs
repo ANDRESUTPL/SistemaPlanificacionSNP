@@ -96,6 +96,11 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                if (string.Equals(ex.Message, "Ya existe un objetivo con el mismo código para el plan nacional", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Conflict(ApiResponse<MacroObjetivoEstrategicoDto>.FailureWith(ex.Message));
+                }
+
                 return BadRequest(ApiResponse<MacroObjetivoEstrategicoDto>.FailureWith(ex.Message));
             }
             catch (Exception ex)
@@ -121,6 +126,11 @@ namespace SistemaPlanificacionSNP.MacroPlanificacion.Api.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                if (string.Equals(ex.Message, "Ya existe un objetivo con el mismo código para el plan nacional", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Conflict(ApiResponse<MacroObjetivoEstrategicoDto>.FailureWith(ex.Message));
+                }
+
                 return BadRequest(ApiResponse<MacroObjetivoEstrategicoDto>.FailureWith(ex.Message));
             }
             catch (Exception ex)

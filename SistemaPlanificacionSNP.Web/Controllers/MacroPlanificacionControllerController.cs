@@ -13,6 +13,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 	[Route("macroplanificacion/planes")]
 	public class MacroPlanificacionController : Controller
 	{
+		private const string ClaimLectura = "Lectura_13";
+		private const string ClaimCreacion = "Creacion_13";
+		private const string ClaimEdicion = "Edicion_13";
+		private const string ClaimEliminacion = "Eliminacion_13";
+
 		private readonly IApiClient _apiClient;
 		private readonly ILogger<MacroPlanificacionController> _logger;
 
@@ -26,6 +31,16 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		public async Task<IActionResult> Index(string? buscar)
 		{
 			var model = new MacroPlanificacionIndexViewModel { Buscar = buscar };
+
+			if (!HasPermission(ClaimLectura))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para visualizar Planes Nacionales.");
+			}
+
+			model.PuedeLeer = true;
+			model.PuedeCrear = HasPermission(ClaimCreacion);
+			model.PuedeEditar = HasPermission(ClaimEdicion);
+			model.PuedeEliminar = HasPermission(ClaimEliminacion);
 
 			try
 			{
@@ -82,6 +97,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("crear")]
 		public async Task<IActionResult> CrearPlan()
 		{
+			if (!HasPermission(ClaimCreacion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para crear planes nacionales.");
+			}
+
 			var model = new PlanNacionalCreateViewModel();
 			await CargarPeriodosDisponibles(model);
 			return View(model);
@@ -91,6 +111,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearPlan(PlanNacionalCreateViewModel model)
 		{
+			if (!HasPermission(ClaimCreacion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para crear planes nacionales.");
+			}
+
 			if (!ModelState.IsValid)
 			{
 				await CargarPeriodosDisponibles(model);
@@ -142,7 +167,191 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			return View(model);
 		}
 
+		[HttpGet("{id:int}/editar")]
+		public async Task<IActionResult> EditarPlan(int id)
+		{
+			if (!HasPermission(ClaimEdicion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para editar planes nacionales.");
+			}
+
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/planesnacionales/{id}");
+				if (response?.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+				{
+					return RedirectToAction("Login", "Account");
+				}
+
+				if (response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+				{
+					TempData["Warning"] = "Plan Nacional no encontrado.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				if (response?.IsSuccessStatusCode != true)
+				{
+					TempData["Warning"] = "No fue posible cargar el plan para edición.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				var envelope = JsonSerializer.Deserialize<ApiEnvelope<MacroPlanNacionalApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				if (envelope?.Data == null)
+				{
+					TempData["Warning"] = "No fue posible cargar el plan para edición.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var model = new PlanNacionalEditViewModel
+				{
+					PlanNacionalId = envelope.Data.PlanNacionalId,
+					Nombre = envelope.Data.Nombre,
+					PeriodoPlanificacionId = envelope.Data.PeriodoPlanificacionId,
+					PeriodoInicio = envelope.Data.PeriodoInicio,
+					PeriodoFin = envelope.Data.PeriodoFin,
+					Estado = envelope.Data.Estado
+				};
+
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error loading Plan edit form: {ex.Message}");
+				TempData["Warning"] = "No fue posible cargar el plan para edición.";
+				return RedirectToAction(nameof(Index));
+			}
+		}
+
+		[HttpPost("{id:int}/editar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EditarPlan(int id, PlanNacionalEditViewModel model)
+		{
+			if (!HasPermission(ClaimEdicion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para editar planes nacionales.");
+			}
+
+			if (id != model.PlanNacionalId)
+			{
+				return BadRequest();
+			}
+
+			if (!ModelState.IsValid)
+			{
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
+
+			await CargarPeriodosDisponibles(model);
+			if (!model.PeriodoPlanificacionId.HasValue)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "Debe seleccionar un período de planificación.");
+				return View(model);
+			}
+
+			var periodoSeleccionado = model.PeriodosDisponibles
+				.FirstOrDefault(p => p.PeriodoPlanificacionId == model.PeriodoPlanificacionId.Value);
+
+			if (periodoSeleccionado == null)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado no es válido.");
+				return View(model);
+			}
+
+			model.PeriodoInicio = periodoSeleccionado.FechaInicio.Year;
+			model.PeriodoFin = periodoSeleccionado.FechaFin.Year;
+
+			if (model.PeriodoInicio > model.PeriodoFin)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado tiene un rango de fechas inválido.");
+				return View(model);
+			}
+
+			try
+			{
+				var payload = new
+				{
+					model.Nombre,
+					model.PeriodoPlanificacionId,
+					model.PeriodoInicio,
+					model.PeriodoFin,
+					model.Estado
+				};
+				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/planesnacionales/{id}", payload);
+
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Plan Nacional actualizado exitosamente.";
+					return RedirectToAction(nameof(Index));
+				}
+
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar el Plan Nacional.");
+				ModelState.AddModelError(string.Empty, errorMsg);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error updating PND: {ex.Message}");
+				ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+			}
+
+			return View(model);
+		}
+
+		[HttpPost("{id:int}/eliminar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EliminarPlan(int id)
+		{
+			if (!HasPermission(ClaimEliminacion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para eliminar planes nacionales.");
+			}
+
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/planesnacionales/{id}");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Plan Nacional eliminado exitosamente.";
+				}
+				else
+				{
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible eliminar el Plan Nacional.");
+					TempData["Warning"] = errorMsg;
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error deleting PND: {ex.Message}");
+				TempData["Warning"] = "Error interno al eliminar el Plan Nacional.";
+			}
+
+			return RedirectToAction(nameof(Index));
+		}
+
 		private async Task CargarPeriodosDisponibles(PlanNacionalCreateViewModel model)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var json = await response.Content.ReadAsStringAsync();
+					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+					model.PeriodosDisponibles = (envelope?.Data ?? new List<PeriodoPlanificacionApiDto>())
+						.Where(p => p.Activo)
+						.OrderByDescending(p => p.FechaInicio)
+						.ToList();
+				}
+			}
+			catch
+			{
+				model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
+			}
+		}
+
+		private async Task CargarPeriodosDisponibles(PlanNacionalEditViewModel model)
 		{
 			try
 			{
@@ -166,6 +375,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("{id:int}")]
 		public async Task<IActionResult> Detalle(int id)
 		{
+			if (!HasPermission(ClaimLectura))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para visualizar el detalle del plan nacional.");
+			}
+
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/planesnacionales/{id}/jerarquia");
@@ -182,6 +396,9 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 					if (envelope?.Data != null)
 					{
+						ViewBag.PuedeCrear = HasPermission(ClaimCreacion);
+						ViewBag.PuedeEditar = HasPermission(ClaimEdicion);
+						ViewBag.PuedeEliminar = HasPermission(ClaimEliminacion);
 						if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 						if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
 						return View(envelope.Data);
@@ -203,6 +420,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearObjetivo(ObjetivoMacroCreateViewModel model)
 		{
+			if (!HasPermission(ClaimCreacion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para crear objetivos estratégicos nacionales.");
+			}
+
 			if (!ModelState.IsValid)
 			{
 				TempData["Warning"] = "Datos del objetivo incompletos o inválidos.";
@@ -231,6 +453,135 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return RedirectToAction(nameof(Detalle), new { id = model.PlanNacionalId });
+		}
+
+		[HttpGet("{planId:int}/objetivos/{objetivoId:int}/editar")]
+		public async Task<IActionResult> EditarObjetivo(int planId, int objetivoId)
+		{
+			if (!HasPermission(ClaimEdicion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para editar objetivos estratégicos nacionales.");
+			}
+
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/objetivosestrategicos/{objetivoId}");
+				if (response?.StatusCode == System.Net.HttpStatusCode.NotFound)
+				{
+					TempData["Warning"] = "Objetivo estratégico no encontrado.";
+					return RedirectToAction(nameof(Detalle), new { id = planId });
+				}
+
+				if (response?.IsSuccessStatusCode != true)
+				{
+					TempData["Warning"] = "No fue posible cargar el objetivo para edición.";
+					return RedirectToAction(nameof(Detalle), new { id = planId });
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				var envelope = JsonSerializer.Deserialize<ApiEnvelope<MacroObjetivoEstrategicoApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				if (envelope?.Data == null)
+				{
+					TempData["Warning"] = "No fue posible cargar el objetivo para edición.";
+					return RedirectToAction(nameof(Detalle), new { id = planId });
+				}
+
+				if (envelope.Data.PlanNacionalId != planId)
+				{
+					TempData["Warning"] = "El objetivo no pertenece al plan nacional indicado.";
+					return RedirectToAction(nameof(Detalle), new { id = planId });
+				}
+
+				var model = new ObjetivoMacroEditViewModel
+				{
+					ObjetivoEstrategicoId = envelope.Data.ObjetivoEstrategicoId,
+					PlanNacionalId = envelope.Data.PlanNacionalId,
+					Codigo = envelope.Data.Codigo,
+					Nombre = envelope.Data.Nombre,
+					Descripcion = envelope.Data.Descripcion
+				};
+
+				return View(model);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando edición de objetivo macro: {ex.Message}");
+				TempData["Warning"] = "No fue posible cargar el objetivo para edición.";
+				return RedirectToAction(nameof(Detalle), new { id = planId });
+			}
+		}
+
+		[HttpPost("{planId:int}/objetivos/{objetivoId:int}/editar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EditarObjetivo(int planId, int objetivoId, ObjetivoMacroEditViewModel model)
+		{
+			if (!HasPermission(ClaimEdicion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para editar objetivos estratégicos nacionales.");
+			}
+
+			if (planId != model.PlanNacionalId || objetivoId != model.ObjetivoEstrategicoId)
+			{
+				return BadRequest();
+			}
+
+			if (!ModelState.IsValid)
+			{
+				return View(model);
+			}
+
+			try
+			{
+				var payload = new { model.Codigo, model.Nombre, model.Descripcion };
+				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/objetivosestrategicos/{objetivoId}", payload);
+
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Objetivo estratégico actualizado exitosamente.";
+					return RedirectToAction(nameof(Detalle), new { id = planId });
+				}
+
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar el objetivo estratégico.");
+				ModelState.AddModelError(string.Empty, errorMsg);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error actualizando objetivo macro: {ex.Message}");
+				ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+			}
+
+			return View(model);
+		}
+
+		[HttpPost("{planId:int}/objetivos/{objetivoId:int}/eliminar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EliminarObjetivo(int planId, int objetivoId)
+		{
+			if (!HasPermission(ClaimEliminacion))
+			{
+				return RedirectToAccessDenied("No cuentas con permisos para eliminar objetivos estratégicos nacionales.");
+			}
+
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/objetivosestrategicos/{objetivoId}");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Objetivo estratégico eliminado exitosamente.";
+				}
+				else
+				{
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible eliminar el objetivo estratégico.");
+					TempData["Warning"] = errorMsg;
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error eliminando objetivo macro: {ex.Message}");
+				TempData["Warning"] = "Error interno al eliminar el objetivo estratégico.";
+			}
+
+			return RedirectToAction(nameof(Detalle), new { id = planId });
 		}
 
         [HttpGet("exportar")]
@@ -310,5 +661,25 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 return RedirectToAction(nameof(Index), new { buscar });
             }
         }
+
+		private IActionResult RedirectToAccessDenied(string message)
+		{
+			TempData["Warning"] = message;
+			return RedirectToAction("AccessDenied", "Account");
+		}
+
+		private bool HasPermission(string claimType)
+		{
+			var hasGranularClaim = User.Claims.Any(c =>
+				string.Equals(c.Type, claimType, StringComparison.OrdinalIgnoreCase)
+				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+
+			if (hasGranularClaim)
+			{
+				return true;
+			}
+
+			return User.IsInRole("Administrador");
+		}
     }
 }

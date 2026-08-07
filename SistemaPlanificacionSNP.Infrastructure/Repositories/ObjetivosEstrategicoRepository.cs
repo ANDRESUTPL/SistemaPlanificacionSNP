@@ -51,8 +51,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
 
         public async Task<ObjetivosEstrategico?> GetByCodigoAsync(int planNacionalId, string codigo)
         {
+            var normalizedCodigo = codigo.Trim().ToUpperInvariant();
+
             return await _context.ObjetivosEstrategicos
-                .FirstOrDefaultAsync(x => x.PlanNacionalId == planNacionalId && x.Codigo == codigo);
+                .FirstOrDefaultAsync(x => x.PlanNacionalId == planNacionalId && x.Codigo.ToUpper() == normalizedCodigo);
         }
 
         public async Task<List<ObjetivosEstrategico>> GetByPlanNacionalIdAsync(int planNacionalId)

@@ -175,6 +175,96 @@ public class MacroPlanificacionControllerTests : ControllerTestBase
         controller.ModelState[string.Empty]!.Errors.Should().ContainSingle(x => x.ErrorMessage == "El plan ya existe");
     }
 
+    [Fact]
+    public async Task EditarPlan_Get_ShouldReturnView_WhenApiReturnsPlan()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planesnacionales/10", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new
+            {
+                planNacionalId = 10,
+                nombre = "Plan Nacional Editar",
+                periodoPlanificacionId = 1,
+                periodoInicio = 2025,
+                periodoFin = 2030,
+                estado = "Borrador"
+            })));
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/instituciones/periodos", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new[]
+            {
+                new
+                {
+                    periodoPlanificacionId = 1,
+                    codigo = "P-2025",
+                    nombre = "Periodo 2025-2030",
+                    fechaInicio = new DateTime(2025, 1, 1),
+                    fechaFin = new DateTime(2030, 12, 31),
+                    activo = true
+                }
+            })));
+
+        var controller = BuildController(apiClientMock);
+
+        var result = await controller.EditarPlan(10);
+
+        var view = result.Should().BeOfType<ViewResult>().Subject;
+        var model = view.Model.Should().BeOfType<PlanNacionalEditViewModel>().Subject;
+        model.PlanNacionalId.Should().Be(10);
+        model.Nombre.Should().Be("Plan Nacional Editar");
+    }
+
+    [Fact]
+    public async Task EditarPlan_Post_WhenApiSucceeds_ShouldRedirectToIndex()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/instituciones/periodos", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new[]
+            {
+                new
+                {
+                    periodoPlanificacionId = 1,
+                    codigo = "P-2025",
+                    nombre = "Periodo 2025-2030",
+                    fechaInicio = new DateTime(2025, 1, 1),
+                    fechaFin = new DateTime(2030, 12, 31),
+                    activo = true
+                }
+            })));
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Put, "/api/planesnacionales/10", It.IsAny<object>()))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new { ok = true })));
+
+        var controller = BuildController(apiClientMock);
+        var model = new PlanNacionalEditViewModel
+        {
+            PlanNacionalId = 10,
+            Nombre = "Plan Nacional Editado",
+            PeriodoPlanificacionId = 1,
+            Estado = "Borrador"
+        };
+
+        var result = await controller.EditarPlan(10, model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be(nameof(MacroPlanificacionController.Index));
+        controller.TempData["Success"].Should().Be("Plan Nacional actualizado exitosamente.");
+    }
+
+    [Fact]
+    public async Task EliminarPlan_WhenApiSucceeds_ShouldRedirectToIndexWithSuccess()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Delete, "/api/planesnacionales/10", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new { ok = true })));
+
+        var controller = BuildController(apiClientMock);
+
+        var result = await controller.EliminarPlan(10);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be(nameof(MacroPlanificacionController.Index));
+        controller.TempData["Success"].Should().Be("Plan Nacional eliminado exitosamente.");
+    }
+
     private static MacroPlanificacionController BuildController(Mock<IApiClient> apiClientMock)
     {
         var controller = new MacroPlanificacionController(

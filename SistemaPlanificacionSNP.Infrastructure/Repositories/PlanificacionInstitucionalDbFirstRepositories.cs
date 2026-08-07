@@ -11,7 +11,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         Task<int> CountFilteredAsync(PlanesEstrategicoQueryDto query);
         Task<PlanesEstrategico?> GetByIdAsync(int planId);
         Task<PlanesEstrategico?> GetByIdWithProyectosAsync(int planId);
-        Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null);
+        Task<bool> ExistsByEntidadPublicaPeriodoAsync(int entidadPublicaId, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null);
         Task<bool> HasActiveProjectsAsync(int planId);
         Task AddAsync(PlanesEstrategico entity);
         Task UpdateAsync(PlanesEstrategico entity);
@@ -66,9 +66,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
                 .FirstOrDefaultAsync(x => x.PlanEstrategicoId == planId);
         }
 
-        public Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null)
+        public Task<bool> ExistsByEntidadPublicaPeriodoAsync(int entidadPublicaId, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null)
         {
-            var q = _context.PlanesEstrategicos.Where(x => x.Entidad == entidad);
+            var q = _context.PlanesEstrategicos.Where(x => x.EntidadPublicaId == entidadPublicaId);
 
             if (periodoPlanificacionId.HasValue)
             {

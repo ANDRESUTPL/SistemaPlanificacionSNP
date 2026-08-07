@@ -4,6 +4,9 @@
 @{
     ViewData["Title"] = "Estructura del Plan Nacional";
     var nuevoObjetivo = new SistemaPlanificacionSNP.Web.Models.ObjetivoMacroCreateViewModel { PlanNacionalId = Model.PlanNacionalId };
+    var puedeCrear = ViewBag.PuedeCrear is bool pc && pc;
+    var puedeEditar = ViewBag.PuedeEditar is bool pe && pe;
+    var puedeEliminar = ViewBag.PuedeEliminar is bool pd && pd;
 }
 
 <div class="container-fluid p-0">
@@ -65,9 +68,12 @@
             <div class="card border-0 shadow-sm mb-4 h-100">
                 <div class="card-header bg-white pt-4 pb-3 border-bottom px-4 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-bullseye me-2 text-primary"></i>Objetivos Estratégicos Nacionales</h5>
-                    <button type="button" class="btn btn-success border shadow-sm px-4 fw-medium" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">
-                        <i class="fas fa-plus me-1"></i> Agregar Objetivo
-                    </button>
+                    @if (puedeCrear)
+                    {
+                        <button type="button" class="btn btn-success border shadow-sm px-4 fw-medium" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">
+                            <i class="fas fa-plus me-1"></i> Agregar Objetivo
+                        </button>
+                    }
                 </div>
                 <div class="card-body p-4 bg-light bg-opacity-50">
 
@@ -77,7 +83,10 @@
                             <div class="display-1 text-muted opacity-25 mb-3"><i class="fas fa-project-diagram"></i></div>
                             <h5 class="text-muted fw-bold">No hay objetivos definidos</h5>
                             <p class="text-muted">Comienza agregando el primer objetivo estratégico nacional.</p>
-                            <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">Agregar Ahora</button>
+                            @if (puedeCrear)
+                            {
+                                <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addObjetivoModal">Agregar Ahora</button>
+                            }
                         </div>
                     }
                     else
@@ -102,6 +111,21 @@
                                             </div>
                                             <div class="ms-3 text-end">
                                                 <span class="badge bg-light text-secondary border d-block mb-1">ID: @obj.ObjetivoEstrategicoId</span>
+                                                @if (puedeEditar)
+                                                {
+                                                    <a href="/macroplanificacion/planes/@Model.PlanNacionalId/objetivos/@obj.ObjetivoEstrategicoId/editar" class="btn btn-sm btn-outline-primary mt-2">
+                                                        <i class="fas fa-pen me-1"></i>Editar
+                                                    </a>
+                                                }
+                                                @if (puedeEliminar)
+                                                {
+                                                    <form method="post" action="/macroplanificacion/planes/@Model.PlanNacionalId/objetivos/@obj.ObjetivoEstrategicoId/eliminar" class="mt-2" onsubmit="return confirm('¿Está seguro de eliminar este objetivo estratégico nacional?');">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-trash me-1"></i>Eliminar
+                                                        </button>
+                                                    </form>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -116,46 +140,49 @@
 </div>
 
 <!-- Modal para Crear Objetivo -->
-<div class="modal fade" id="addObjetivoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-bullseye me-2 text-primary"></i>Nuevo Objetivo Nacional</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+@if (puedeCrear)
+{
+    <div class="modal fade" id="addObjetivoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fas fa-bullseye me-2 text-primary"></i>Nuevo Objetivo Nacional</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="/macroplanificacion/planes/objetivos/crear">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PlanNacionalId" value="@nuevoObjetivo.PlanNacionalId" />
+
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center mb-4">
+                            <i class="fas fa-info-circle text-info fs-5 me-3"></i>
+                            <span class="text-sm">Al agregar un objetivo al plan <strong>@Model.Nombre</strong>, este quedará disponible para que todas las entidades públicas puedan alinearse a él.</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-medium text-sm">Código Corto</label>
+                                <input type="text" name="Codigo" class="form-control fw-bold text-primary bg-light" required placeholder="Ej. O1, EJE-1" style="text-transform: uppercase;" />
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label fw-medium text-sm">Enunciado del Objetivo</label>
+                                <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Garantizar el derecho a la salud integral..." />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium text-sm">Descripción / Alcance (Opcional)</label>
+                                <textarea name="Descripcion" class="form-control" rows="3" placeholder="Detalles o lineamientos específicos para la ejecución de este objetivo..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 bg-light">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Objetivo</button>
+                    </div>
+                </form>
             </div>
-            <form method="post" action="/macroplanificacion/planes/objetivos/crear">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="PlanNacionalId" value="@nuevoObjetivo.PlanNacionalId" />
-
-                <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center mb-4">
-                        <i class="fas fa-info-circle text-info fs-5 me-3"></i>
-                        <span class="text-sm">Al agregar un objetivo al plan <strong>@Model.Nombre</strong>, este quedará disponible para que todas las entidades públicas puedan alinearse a él.</span>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label fw-medium text-sm">Código Corto</label>
-                            <input type="text" name="Codigo" class="form-control fw-bold text-primary bg-light" required placeholder="Ej. O1, EJE-1" style="text-transform: uppercase;" />
-                        </div>
-                        <div class="col-md-9">
-                            <label class="form-label fw-medium text-sm">Enunciado del Objetivo</label>
-                            <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Garantizar el derecho a la salud integral..." />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium text-sm">Descripción / Alcance (Opcional)</label>
-                            <textarea name="Descripcion" class="form-control" rows="3" placeholder="Detalles o lineamientos específicos para la ejecución de este objetivo..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Objetivo</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
+}
 
 <style>
     .hover-shadow:hover {

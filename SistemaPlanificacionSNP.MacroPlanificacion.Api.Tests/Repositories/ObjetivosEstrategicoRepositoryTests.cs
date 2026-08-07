@@ -121,6 +121,42 @@ public class ObjetivosEstrategicoRepositoryTests
         await action.Should().ThrowAsync<DbUpdateException>();
     }
 
+    [Fact]
+    public async Task GetByCodigoAsync_ShouldMatchCaseInsensitive_AndIgnoreSoftDeleted()
+    {
+        await using var fixture = new RepositoryFixture();
+        await fixture.InitializeAsync();
+
+        var plan = SeedPlans(fixture).First();
+        fixture.DbContext.ObjetivosEstrategicos.AddRange(
+            new ObjetivosEstrategico
+            {
+                PlanNacionalId = plan.PlanNacionalId,
+                Codigo = "obj-777",
+                Nombre = "Objetivo activo"
+            },
+            new ObjetivosEstrategico
+            {
+                PlanNacionalId = plan.PlanNacionalId,
+                Codigo = "OBJ-888",
+                Nombre = "Objetivo eliminado",
+                IsDeleted = true,
+                DeletedAtUtc = DateTime.UtcNow,
+                DeletedBy = "tester"
+            });
+        await fixture.DbContext.SaveChangesAsync();
+        fixture.DbContext.ChangeTracker.Clear();
+
+        var repository = new ObjetivosEstrategicoRepository(fixture.DbContext);
+
+        var foundActive = await repository.GetByCodigoAsync(plan.PlanNacionalId, "OBJ-777");
+        var foundDeleted = await repository.GetByCodigoAsync(plan.PlanNacionalId, "obj-888");
+
+        foundActive.Should().NotBeNull();
+        foundActive!.Nombre.Should().Be("Objetivo activo");
+        foundDeleted.Should().BeNull();
+    }
+
     private static List<PlanesNacionalesDesarrollo> SeedPlans(RepositoryFixture fixture)
     {
         var plans = new List<PlanesNacionalesDesarrollo>

@@ -15,5 +15,11 @@ public partial class ObjetivosEstrategico
 
     public string? Descripcion { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAtUtc { get; set; }
+
+    public string? DeletedBy { get; set; }
+
     public virtual PlanesNacionalesDesarrollo PlanNacional { get; set; } = null!;
 }

@@ -153,6 +153,31 @@ public class ObjetivosEstrategicosControllerTests
     }
 
     [Fact]
+    public async Task Create_WhenServiceThrowsDuplicateCode_ShouldReturnConflict()
+    {
+        var dto = new MacroObjetivoEstrategicoCreateDto
+        {
+            PlanNacionalId = 10,
+            Codigo = "OBJ-001",
+            Nombre = "Objetivo duplicado"
+        };
+
+        var serviceMock = new Mock<IMacroObjetivoEstrategicoService>();
+        serviceMock.Setup(s => s.CreateAsync(dto, It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("Ya existe un objetivo con el mismo código para el plan nacional"));
+
+        var controller = BuildController(serviceMock, new Mock<IMapper>());
+        controller.ControllerContext = BuildControllerContext("user-123");
+
+        var result = await controller.Create(dto);
+
+        var conflict = result.Result.Should().BeOfType<ConflictObjectResult>().Subject;
+        var response = conflict.Value.Should().BeOfType<ApiResponse<MacroObjetivoEstrategicoDto>>().Subject;
+        response.Success.Should().BeFalse();
+        response.Message.Should().Be("Ya existe un objetivo con el mismo código para el plan nacional");
+    }
+
+    [Fact]
     public async Task Update_WhenObjectiveDoesNotExist_ShouldReturnNotFound()
     {
         var serviceMock = new Mock<IMacroObjetivoEstrategicoService>();

@@ -154,6 +154,31 @@ public class MacroPlanNacionalServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_ShouldThrow_WhenPlanIsNotBorrador()
+    {
+        var existing = new PlanesNacionalesDesarrollo
+        {
+            PlanNacionalId = 11,
+            Nombre = "Plan activo",
+            PeriodoInicio = 2020,
+            PeriodoFin = 2025,
+            Estado = "Activo",
+            ObjetivosEstrategicos = new List<ObjetivosEstrategico>()
+        };
+
+        var unitOfWorkMock = BuildUnitOfWork(planWithObjectives: existing);
+        var service = new MacroPlanNacionalService(unitOfWorkMock.Object);
+
+        var action = async () => await service.DeleteAsync(11, "user-123");
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Solo se pueden eliminar planes en estado Borrador");
+
+        unitOfWorkMock.Verify(u => u.PlanesNacionales.RemoveAsync(It.IsAny<PlanesNacionalesDesarrollo>()), Times.Never);
+        unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task GetResumenAsync_ShouldReturnAggregatedValuesFromRepositories()
     {
         var unitOfWorkMock = BuildUnitOfWork();

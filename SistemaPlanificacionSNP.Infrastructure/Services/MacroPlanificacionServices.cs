@@ -1,4 +1,5 @@
 using SistemaPlanificacionSNP.Domain.Entities.MacroPlanificacion;
+using Microsoft.EntityFrameworkCore;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
 using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
 
@@ -150,6 +151,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 throw new InvalidOperationException("No se puede eliminar el plan porque tiene objetivos asociados");
             }
 
+			if (!string.Equals(entity.Estado, "Borrador", StringComparison.OrdinalIgnoreCase))
+			{
+				throw new InvalidOperationException("Solo se pueden eliminar planes en estado Borrador");
+			}
+
             await _unitOfWork.PlanesNacionales.RemoveAsync(entity);
             await _unitOfWork.SaveChangesAsync();
             return true;
@@ -249,13 +255,15 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             ValidateActor(actorId);
             ValidateCreate(dto);
 
+            var normalizedCodigo = NormalizeCodigo(dto.Codigo);
+
             var plan = await _unitOfWork.PlanesNacionales.GetByIdAsync(dto.PlanNacionalId);
             if (plan == null)
             {
                 throw new InvalidOperationException("El plan nacional no existe");
             }
 
-            var codigoExistente = await _unitOfWork.ObjetivosEstrategicos.GetByCodigoAsync(dto.PlanNacionalId, dto.Codigo.Trim());
+            var codigoExistente = await _unitOfWork.ObjetivosEstrategicos.GetByCodigoAsync(dto.PlanNacionalId, normalizedCodigo);
             if (codigoExistente != null)
             {
                 throw new InvalidOperationException("Ya existe un objetivo con el mismo código para el plan nacional");
@@ -264,13 +272,23 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entity = new ObjetivosEstrategico
             {
                 PlanNacionalId = dto.PlanNacionalId,
-                Codigo = dto.Codigo.Trim(),
+                Codigo = normalizedCodigo,
                 Nombre = dto.Nombre.Trim(),
-                Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim()
+                Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim(),
+                IsDeleted = false,
+                DeletedAtUtc = null,
+                DeletedBy = null
             };
 
-            await _unitOfWork.ObjetivosEstrategicos.AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+            try
+            {
+                await _unitOfWork.ObjetivosEstrategicos.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException("Ya existe un objetivo con el mismo código para el plan nacional", ex);
+            }
 
             return entity;
         }
@@ -292,13 +310,14 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                     throw new InvalidOperationException("Código inválido");
                 }
 
-                var duplicado = await _unitOfWork.ObjetivosEstrategicos.GetByCodigoAsync(entity.PlanNacionalId, dto.Codigo.Trim());
+                var normalizedCodigo = NormalizeCodigo(dto.Codigo);
+                var duplicado = await _unitOfWork.ObjetivosEstrategicos.GetByCodigoAsync(entity.PlanNacionalId, normalizedCodigo);
                 if (duplicado != null && duplicado.ObjetivoEstrategicoId != entity.ObjetivoEstrategicoId)
                 {
                     throw new InvalidOperationException("Ya existe un objetivo con el mismo código para el plan nacional");
                 }
 
-                entity.Codigo = dto.Codigo.Trim();
+                entity.Codigo = normalizedCodigo;
             }
 
             if (dto.Nombre != null)
@@ -321,8 +340,15 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.Descripcion = string.IsNullOrWhiteSpace(dto.Descripcion) ? null : dto.Descripcion.Trim();
             }
 
-            await _unitOfWork.ObjetivosEstrategicos.UpdateAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+            try
+            {
+                await _unitOfWork.ObjetivosEstrategicos.UpdateAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException("Ya existe un objetivo con el mismo código para el plan nacional", ex);
+            }
 
             return entity;
         }
@@ -337,7 +363,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 return false;
             }
 
-            await _unitOfWork.ObjetivosEstrategicos.RemoveAsync(entity);
+            entity.IsDeleted = true;
+            entity.DeletedAtUtc = DateTime.UtcNow;
+            entity.DeletedBy = actorId.Trim();
+
+            await _unitOfWork.ObjetivosEstrategicos.UpdateAsync(entity);
             await _unitOfWork.SaveChangesAsync();
             return true;
         }
@@ -376,6 +406,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             {
                 throw new InvalidOperationException("No se pudo determinar la identidad del usuario desde los claims");
             }
+        }
+
+        private static string NormalizeCodigo(string codigo)
+        {
+            return codigo.Trim().ToUpperInvariant();
         }
 
         private static void NormalizePaging(int pageNumber, int pageSize, out int normalizedPageNumber, out int normalizedPageSize)

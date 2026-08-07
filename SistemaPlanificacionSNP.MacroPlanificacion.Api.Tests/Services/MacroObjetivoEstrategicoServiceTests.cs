@@ -102,6 +102,41 @@ public class MacroObjetivoEstrategicoServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ShouldThrow_WhenCodigoAlreadyExistsForPlan_CaseInsensitive()
+    {
+        var plan = new PlanesNacionalesDesarrollo
+        {
+            PlanNacionalId = 10,
+            Nombre = "Plan Nacional 2030",
+            PeriodoInicio = 2025,
+            PeriodoFin = 2030,
+            Estado = "Activo"
+        };
+
+        var unitOfWorkMock = BuildUnitOfWork(planById: plan, duplicateObjective: new ObjetivosEstrategico
+        {
+            ObjetivoEstrategicoId = 1,
+            PlanNacionalId = 10,
+            Codigo = "obj-001",
+            Nombre = "Objetivo existente"
+        });
+
+        var service = new MacroObjetivoEstrategicoService(unitOfWorkMock.Object);
+        var dto = new MacroObjetivoEstrategicoCreateDto
+        {
+            PlanNacionalId = 10,
+            Codigo = "OBJ-001",
+            Nombre = "Nuevo objetivo",
+            Descripcion = null
+        };
+
+        var action = async () => await service.CreateAsync(dto, "user-123");
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Ya existe un objetivo con el mismo código para el plan nacional");
+    }
+
+    [Fact]
     public async Task UpdateAsync_ShouldApplyPartialChanges_AndPreservePlanId()
     {
         var existing = new ObjetivosEstrategico
@@ -182,6 +217,31 @@ public class MacroObjetivoEstrategicoServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_ShouldSoftDelete_WhenObjectiveExists()
+    {
+        var existing = new ObjetivosEstrategico
+        {
+            ObjetivoEstrategicoId = 20,
+            PlanNacionalId = 10,
+            Codigo = "OBJ-001",
+            Nombre = "Objetivo original",
+            IsDeleted = false
+        };
+
+        var unitOfWorkMock = BuildUnitOfWork(existingObjective: existing);
+        var service = new MacroObjetivoEstrategicoService(unitOfWorkMock.Object);
+
+        var result = await service.DeleteAsync(20, "user-123");
+
+        result.Should().BeTrue();
+        existing.IsDeleted.Should().BeTrue();
+        existing.DeletedBy.Should().Be("user-123");
+        existing.DeletedAtUtc.Should().NotBeNull();
+        unitOfWorkMock.Verify(u => u.ObjetivosEstrategicos.UpdateAsync(existing), Times.Once);
+        unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPagedAsync_ShouldNormalizePagingValuesBeforeRepositoryCall()
     {
         var query = new MacroObjetivoEstrategicoQueryDto
@@ -232,7 +292,7 @@ public class MacroObjetivoEstrategicoServiceTests
             .ReturnsAsync((int planNacionalId, string codigo) =>
                 duplicateObjective != null &&
                 duplicateObjective.PlanNacionalId == planNacionalId &&
-                duplicateObjective.Codigo == codigo
+                string.Equals(duplicateObjective.Codigo, codigo, StringComparison.OrdinalIgnoreCase)
                     ? duplicateObjective
                     : null);
         objetivosRepoMock.Setup(r => r.AddAsync(It.IsAny<ObjetivosEstrategico>())).Returns(Task.CompletedTask);

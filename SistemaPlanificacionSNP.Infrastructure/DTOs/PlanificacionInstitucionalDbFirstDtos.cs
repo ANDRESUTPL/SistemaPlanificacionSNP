@@ -17,6 +17,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int PlanEstrategicoId { get; set; }
         public string Entidad { get; set; } = string.Empty;
+        public int? EntidadPublicaId { get; set; }
         public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
@@ -31,6 +32,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
 
     public class PlanesEstrategicoCreateDto
     {
+        public int EntidadPublicaId { get; set; }
         public string Entidad { get; set; } = string.Empty;
         public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
@@ -40,6 +42,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
 
     public class PlanesEstrategicoUpdateDto
     {
+        public int? EntidadPublicaId { get; set; }
         public string? Entidad { get; set; }
         public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }

@@ -89,6 +89,7 @@
                                         <th class="border-0 text-xs text-muted fw-bold ps-4">CÓDIGO / PROYECTO</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-end">MONTO ($)</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-center">ESTADO</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">ACCIONES</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -104,6 +105,11 @@
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-light text-dark border">@proy.Estado</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="/planificacion/institucional/@Model.PlanEstrategicoId/proyectos/@proy.ProyectoInversionId/editar" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-pen me-1"></i>Editar
+                                                </a>
                                             </td>
                                         </tr>
                                     }

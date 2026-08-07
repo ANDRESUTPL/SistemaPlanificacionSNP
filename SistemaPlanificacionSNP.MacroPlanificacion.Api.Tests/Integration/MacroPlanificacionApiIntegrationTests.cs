@@ -194,7 +194,11 @@ public sealed class MacroPlanificacionApiWebApplicationFactory : WebApplicationF
         {
             new(ClaimTypes.NameIdentifier, actorId),
             new(ClaimTypes.Name, "macro.integration"),
-            new("role", "Administrador")
+            new("role", "Administrador"),
+            new("Lectura_13", "true"),
+            new("Creacion_13", "true"),
+            new("Edicion_13", "true"),
+            new("Eliminacion_13", "true")
         };
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret));

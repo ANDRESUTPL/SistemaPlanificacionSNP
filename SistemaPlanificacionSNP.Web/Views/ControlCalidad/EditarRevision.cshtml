@@ -1,0 +1,84 @@
+@model SistemaPlanificacionSNP.Web.Models.RevisionEditViewModel
+
+@{
+    ViewData["Title"] = "Editar Revision";
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-pen-to-square me-2 text-primary"></i>Editar Revision Tecnica</h3>
+            <p class="text-muted mb-0 text-uppercase tracking-wider text-xs fw-bold">@Model.CodigoRevision</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/controlcalidad/revisiones" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8 col-xl-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 p-lg-5">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="alert alert-warning border-0"></div>
+                    }
+
+                    <form method="post" action="/controlcalidad/revisiones/@Model.RevisionId/editar">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="RevisionId" />
+                        <input type="hidden" asp-for="CodigoRevision" />
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="CodigoRevision" class="form-label fw-medium text-sm"></label>
+                                <input asp-for="CodigoRevision" class="form-control bg-light" readonly />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Estado" class="form-label fw-medium text-sm"></label>
+                                <select asp-for="Estado" class="form-select" required>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Aprobada">Aprobada</option>
+                                    <option value="Rechazada">Rechazada</option>
+                                </select>
+                                <span asp-validation-for="Estado" class="text-danger text-sm"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Modulo" class="form-label fw-medium text-sm"></label>
+                                <input asp-for="Modulo" class="form-control" autocomplete="off" />
+                                <span asp-validation-for="Modulo" class="text-danger text-sm"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="FechaRevision" class="form-label fw-medium text-sm"></label>
+                                <input asp-for="FechaRevision" class="form-control" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" step="60" />
+                                <span asp-validation-for="FechaRevision" class="text-danger text-sm"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Observaciones" class="form-label fw-medium text-sm"></label>
+                                <textarea asp-for="Observaciones" class="form-control" rows="3" placeholder="Observaciones del expediente..."></textarea>
+                                <span asp-validation-for="Observaciones" class="text-danger text-sm"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="/controlcalidad/revisiones" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-secondary px-4 shadow-sm">
+                                <i class="fas fa-save me-1"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

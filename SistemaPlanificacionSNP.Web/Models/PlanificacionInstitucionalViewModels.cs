@@ -7,6 +7,8 @@ namespace SistemaPlanificacionSNP.Web.Models
 	{
 		public int PlanEstrategicoId { get; set; }
 		public string Entidad { get; set; } = string.Empty;
+		public int? EntidadPublicaId { get; set; }
+		public int? PeriodoPlanificacionId { get; set; }
 		public int PeriodoInicio { get; set; }
 		public int PeriodoFin { get; set; }
 		public string Estado { get; set; } = string.Empty;
@@ -51,7 +53,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 	{
 		[Display(Name = "Entidad Pública")]
 		[Required(ErrorMessage = "Debe seleccionar una entidad.")]
-		public string Entidad { get; set; } = string.Empty;
+		public int? EntidadPublicaId { get; set; }
 
 		[Display(Name = "Período de Planificación")]
 		[Required(ErrorMessage = "Debe seleccionar un período de planificación.")]
@@ -89,5 +91,27 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a cero.")]
 		[DataType(DataType.Currency)]
 		public decimal Monto { get; set; }
+	}
+
+	public class ProyectoInversionEditViewModel : ProyectoInversionCreateViewModel
+	{
+		[Required]
+		public int ProyectoInversionId { get; set; }
+
+		[Display(Name = "Estado del Proyecto")]
+		[Required(ErrorMessage = "El estado es obligatorio.")]
+		[StringLength(30, ErrorMessage = "Máximo 30 caracteres.")]
+		public string Estado { get; set; } = string.Empty;
+	}
+
+	public class PlanEstrategicoEditViewModel : PlanEstrategicoCreateViewModel
+	{
+		[Required]
+		public int PlanEstrategicoId { get; set; }
+
+		[Display(Name = "Estado")]
+		[Required(ErrorMessage = "El estado es obligatorio.")]
+		[StringLength(30, ErrorMessage = "Máximo 30 caracteres.")]
+		public string Estado { get; set; } = "Borrador";
 	}
 }

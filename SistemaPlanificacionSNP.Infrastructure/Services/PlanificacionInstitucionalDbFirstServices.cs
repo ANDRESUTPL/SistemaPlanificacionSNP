@@ -57,7 +57,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entidad = dto.Entidad.Trim();
             var estado = dto.Estado.Trim();
 
-            var exists = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPeriodoAsync(entidad, dto.PeriodoInicio, dto.PeriodoFin, periodoPlanificacionId: dto.PeriodoPlanificacionId);
+            var exists = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPublicaPeriodoAsync(dto.EntidadPublicaId, dto.PeriodoInicio, dto.PeriodoFin, periodoPlanificacionId: dto.PeriodoPlanificacionId);
             if (exists)
             {
                 throw new InvalidOperationException("Ya existe un plan para la entidad y periodo indicado");
@@ -66,6 +66,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entity = new PlanesEstrategico
             {
                 Entidad = entidad,
+                EntidadPublicaId = dto.EntidadPublicaId,
                 PeriodoPlanificacionId = dto.PeriodoPlanificacionId,
                 PeriodoInicio = dto.PeriodoInicio,
                 PeriodoFin = dto.PeriodoFin,
@@ -92,6 +93,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 throw new InvalidOperationException("PeriodoPlanificacionId inválido");
             }
 
+            if (dto.EntidadPublicaId.HasValue && dto.EntidadPublicaId.Value <= 0)
+            {
+                throw new InvalidOperationException("EntidadPublicaId inválido");
+            }
+
             if (!string.IsNullOrWhiteSpace(dto.Entidad))
             {
                 if (dto.Entidad.Length > 200)
@@ -99,6 +105,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                     throw new InvalidOperationException("La entidad supera el máximo de 200 caracteres");
                 }
                 entity.Entidad = dto.Entidad.Trim();
+            }
+
+            if (dto.EntidadPublicaId.HasValue)
+            {
+                entity.EntidadPublicaId = dto.EntidadPublicaId.Value;
             }
 
             if (dto.PeriodoInicio.HasValue)
@@ -123,8 +134,13 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.Estado = dto.Estado.Trim();
             }
 
-            var duplicate = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPeriodoAsync(
-                entity.Entidad,
+            if (!entity.EntidadPublicaId.HasValue)
+            {
+                throw new InvalidOperationException("EntidadPublicaId es requerido para actualizar el plan");
+            }
+
+            var duplicate = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPublicaPeriodoAsync(
+                entity.EntidadPublicaId.Value,
                 entity.PeriodoInicio,
                 entity.PeriodoFin,
                 entity.PlanEstrategicoId,
@@ -197,6 +213,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
 
         private static void ValidateCreate(PlanesEstrategicoCreateDto dto)
         {
+            if (dto.EntidadPublicaId <= 0)
+            {
+                throw new InvalidOperationException("EntidadPublicaId es requerido");
+            }
+
             if (string.IsNullOrWhiteSpace(dto.Entidad) || string.IsNullOrWhiteSpace(dto.Estado))
             {
                 throw new InvalidOperationException("Entidad y estado son requeridos");
