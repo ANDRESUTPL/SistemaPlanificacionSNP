@@ -13,17 +13,23 @@
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">
             <!-- Botón Exportar Excel -->
-            <a href="/parametrizacion/instituciones/exportar?buscar=@Model.Buscar" class="btn btn-success border shadow-sm px-4 fw-medium">
-                <i class="fas fa-file-excel me-2"></i>Exportar Excel
-            </a>
+            @if (Model.PuedeLeer)
+            {
+                <a href="/parametrizacion/instituciones/exportar?buscar=@Model.Buscar" class="btn btn-success border shadow-sm px-4 fw-medium">
+                    <i class="fas fa-file-excel me-2"></i>Exportar Excel
+                </a>
+            }
 
             <!-- Botones Existentes -->
-            <button type="button" class="btn btn-outline-primary border shadow-sm px-4 fw-medium" data-bs-toggle="modal" data-bs-target="#addPeriodoModal">
-                <i class="fas fa-calendar-plus me-2"></i>Nuevo Período
-            </button>
-            <a href="/parametrizacion/instituciones/crear-entidad" class="btn btn-secondary border shadow-sm px-4 fw-medium">
-                <i class="fas fa-plus me-2"></i>Nueva Entidad
-            </a>
+            @if (Model.PuedeCrear)
+            {
+                <button type="button" class="btn btn-outline-primary border shadow-sm px-4 fw-medium" data-bs-toggle="modal" data-bs-target="#addPeriodoModal">
+                    <i class="fas fa-calendar-plus me-2"></i>Nuevo Período
+                </button>
+                <a href="/parametrizacion/instituciones/crear-entidad" class="btn btn-secondary border shadow-sm px-4 fw-medium">
+                    <i class="fas fa-plus me-2"></i>Nueva Entidad
+                </a>
+            }
         </div>
     </div>
 
@@ -68,12 +74,13 @@
                                     <th class="border-0 text-xs text-muted fw-bold">TIPO DE ENTIDAD</th>
                                     <th class="border-0 text-xs text-muted fw-bold text-center">NIVEL GOBIERNO</th>
                                     <th class="border-0 text-xs text-muted fw-bold text-center">ESTADO</th>
+                                    <th class="border-0 text-xs text-muted fw-bold text-center">ACCIONES</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (Model.Entidades.Count == 0)
                                 {
-                                    <tr><td colspan="4" class="text-center py-5 text-muted">No se encontraron entidades registradas.</td></tr>
+                                    <tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron entidades registradas.</td></tr>
                                 }
                                 else
                                 {
@@ -96,6 +103,23 @@
                                                     <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger-subtle">Inactiva</span>
                                                 }
                                             </td>
+                                            <td class="text-center">
+                                                @if (Model.PuedeEditar)
+                                                {
+                                                    <a href="/parametrizacion/instituciones/editar-entidad/@ent.EntidadPublicaId" class="btn btn-sm btn-outline-primary me-1" title="Editar entidad">
+                                                        <i class="fas fa-pen"></i>
+                                                    </a>
+                                                }
+                                                @if (ent.Activa && Model.PuedeEliminar)
+                                                {
+                                                    <form method="post" action="/parametrizacion/instituciones/inactivar-entidad/@ent.EntidadPublicaId" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Inactivar entidad" onclick="return confirm('¿Deseas inactivar esta entidad?');">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 }
@@ -113,12 +137,13 @@
                                     <th class="border-0 text-xs text-muted fw-bold">NOMBRE</th>
                                     <th class="border-0 text-xs text-muted fw-bold">VIGENCIA</th>
                                     <th class="border-0 text-xs text-muted fw-bold text-center">ESTADO</th>
+                                    <th class="border-0 text-xs text-muted fw-bold text-center">ACCIONES</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @if (Model.Periodos.Count == 0)
                                 {
-                                    <tr><td colspan="4" class="text-center py-5 text-muted">No se encontraron períodos de planificación.</td></tr>
+                                    <tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron períodos de planificación.</td></tr>
                                 }
                                 else
                                 {
@@ -142,6 +167,34 @@
                                                     <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">Histórico</span>
                                                 }
                                             </td>
+                                            <td class="text-center">
+                                                @if (Model.PuedeEditar)
+                                                {
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-primary me-1 btn-editar-periodo"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#editPeriodoModal"
+                                                        data-id="@per.PeriodoPlanificacionId"
+                                                        data-codigo="@per.Codigo"
+                                                        data-nombre="@per.Nombre"
+                                                        data-fechainicio="@per.FechaInicio.ToString("yyyy-MM-dd")"
+                                                        data-fechafin="@per.FechaFin.ToString("yyyy-MM-dd")"
+                                                        data-activo="@(per.Activo ? "true" : "false")"
+                                                        title="Editar período">
+                                                        <i class="fas fa-pen"></i>
+                                                    </button>
+                                                }
+                                                @if (per.Activo && Model.PuedeEliminar)
+                                                {
+                                                    <form method="post" action="/parametrizacion/instituciones/inactivar-periodo/@per.PeriodoPlanificacionId" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Inactivar período" onclick="return confirm('¿Deseas inactivar este período?');">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 }
@@ -154,6 +207,8 @@
     </div>
 </div>
 
+@if (Model.PuedeCrear)
+{
 <div class="modal fade" id="addPeriodoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -185,12 +240,61 @@
                 </div>
                 <div class="modal-footer border-top-0 bg-light">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Período</button>
+                    <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Período</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+}
+
+@if (Model.PuedeEditar)
+{
+<div class="modal fade" id="editPeriodoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen-to-square me-2 text-primary"></i>Editar Período</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="formEditPeriodo">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium text-sm">Código del Período</label>
+                        <input type="text" name="Codigo" id="editPeriodoCodigo" class="form-control" required style="text-transform: uppercase;" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium text-sm">Nombre Descriptivo</label>
+                        <input type="text" name="Nombre" id="editPeriodoNombre" class="form-control" required />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-medium text-sm">Fecha Inicio</label>
+                            <input type="date" name="FechaInicio" id="editPeriodoFechaInicio" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium text-sm">Fecha Fin</label>
+                            <input type="date" name="FechaFin" id="editPeriodoFechaFin" class="form-control" required />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fw-medium text-sm">Estado</label>
+                        <select class="form-select" id="editPeriodoActivo" name="Activo">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}
 
 @section Scripts {
     <script>
@@ -210,6 +314,24 @@
                 var tab = new bootstrap.Tab(triggerEl);
                 tab.show();
             }
+
+            document.querySelectorAll('.btn-editar-periodo').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const codigo = this.getAttribute('data-codigo') || '';
+                    const nombre = this.getAttribute('data-nombre') || '';
+                    const fechaInicio = this.getAttribute('data-fechainicio') || '';
+                    const fechaFin = this.getAttribute('data-fechafin') || '';
+                    const activo = this.getAttribute('data-activo') || 'false';
+
+                    document.getElementById('formEditPeriodo').setAttribute('action', '/parametrizacion/instituciones/editar-periodo/' + id);
+                    document.getElementById('editPeriodoCodigo').value = codigo;
+                    document.getElementById('editPeriodoNombre').value = nombre;
+                    document.getElementById('editPeriodoFechaInicio').value = fechaInicio;
+                    document.getElementById('editPeriodoFechaFin').value = fechaFin;
+                    document.getElementById('editPeriodoActivo').value = activo;
+                });
+            });
         });
     </script>
 }

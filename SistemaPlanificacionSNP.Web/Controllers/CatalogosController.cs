@@ -92,8 +92,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					return RedirectToAction(nameof(Index));
 				}
 
-				var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-				ModelState.AddModelError(string.Empty, errorMsg ?? "No fue posible crear el catálogo. Verifica los datos.");
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible crear el catálogo. Verifica los datos.");
+				ModelState.AddModelError(string.Empty, errorMsg);
 			}
 			catch (Exception ex)
 			{
@@ -160,8 +160,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				}
 				else
 				{
-					var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-					TempData["Warning"] = errorMsg ?? "No se pudo agregar el ítem.";
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo agregar el ítem.");
+					TempData["Warning"] = errorMsg;
 				}
 			}
 			catch (Exception ex)

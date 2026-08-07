@@ -80,25 +80,48 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		}
 
 		[HttpGet("crear")]
-		public IActionResult CrearPlan()
+		public async Task<IActionResult> CrearPlan()
 		{
-			return View(new PlanNacionalCreateViewModel());
+			var model = new PlanNacionalCreateViewModel();
+			await CargarPeriodosDisponibles(model);
+			return View(model);
 		}
 
 		[HttpPost("crear")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearPlan(PlanNacionalCreateViewModel model)
 		{
-			if (model.PeriodoInicio > model.PeriodoFin)
+			if (!ModelState.IsValid)
 			{
-				ModelState.AddModelError(nameof(model.PeriodoFin), "El año de fin debe ser mayor o igual al de inicio.");
+				await CargarPeriodosDisponibles(model);
+				return View(model);
 			}
 
-			if (!ModelState.IsValid) return View(model);
+			await CargarPeriodosDisponibles(model);
+
+			var periodoSeleccionado = model.PeriodosDisponibles
+				.FirstOrDefault(p => p.PeriodoPlanificacionId == model.PeriodoPlanificacionId);
+
+			if (periodoSeleccionado == null)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado no es válido.");
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
+
+			model.PeriodoInicio = periodoSeleccionado.FechaInicio.Year;
+			model.PeriodoFin = periodoSeleccionado.FechaFin.Year;
+
+			if (model.PeriodoInicio > model.PeriodoFin)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado tiene un rango de fechas inválido.");
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
 
 			try
 			{
-				var payload = new { model.Nombre, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
+				var payload = new { model.Nombre, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
 				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/planesnacionales/crear", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -107,8 +130,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					return RedirectToAction(nameof(Index));
 				}
 
-				var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-				ModelState.AddModelError(string.Empty, errorMsg ?? "No fue posible crear el Plan Nacional.");
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible crear el Plan Nacional.");
+				ModelState.AddModelError(string.Empty, errorMsg);
 			}
 			catch (Exception ex)
 			{
@@ -117,6 +140,27 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return View(model);
+		}
+
+		private async Task CargarPeriodosDisponibles(PlanNacionalCreateViewModel model)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var json = await response.Content.ReadAsStringAsync();
+					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+					model.PeriodosDisponibles = (envelope?.Data ?? new List<PeriodoPlanificacionApiDto>())
+						.Where(p => p.Activo)
+						.OrderByDescending(p => p.FechaInicio)
+						.ToList();
+				}
+			}
+			catch
+			{
+				model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
+			}
 		}
 
 		[HttpGet("{id:int}")]
@@ -176,8 +220,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				}
 				else
 				{
-					var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-					TempData["Warning"] = errorMsg ?? "No se pudo agregar el objetivo.";
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo agregar el objetivo.");
+					TempData["Warning"] = errorMsg;
 				}
 			}
 			catch (Exception ex)

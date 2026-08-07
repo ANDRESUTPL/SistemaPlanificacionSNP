@@ -220,7 +220,11 @@ public sealed class ParametrizacionApiWebApplicationFactory : WebApplicationFact
         {
             new(ClaimTypes.NameIdentifier, actorId),
             new(ClaimTypes.Name, "parametrizacion.integration"),
-            new("role", "Administrador")
+            new("role", "Administrador"),
+            new("Lectura_11", "true"),
+            new("Creacion_11", "true"),
+            new("Edicion_11", "true"),
+            new("Eliminacion_11", "true")
         };
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret));

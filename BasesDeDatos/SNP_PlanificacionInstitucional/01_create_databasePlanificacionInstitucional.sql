@@ -48,6 +48,7 @@ BEGIN
     CREATE TABLE dbo.PlanesNacionalesDesarrollo (
         PlanNacionalId INT IDENTITY(1,1) PRIMARY KEY,
         Nombre NVARCHAR(250) NOT NULL,
+        PeriodoPlanificacionId INT NULL,
         PeriodoInicio INT NOT NULL,
         PeriodoFin INT NOT NULL,
         Estado NVARCHAR(30) NOT NULL,
@@ -80,11 +81,24 @@ BEGIN
     CREATE TABLE dbo.PlanesEstrategicos (
         PlanEstrategicoId INT IDENTITY(1,1) PRIMARY KEY,
         Entidad NVARCHAR(200) NOT NULL,
+        PeriodoPlanificacionId INT NULL,
         PeriodoInicio INT NOT NULL,
         PeriodoFin INT NOT NULL,
         Estado NVARCHAR(30) NOT NULL,
         FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_PI_PlanesEstrategicos_FechaCreacion DEFAULT (SYSUTCDATETIME())
     );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = N'IX_PlanesEstrategicos_PeriodoPlanificacionId'
+      AND object_id = OBJECT_ID(N'dbo.PlanesEstrategicos')
+)
+BEGIN
+    CREATE INDEX IX_PlanesEstrategicos_PeriodoPlanificacionId
+        ON dbo.PlanesEstrategicos(PeriodoPlanificacionId);
 END;
 GO
 

@@ -14,9 +14,9 @@ GO
 PRINT 'Insertando Plan Nacional de Desarrollo...';
 
 SET IDENTITY_INSERT [dbo].[PlanesNacionalesDesarrollo] ON;
-INSERT INTO [dbo].[PlanesNacionalesDesarrollo] ([PlanNacionalId], [Nombre], [PeriodoInicio], [PeriodoFin], [Estado], [FechaCreacion])
+INSERT INTO [dbo].[PlanesNacionalesDesarrollo] ([PlanNacionalId], [Nombre], [PeriodoPlanificacionId], [PeriodoInicio], [PeriodoFin], [Estado], [FechaCreacion])
 VALUES 
-(1, 'Plan Nacional de Desarrollo: Creación de Oportunidades 2026-2030', 2026, 2030, 'Vigente', SYSUTCDATETIME());
+(1, 'Plan Nacional de Desarrollo: Creación de Oportunidades 2026-2030', 1, 2026, 2030, 'Vigente', SYSUTCDATETIME());
 SET IDENTITY_INSERT [dbo].[PlanesNacionalesDesarrollo] OFF;
 
 PRINT 'Insertando Objetivos Estratégicos Macro...';

@@ -5,6 +5,8 @@ namespace SistemaPlanificacionSNP.Web.Common
 {
     public static class ApiHttpErrorHelper
     {
+        public const string ForbiddenDefaultMessage = "No cuentas con permisos para realizar esta accion.";
+
         public static string BuildStatusMessage(
             HttpStatusCode statusCode,
             string fallback,
@@ -14,7 +16,7 @@ namespace SistemaPlanificacionSNP.Web.Common
             return statusCode switch
             {
                 HttpStatusCode.Unauthorized => unauthorizedMessage ?? "Tu sesion expiro. Inicia sesion nuevamente para continuar.",
-                HttpStatusCode.Forbidden => forbiddenMessage ?? "No cuentas con permisos para realizar esta accion.",
+                HttpStatusCode.Forbidden => forbiddenMessage ?? ForbiddenDefaultMessage,
                 HttpStatusCode.NotFound => "No se encontro la informacion solicitada.",
                 HttpStatusCode.InternalServerError => "El servidor presento un error interno. Intenta nuevamente en unos minutos.",
                 HttpStatusCode.BadGateway => "El gateway no pudo comunicarse con el servicio solicitado.",
@@ -62,6 +64,31 @@ namespace SistemaPlanificacionSNP.Web.Common
             {
                 return null;
             }
+        }
+
+        public static async Task<string> ResolveMutationErrorMessageAsync(
+            HttpResponseMessage? response,
+            string fallback,
+            string? forbiddenMessage = null,
+            string? unauthorizedMessage = null)
+        {
+            if (response == null)
+            {
+                return "No fue posible conectar con el servidor. Intenta nuevamente.";
+            }
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                return forbiddenMessage ?? ForbiddenDefaultMessage;
+            }
+
+            var apiError = await TryExtractApiMessageAsync(response);
+            if (!string.IsNullOrWhiteSpace(apiError))
+            {
+                return apiError;
+            }
+
+            return BuildStatusMessage(response.StatusCode, fallback, unauthorizedMessage, forbiddenMessage);
         }
     }
 }

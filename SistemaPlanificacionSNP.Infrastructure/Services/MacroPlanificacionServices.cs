@@ -63,6 +63,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entity = new PlanesNacionalesDesarrollo
             {
                 Nombre = dto.Nombre.Trim(),
+                PeriodoPlanificacionId = dto.PeriodoPlanificacionId,
                 PeriodoInicio = dto.PeriodoInicio,
                 PeriodoFin = dto.PeriodoFin,
                 Estado = dto.Estado.Trim(),
@@ -78,6 +79,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
         public async Task<PlanesNacionalesDesarrollo?> UpdateAsync(int planNacionalId, MacroPlanNacionalUpdateDto dto, string actorId)
         {
             ValidateActor(actorId);
+
+            if (dto.PeriodoPlanificacionId.HasValue && dto.PeriodoPlanificacionId.Value <= 0)
+            {
+                throw new InvalidOperationException("PeriodoPlanificacionId inválido");
+            }
 
             var entity = await _unitOfWork.PlanesNacionales.GetByIdAsync(planNacionalId);
             if (entity == null)
@@ -102,6 +108,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (dto.PeriodoFin.HasValue)
             {
                 entity.PeriodoFin = dto.PeriodoFin.Value;
+            }
+
+            if (dto.PeriodoPlanificacionId.HasValue)
+            {
+                entity.PeriodoPlanificacionId = dto.PeriodoPlanificacionId.Value;
             }
 
             if (dto.Estado != null)
@@ -160,6 +171,16 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(dto.Nombre) || string.IsNullOrWhiteSpace(dto.Estado))
             {
                 throw new InvalidOperationException("Nombre y estado son requeridos");
+            }
+
+            if (dto.PeriodoPlanificacionId.HasValue && dto.PeriodoPlanificacionId.Value <= 0)
+            {
+                throw new InvalidOperationException("PeriodoPlanificacionId inválido");
+            }
+
+            if (dto.PeriodoInicio <= 0 || dto.PeriodoFin <= 0)
+            {
+                throw new InvalidOperationException("PeriodoInicio y PeriodoFin son requeridos");
             }
 
             if (dto.Nombre.Trim().Length > 200)

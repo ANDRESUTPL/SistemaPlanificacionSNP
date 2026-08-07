@@ -57,7 +57,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entidad = dto.Entidad.Trim();
             var estado = dto.Estado.Trim();
 
-            var exists = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPeriodoAsync(entidad, dto.PeriodoInicio, dto.PeriodoFin);
+            var exists = await _unitOfWork.PlanesEstrategicos.ExistsByEntidadPeriodoAsync(entidad, dto.PeriodoInicio, dto.PeriodoFin, periodoPlanificacionId: dto.PeriodoPlanificacionId);
             if (exists)
             {
                 throw new InvalidOperationException("Ya existe un plan para la entidad y periodo indicado");
@@ -66,6 +66,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             var entity = new PlanesEstrategico
             {
                 Entidad = entidad,
+                PeriodoPlanificacionId = dto.PeriodoPlanificacionId,
                 PeriodoInicio = dto.PeriodoInicio,
                 PeriodoFin = dto.PeriodoFin,
                 Estado = estado,
@@ -84,6 +85,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (entity == null)
             {
                 return null;
+            }
+
+            if (dto.PeriodoPlanificacionId.HasValue && dto.PeriodoPlanificacionId.Value <= 0)
+            {
+                throw new InvalidOperationException("PeriodoPlanificacionId inválido");
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Entidad))
@@ -107,6 +113,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.PeriodoFin = dto.PeriodoFin.Value;
             }
 
+            if (dto.PeriodoPlanificacionId.HasValue)
+            {
+                entity.PeriodoPlanificacionId = dto.PeriodoPlanificacionId.Value;
+            }
+
             if (!string.IsNullOrWhiteSpace(dto.Estado))
             {
                 entity.Estado = dto.Estado.Trim();
@@ -116,7 +127,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.Entidad,
                 entity.PeriodoInicio,
                 entity.PeriodoFin,
-                entity.PlanEstrategicoId);
+                entity.PlanEstrategicoId,
+                entity.PeriodoPlanificacionId);
 
             if (duplicate)
             {
@@ -188,6 +200,16 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(dto.Entidad) || string.IsNullOrWhiteSpace(dto.Estado))
             {
                 throw new InvalidOperationException("Entidad y estado son requeridos");
+            }
+
+            if (dto.PeriodoPlanificacionId.HasValue && dto.PeriodoPlanificacionId.Value <= 0)
+            {
+                throw new InvalidOperationException("PeriodoPlanificacionId inválido");
+            }
+
+            if (dto.PeriodoInicio <= 0 || dto.PeriodoFin <= 0)
+            {
+                throw new InvalidOperationException("PeriodoInicio y PeriodoFin son requeridos");
             }
 
             if (dto.Entidad.Length > 200)

@@ -1,14 +1,14 @@
-﻿@model SistemaPlanificacionSNP.Web.Models.EntidadPublicaCreateViewModel
+@model SistemaPlanificacionSNP.Web.Models.EntidadPublicaEditViewModel
 
 @{
-    ViewData["Title"] = "Registrar Entidad Pública";
+    ViewData["Title"] = "Editar Entidad Pública";
 }
 
 <div class="container-fluid p-0">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
         <div>
-            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-landmark me-2 text-primary"></i>Nueva Entidad Pública</h3>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">Registro de institución y asignación de nivel gubernamental.</p>
+            <h3 class="mb-1 fw-bold text-dark"><i class="fas fa-pen-to-square me-2 text-primary"></i>Editar Entidad Pública</h3>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Actualiza la información institucional y su período de referencia.</p>
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">
             <a href="/parametrizacion/instituciones" class="btn btn-light border shadow-sm px-4 fw-medium text-secondary">
@@ -27,7 +27,7 @@
                     <h5 class="mb-0 fw-bold text-dark">Información Organizacional</h5>
                 </div>
                 <div class="card-body p-4 p-xl-5">
-                    <form method="post" action="/parametrizacion/instituciones/crear-entidad" id="formCreateEntidad">
+                    <form method="post" action="/parametrizacion/instituciones/editar-entidad/@Model.EntidadPublicaId" id="formEditEntidad">
                         @Html.AntiForgeryToken()
 
                         @if (!ViewData.ModelState.IsValid)
@@ -46,23 +46,23 @@
                         <div class="row g-4">
                             <div class="col-12 col-md-4">
                                 <label asp-for="Codigo" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Código</label>
-                                <input asp-for="Codigo" class="form-control form-control-lg" placeholder="Ej. MSP" style="text-transform: uppercase;" autocomplete="off" />
+                                <input asp-for="Codigo" class="form-control form-control-lg" placeholder="Ej. MSP" autocomplete="off" style="text-transform: uppercase;" />
                                 <span asp-validation-for="Codigo" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                             </div>
 
                             <div class="col-12 col-md-8">
                                 <label asp-for="Nombre" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Nombre Oficial <span class="text-danger">*</span></label>
-                                <input asp-for="Nombre" class="form-control form-control-lg" placeholder="Ej. Ministerio de Salud Pública" autocomplete="off" />
+                                <input asp-for="Nombre" class="form-control form-control-lg" autocomplete="off" />
                                 <span asp-validation-for="Nombre" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                             </div>
 
                             <div class="col-12 col-md-4">
                                 <label asp-for="Sigla" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Sigla <span class="text-danger">*</span></label>
-                                <input asp-for="Sigla" class="form-control form-control-lg bg-light" placeholder="Ej. MSP" style="text-transform: uppercase;" autocomplete="off" />
+                                <input asp-for="Sigla" class="form-control form-control-lg bg-light" style="text-transform: uppercase;" autocomplete="off" />
                                 <span asp-validation-for="Sigla" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                             </div>
 
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label asp-for="Tipo" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Tipo de Institución <span class="text-danger">*</span></label>
                                 <select asp-for="Tipo" class="form-select form-select-lg">
                                     <option value="">Seleccione una opción...</option>
@@ -76,7 +76,7 @@
                                 <span asp-validation-for="Tipo" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                             </div>
 
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
                                 <label asp-for="NivelGobierno" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Nivel de Gobierno <span class="text-danger">*</span></label>
                                 <select asp-for="NivelGobierno" class="form-select form-select-lg">
                                     <option value="">Seleccione el nivel...</option>
@@ -92,7 +92,7 @@
                             <div class="col-12 col-md-6">
                                 <label asp-for="PeriodoPlanificacionId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Período de Planificación</label>
                                 <select asp-for="PeriodoPlanificacionId" class="form-select form-select-lg">
-                                    <option value="">Asignar al período activo más reciente</option>
+                                    <option value="">Seleccione un período...</option>
                                     @foreach (var periodo in Model.PeriodosDisponibles)
                                     {
                                         <option value="@periodo.PeriodoPlanificacionId">@periodo.Nombre (@periodo.FechaInicio.Year - @periodo.FechaFin.Year)</option>
@@ -113,7 +113,7 @@
                         <div class="d-flex justify-content-end gap-2">
                             <a href="/parametrizacion/instituciones" class="btn btn-outline-secondary px-4 rounded-pill">Cancelar</a>
                             <button type="submit" class="btn btn-secondary px-5 rounded-pill shadow-sm" id="btnSubmit">
-                                <i class="fas fa-save me-2"></i>Registrar Entidad
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
                             </button>
                         </div>
                     </form>
@@ -129,14 +129,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('formCreateEntidad');
+            const form = document.getElementById('formEditEntidad');
             const btnSubmit = document.getElementById('btnSubmit');
 
             if (form) {
                 form.addEventListener('submit', function(e) {
                     if ($(this).valid()) {
                         btnSubmit.disabled = true;
-                        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Registrando...';
+                        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
                     }
                 });
             }

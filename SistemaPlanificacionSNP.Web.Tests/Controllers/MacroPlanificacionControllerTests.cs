@@ -80,34 +80,59 @@ public class MacroPlanificacionControllerTests : ControllerTestBase
     public async Task CrearPlan_WhenYearsAreInvalid_ShouldReturnViewAndNotCallApi()
     {
         var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/instituciones/periodos", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new[]
+            {
+                new
+                {
+                    periodoPlanificacionId = 1,
+                    codigo = "P-INVALIDO",
+                    nombre = "Periodo Invalido",
+                    fechaInicio = new DateTime(2030, 1, 1),
+                    fechaFin = new DateTime(2025, 12, 31),
+                    activo = true
+                }
+            })));
+
         var controller = BuildController(apiClientMock);
         var model = new PlanNacionalCreateViewModel
         {
             Nombre = "Plan inválido",
-            PeriodoInicio = 2030,
-            PeriodoFin = 2025
+            PeriodoPlanificacionId = 1
         };
 
         var result = await controller.CrearPlan(model);
 
         var view = result.Should().BeOfType<ViewResult>().Subject;
         view.Model.Should().BeSameAs(model);
-        controller.ModelState.Should().ContainKey(nameof(model.PeriodoFin));
-        apiClientMock.Verify(x => x.SendAsync(It.IsAny<HttpMethod>(), It.IsAny<string>(), It.IsAny<object?>()), Times.Never);
+        controller.ModelState.Should().ContainKey(nameof(model.PeriodoPlanificacionId));
+        apiClientMock.Verify(x => x.SendAsync(HttpMethod.Post, "/api/planesnacionales/crear", It.IsAny<object?>()), Times.Never);
     }
 
     [Fact]
     public async Task CrearPlan_WhenApiSucceeds_ShouldSetSuccessAndRedirectToIndex()
     {
         var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/instituciones/periodos", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new[]
+            {
+                new
+                {
+                    periodoPlanificacionId = 1,
+                    codigo = "P-2025",
+                    nombre = "Periodo 2025-2030",
+                    fechaInicio = new DateTime(2025, 1, 1),
+                    fechaFin = new DateTime(2030, 12, 31),
+                    activo = true
+                }
+            })));
         apiClientMock.Setup(x => x.SendAsync(HttpMethod.Post, "/api/planesnacionales/crear", It.IsAny<object>()))
             .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new { planNacionalId = 10 })));
         var controller = BuildController(apiClientMock);
         var model = new PlanNacionalCreateViewModel
         {
             Nombre = "Plan Nacional",
-            PeriodoInicio = 2025,
-            PeriodoFin = 2030
+            PeriodoPlanificacionId = 1
         };
 
         var result = await controller.CrearPlan(model);
@@ -121,14 +146,26 @@ public class MacroPlanificacionControllerTests : ControllerTestBase
     public async Task CrearPlan_WhenApiRejects_ShouldAddModelErrorAndReturnView()
     {
         var apiClientMock = new Mock<IApiClient>();
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/instituciones/periodos", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new[]
+            {
+                new
+                {
+                    periodoPlanificacionId = 1,
+                    codigo = "P-2025",
+                    nombre = "Periodo 2025-2030",
+                    fechaInicio = new DateTime(2025, 1, 1),
+                    fechaFin = new DateTime(2030, 12, 31),
+                    activo = true
+                }
+            })));
         apiClientMock.Setup(x => x.SendAsync(HttpMethod.Post, "/api/planesnacionales/crear", It.IsAny<object>()))
             .ReturnsAsync(WebTestData.JsonResponse(new { message = "El plan ya existe" }, HttpStatusCode.BadRequest));
         var controller = BuildController(apiClientMock);
         var model = new PlanNacionalCreateViewModel
         {
             Nombre = "Plan Nacional",
-            PeriodoInicio = 2025,
-            PeriodoFin = 2030
+            PeriodoPlanificacionId = 1
         };
 
         var result = await controller.CrearPlan(model);

@@ -103,7 +103,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
             CreateMap<ProyectoInversion, ProyectoInversionDto>();
 
             // ==================== ENTIDAD PÚBLICA ====================
-            CreateMap<EntidadPublica, EntidadPublicaDto>();
+            CreateMap<EntidadPublica, EntidadPublicaDto>()
+                .ForMember(dest => dest.Activa, opt => opt.MapFrom(src => src.Activo))
+                .ForMember(dest => dest.Tipo, opt => opt.MapFrom(_ => string.Empty))
+                .ForMember(dest => dest.NivelGobierno, opt => opt.MapFrom(_ => string.Empty));
 
             CreateMap<EntidadPublicaCreateUpdateDto, EntidadPublica>()
                 .ForMember(dest => dest.EntidadPublicaId, opt => opt.Ignore())

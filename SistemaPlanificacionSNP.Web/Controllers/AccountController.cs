@@ -6,6 +6,7 @@ using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Models;
 using SistemaPlanificacionSNP.Web.Services;
 using System.Net;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -107,30 +108,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 // Guardar tokens en cookies
                 _authService.SaveAuthData(accessToken, refreshToken, nombreUsuario ?? "Usuario");
 
-                // Crear claims principal para autenticación local
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, usuario.GetProperty("usuarioId").GetInt32().ToString()),
-                    new Claim(ClaimTypes.Name, nombreUsuario ?? "Usuario"),
-                    new Claim(ClaimTypes.Email, usuario.GetProperty("email").GetString() ?? ""),
-                    new Claim("Nombre", usuario.GetProperty("nombre").GetString() ?? ""),
-                    new Claim("Apellido", usuario.GetProperty("apellido").GetString() ?? "")
-                };
-
-                // Agregar roles
-                if (usuario.TryGetProperty("roles", out var rolesElement))
-                {
-                    foreach (var rol in rolesElement.EnumerateArray())
-                    {
-                        claims.Add(new Claim(ClaimTypes.Role, rol.GetProperty("nombre").GetString() ?? ""));
-                    }
-                }
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var claimsIdentity = BuildIdentityFromAccessToken(accessToken);
                 var authProperties = new AuthenticationProperties
                 {
                     IsPersistent = model.Recuerdame,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+                    ExpiresUtc = DateTimeOffset.FromUnixTimeSeconds(new JwtSecurityTokenHandler().ReadJwtToken(accessToken).Payload.Expiration ?? DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds())
                 };
 
                 await HttpContext.SignInAsync(
@@ -152,6 +134,20 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 ModelState.AddModelError(string.Empty, "Error inesperado durante el login");
                 return View(model);
             }
+        }
+
+        private static ClaimsIdentity BuildIdentityFromAccessToken(string accessToken)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.ReadJwtToken(accessToken);
+
+            var claims = token.Claims
+                .Where(c => !string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
         [HttpGet]
@@ -245,7 +241,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
                 if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    ModelState.AddModelError(string.Empty, "No tienes permisos para cambiar esta contraseña.");
+                    ModelState.AddModelError(string.Empty, ApiHttpErrorHelper.ForbiddenDefaultMessage);
                     return View(model);
                 }
 

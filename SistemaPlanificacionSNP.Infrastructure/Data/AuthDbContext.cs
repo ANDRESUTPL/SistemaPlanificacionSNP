@@ -32,7 +32,7 @@ public partial class AuthDbContext : DbContext
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => _ = optionsBuilder.IsConfigured
             ? optionsBuilder
-            : optionsBuilder.UseSqlServer("Server=DESKTOP-2IQ6AEG;Database=SNP_Auth;Trusted_Connection=true;Encrypt=false;User Id=AdminSQLUser;Password=1915.*@Ort.;");
+            : optionsBuilder.UseSqlServer("Server=PATRICIOTI-UIO;Database=SNP_Auth;Trusted_Connection=true;Encrypt=false;User Id=AdminSQLUser;Password=1915.*@Ort.;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

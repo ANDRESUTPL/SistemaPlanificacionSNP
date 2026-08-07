@@ -9,6 +9,8 @@ public partial class PlanesEstrategico
 
     public string Entidad { get; set; } = null!;
 
+    public int? PeriodoPlanificacionId { get; set; }
+
     public int PeriodoInicio { get; set; }
 
     public int PeriodoFin { get; set; }

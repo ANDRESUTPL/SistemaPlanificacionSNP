@@ -25,9 +25,12 @@ public partial class PlanificacionInstitucionalDbContext : DbContext
 			// SOLUCIÓN: Agregado el mapeo explícito de la tabla
 			entity.ToTable("PlanesEstrategicos");
 
+			entity.HasIndex(e => e.PeriodoPlanificacionId, "IX_PlanesEstrategicos_PeriodoPlanificacionId");
+
 			entity.Property(e => e.Entidad).HasMaxLength(200);
 			entity.Property(e => e.Estado).HasMaxLength(30);
 			entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(sysutcdatetime())");
+			entity.Property(e => e.PeriodoPlanificacionId).IsRequired(false);
 		});
 
 		modelBuilder.Entity<ProyectosInversion>(entity =>

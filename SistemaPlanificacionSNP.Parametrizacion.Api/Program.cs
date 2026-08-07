@@ -61,7 +61,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 		};
 	});
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy("Instituciones.Lectura", policy =>
+		policy.RequireClaim("Lectura_11", "true"));
+	options.AddPolicy("Instituciones.Creacion", policy =>
+		policy.RequireClaim("Creacion_11", "true"));
+	options.AddPolicy("Instituciones.Edicion", policy =>
+		policy.RequireClaim("Edicion_11", "true"));
+	options.AddPolicy("Instituciones.Eliminacion", policy =>
+		policy.RequireClaim("Eliminacion_11", "true"));
+});
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 

@@ -4,6 +4,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int PlanNacionalId { get; set; }
         public string Nombre { get; set; } = null!;
+        public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
         public string Estado { get; set; } = null!;
@@ -25,6 +26,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class MacroPlanNacionalCreateDto
     {
         public string Nombre { get; set; } = null!;
+        public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
         public string Estado { get; set; } = null!;
@@ -33,6 +35,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class MacroPlanNacionalUpdateDto
     {
         public string? Nombre { get; set; }
+        public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }
         public int? PeriodoFin { get; set; }
         public string? Estado { get; set; }
@@ -41,6 +44,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class MacroPlanNacionalQueryDto
     {
         public string? Estado { get; set; }
+        public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }
         public int? PeriodoFin { get; set; }
         public string? Busqueda { get; set; }

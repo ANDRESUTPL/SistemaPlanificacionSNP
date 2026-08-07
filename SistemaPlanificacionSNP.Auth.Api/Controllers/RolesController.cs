@@ -238,6 +238,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 await _unitOfWork.SaveChangesAsync();
 
                 await SyncRolPermisosAsync(rol.RolId, rolDto.Permisos, rolDto.PermisoIds);
+                await InvalidateSessionsForRoleAsync(rol.RolId);
 
                 var usuarioEditorId = GetAuthenticatedUserId();
                 if (usuarioEditorId.HasValue)
@@ -395,6 +396,32 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 {
                     _context.RolPermisos.Add(permiso);
                 }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task InvalidateSessionsForRoleAsync(int rolId)
+        {
+            var usuarioIds = await _context.UsuarioRols
+                .Where(ur => ur.RolId == rolId)
+                .Select(ur => ur.UsuarioId)
+                .Distinct()
+                .ToListAsync();
+
+            if (usuarioIds.Count == 0)
+            {
+                return;
+            }
+
+            var usuarios = await _context.Usuarios
+                .Where(u => usuarioIds.Contains(u.UsuarioId))
+                .ToListAsync();
+
+            foreach (var usuario in usuarios)
+            {
+                usuario.RefreshToken = null;
+                usuario.RefreshTokenExpiracion = null;
             }
 
             await _context.SaveChangesAsync();

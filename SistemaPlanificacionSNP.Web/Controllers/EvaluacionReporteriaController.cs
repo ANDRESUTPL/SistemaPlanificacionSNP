@@ -151,8 +151,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				}
 				else
 				{
-					var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-					TempData["Warning"] = errorMsg ?? "No se pudo registrar el avance.";
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo registrar el avance.");
+					TempData["Warning"] = errorMsg;
 				}
 			}
 			catch (Exception ex)

@@ -6,6 +6,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public int PageSize { get; set; } = 20;
         public string? Estado { get; set; }
         public string? Entidad { get; set; }
+        public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }
         public int? PeriodoFin { get; set; }
         public string SortBy { get; set; } = "PlanEstrategicoId";
@@ -16,6 +17,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int PlanEstrategicoId { get; set; }
         public string Entidad { get; set; } = string.Empty;
+        public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
         public string Estado { get; set; } = string.Empty;
@@ -30,6 +32,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class PlanesEstrategicoCreateDto
     {
         public string Entidad { get; set; } = string.Empty;
+        public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
         public string Estado { get; set; } = "Borrador";
@@ -38,6 +41,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class PlanesEstrategicoUpdateDto
     {
         public string? Entidad { get; set; }
+        public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }
         public int? PeriodoFin { get; set; }
         public string? Estado { get; set; }

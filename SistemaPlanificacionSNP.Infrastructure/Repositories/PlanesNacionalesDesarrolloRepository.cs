@@ -116,6 +116,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
                 q = q.Where(p => p.Estado == query.Estado);
             }
 
+            if (query.PeriodoPlanificacionId.HasValue)
+            {
+                q = q.Where(p => p.PeriodoPlanificacionId == query.PeriodoPlanificacionId.Value);
+            }
+
             if (query.PeriodoInicio.HasValue)
             {
                 q = q.Where(p => p.PeriodoInicio >= query.PeriodoInicio.Value);
@@ -146,6 +151,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
             {
                 "nombre" => desc ? q.OrderByDescending(x => x.Nombre) : q.OrderBy(x => x.Nombre),
                 "estado" => desc ? q.OrderByDescending(x => x.Estado) : q.OrderBy(x => x.Estado),
+                "periodoplanificacionid" => desc ? q.OrderByDescending(x => x.PeriodoPlanificacionId) : q.OrderBy(x => x.PeriodoPlanificacionId),
                 "periodoinicio" => desc ? q.OrderByDescending(x => x.PeriodoInicio) : q.OrderBy(x => x.PeriodoInicio),
                 "periodofin" => desc ? q.OrderByDescending(x => x.PeriodoFin) : q.OrderBy(x => x.PeriodoFin),
                 "fechacreacion" => desc ? q.OrderByDescending(x => x.FechaCreacion) : q.OrderBy(x => x.FechaCreacion),

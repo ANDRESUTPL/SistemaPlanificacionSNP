@@ -248,9 +248,31 @@ public class ParametrizacionServiceTests
         var persisted = await fixture.DbContext.EntidadesPublicas.FindAsync(result.EntidadPublicaId);
         persisted.Should().NotBeNull();
         persisted!.PeriodoPlanificacionId.Should().Be(1);
-        persisted.Codigo.Should().HaveLength(8);
+        persisted.Codigo.Should().Be("MDP");
         persisted.Activo.Should().BeTrue();
         persisted.FechaCreacion.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
+    public async Task CreatePeriodoAsync_ShouldThrow_WhenFechaInicioIsGreaterOrEqualToFechaFin()
+    {
+        await using var fixture = new ServiceFixture();
+        await fixture.InitializeAsync();
+
+        var service = fixture.CreateService();
+        var dto = new PeriodoPlanificacionCreateUpdateDto
+        {
+            Codigo = "P2035",
+            Nombre = "Periodo inválido",
+            FechaInicio = new DateTime(2035, 12, 31),
+            FechaFin = new DateTime(2035, 1, 1),
+            Activo = true
+        };
+
+        var action = async () => await service.CreatePeriodoAsync(dto);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("La fecha de inicio debe ser menor a la fecha de fin.");
     }
 
     [Fact]

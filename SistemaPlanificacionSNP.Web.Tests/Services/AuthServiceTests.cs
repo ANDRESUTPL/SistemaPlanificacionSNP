@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SistemaPlanificacionSNP.Web.Services;
@@ -13,6 +14,7 @@ public class AuthServiceTests
     public void SaveAuthData_ShouldWriteAuthCookies()
     {
         var context = new DefaultHttpContext();
+        context.Request.Scheme = "http";
         var service = CreateService(context);
 
         service.SaveAuthData("access-token", "refresh-token", "admin.user");
@@ -22,8 +24,8 @@ public class AuthServiceTests
         setCookieHeaders.Should().Contain("refreshToken=refresh-token");
         setCookieHeaders.Should().Contain("userName=admin.user");
         setCookieHeaders.Should().Contain("httponly", Exactly.Twice());
-        setCookieHeaders.Should().Contain("samesite=strict");
-        setCookieHeaders.Should().Contain("secure");
+        setCookieHeaders.Should().Contain("samesite=lax");
+        setCookieHeaders.Should().NotContain("secure");
     }
 
     [Fact]
@@ -71,8 +73,16 @@ public class AuthServiceTests
     public void Methods_ShouldReturnSafeValues_WhenHttpContextIsNull()
     {
         var accessorMock = new Mock<IHttpContextAccessor>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        var configurationMock = new Mock<IConfiguration>();
         accessorMock.SetupGet(x => x.HttpContext).Returns((HttpContext?)null);
-        var service = new AuthService(accessorMock.Object, NullLogger<AuthService>.Instance);
+        configurationMock.Setup(c => c["ApiGateway:BaseUrl"]).Returns("https://localhost:52555");
+
+        var service = new AuthService(
+            accessorMock.Object,
+            httpClientFactoryMock.Object,
+            configurationMock.Object,
+            NullLogger<AuthService>.Instance);
 
         service.GetAccessToken().Should().BeNull();
         service.GetRefreshToken().Should().BeNull();
@@ -85,8 +95,15 @@ public class AuthServiceTests
     private static AuthService CreateService(HttpContext context)
     {
         var accessorMock = new Mock<IHttpContextAccessor>();
+        var httpClientFactoryMock = new Mock<IHttpClientFactory>();
+        var configurationMock = new Mock<IConfiguration>();
         accessorMock.SetupGet(x => x.HttpContext).Returns(context);
+        configurationMock.Setup(c => c["ApiGateway:BaseUrl"]).Returns("https://localhost:52555");
 
-        return new AuthService(accessorMock.Object, NullLogger<AuthService>.Instance);
+        return new AuthService(
+            accessorMock.Object,
+            httpClientFactoryMock.Object,
+            configurationMock.Object,
+            NullLogger<AuthService>.Instance);
     }
 }

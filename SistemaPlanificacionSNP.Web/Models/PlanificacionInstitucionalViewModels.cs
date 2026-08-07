@@ -53,14 +53,16 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Required(ErrorMessage = "Debe seleccionar una entidad.")]
 		public string Entidad { get; set; } = string.Empty;
 
+		[Display(Name = "Período de Planificación")]
+		[Required(ErrorMessage = "Debe seleccionar un período de planificación.")]
+		public int? PeriodoPlanificacionId { get; set; }
+
+		public List<PeriodoPlanificacionApiDto> PeriodosDisponibles { get; set; } = new();
+
 		[Display(Name = "Año de Inicio")]
-		[Required(ErrorMessage = "Requerido.")]
-		[Range(2020, 2100, ErrorMessage = "Año inválido.")]
 		public int PeriodoInicio { get; set; } = DateTime.Now.Year;
 
 		[Display(Name = "Año de Fin")]
-		[Required(ErrorMessage = "Requerido.")]
-		[Range(2020, 2100, ErrorMessage = "Año inválido.")]
 		public int PeriodoFin { get; set; } = DateTime.Now.Year + 4;
 
 		// Para poblar el combo box de entidades desde Parametrización

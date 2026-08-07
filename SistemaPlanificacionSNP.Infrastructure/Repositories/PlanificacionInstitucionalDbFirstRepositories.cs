@@ -11,7 +11,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         Task<int> CountFilteredAsync(PlanesEstrategicoQueryDto query);
         Task<PlanesEstrategico?> GetByIdAsync(int planId);
         Task<PlanesEstrategico?> GetByIdWithProyectosAsync(int planId);
-        Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null);
+        Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null);
         Task<bool> HasActiveProjectsAsync(int planId);
         Task AddAsync(PlanesEstrategico entity);
         Task UpdateAsync(PlanesEstrategico entity);
@@ -66,12 +66,18 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
                 .FirstOrDefaultAsync(x => x.PlanEstrategicoId == planId);
         }
 
-        public Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null)
+        public Task<bool> ExistsByEntidadPeriodoAsync(string entidad, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null)
         {
-            var q = _context.PlanesEstrategicos.Where(x =>
-                x.Entidad == entidad &&
-                x.PeriodoInicio == periodoInicio &&
-                x.PeriodoFin == periodoFin);
+            var q = _context.PlanesEstrategicos.Where(x => x.Entidad == entidad);
+
+            if (periodoPlanificacionId.HasValue)
+            {
+                q = q.Where(x => x.PeriodoPlanificacionId == periodoPlanificacionId.Value);
+            }
+            else
+            {
+                q = q.Where(x => x.PeriodoInicio == periodoInicio && x.PeriodoFin == periodoFin);
+            }
 
             if (excludeId.HasValue)
             {
@@ -114,6 +120,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
                 q = q.Where(x => x.Entidad.Contains(filtro));
             }
 
+            if (query.PeriodoPlanificacionId.HasValue)
+            {
+                q = q.Where(x => x.PeriodoPlanificacionId == query.PeriodoPlanificacionId.Value);
+            }
+
             if (query.PeriodoInicio.HasValue)
             {
                 q = q.Where(x => x.PeriodoInicio >= query.PeriodoInicio.Value);
@@ -133,6 +144,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
             return sortBy.ToLowerInvariant() switch
             {
                 "entidad" => desc ? q.OrderByDescending(x => x.Entidad) : q.OrderBy(x => x.Entidad),
+                "periodoplanificacionid" => desc ? q.OrderByDescending(x => x.PeriodoPlanificacionId) : q.OrderBy(x => x.PeriodoPlanificacionId),
                 "periodoinicio" => desc ? q.OrderByDescending(x => x.PeriodoInicio) : q.OrderBy(x => x.PeriodoInicio),
                 "periodofin" => desc ? q.OrderByDescending(x => x.PeriodoFin) : q.OrderBy(x => x.PeriodoFin),
                 "estado" => desc ? q.OrderByDescending(x => x.Estado) : q.OrderBy(x => x.Estado),

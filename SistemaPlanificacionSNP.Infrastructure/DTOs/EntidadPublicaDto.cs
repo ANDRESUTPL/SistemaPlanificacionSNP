@@ -6,10 +6,13 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class EntidadPublicaDto
     {
         public int EntidadPublicaId { get; set; }
+        public string Codigo { get; set; } = null!;
         public string Nombre { get; set; } = null!;
         public string Sigla { get; set; } = null!;
         public string Tipo { get; set; } = null!;
         public string NivelGobierno { get; set; } = null!;
+        public string Mision { get; set; } = string.Empty;
+        public int PeriodoPlanificacionId { get; set; }
         public bool Activa { get; set; }
         public DateTime FechaCreacion { get; set; }
     }
@@ -19,9 +22,12 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     /// </summary>
     public class EntidadPublicaCreateUpdateDto
     {
+        public string? Codigo { get; set; }
         public string Nombre { get; set; } = null!;
         public string Sigla { get; set; } = null!;
         public string Tipo { get; set; } = null!;
         public string NivelGobierno { get; set; } = null!;
+        public string? Mision { get; set; }
+        public int? PeriodoPlanificacionId { get; set; }
     }
 }

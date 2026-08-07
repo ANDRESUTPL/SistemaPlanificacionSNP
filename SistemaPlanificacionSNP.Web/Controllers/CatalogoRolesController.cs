@@ -250,11 +250,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     return authRedirect;
                 }
 
-                var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                TempData["Warning"] = apiError
-                    ?? (response == null
-                        ? "No fue posible conectar con el servidor. Intenta nuevamente."
-                        : ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible eliminar el rol."));
+                var message = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible eliminar el rol.");
+                TempData["Warning"] = message;
             }
             catch (Exception ex)
             {
@@ -292,8 +289,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 }
                 else
                 {
-                    var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                    TempData["Warning"] = apiError ?? "No fue posible desactivar el rol.";
+                    var message = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible desactivar el rol.");
+                    TempData["Warning"] = message;
                 }
             }
             catch (Exception ex)
@@ -438,7 +435,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
             if (response.StatusCode == HttpStatusCode.Forbidden)
             {
-                ModelState.AddModelError(string.Empty, "No cuentas con permisos para realizar esta accion.");
+                ModelState.AddModelError(string.Empty, ApiHttpErrorHelper.ForbiddenDefaultMessage);
                 return;
             }
 

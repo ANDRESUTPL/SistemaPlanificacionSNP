@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Models;
 using SistemaPlanificacionSNP.Web.Services;
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
@@ -12,11 +15,13 @@ namespace SistemaPlanificacionSNP.Web.Controllers
     public class UsuariosController : Controller
     {
         private readonly IApiClient _apiClient;
+        private readonly IAuthService _authService;
         private readonly ILogger<UsuariosController> _logger;
 
-        public UsuariosController(IApiClient apiClient, ILogger<UsuariosController> logger)
+        public UsuariosController(IApiClient apiClient, IAuthService authService, ILogger<UsuariosController> logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -281,6 +286,15 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
                 if (response?.IsSuccessStatusCode == true)
                 {
+                    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (int.TryParse(currentUserId, out var loggedUserId) && loggedUserId == model.UsuarioId)
+                    {
+                        _authService.ClearAuthData();
+                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        TempData["Warning"] = "Tus roles han cambiado. Inicia sesión nuevamente para cargar tus permisos actualizados.";
+                        return RedirectToAction("Login", "Account");
+                    }
+
                     if (IsAjaxRequest())
                     {
                         return Json(new { success = true, message = "Roles asignados exitosamente." });
@@ -301,7 +315,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 }
                 else if (response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    ModelState.AddModelError(string.Empty, "No cuentas con permisos para actualizar roles de usuario.");
+                    ModelState.AddModelError(string.Empty, ApiHttpErrorHelper.ForbiddenDefaultMessage);
                 }
                 else if ((int)response.StatusCode >= 500)
                 {
@@ -309,10 +323,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 }
                 else
                 {
-                    var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                    ModelState.AddModelError(
-                        string.Empty,
-                        apiError ?? ApiHttpErrorHelper.BuildStatusMessage(response.StatusCode, "No fue posible actualizar los roles del usuario."));
+                    var message = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar los roles del usuario.");
+                    ModelState.AddModelError(string.Empty, message);
                 }
             }
             catch (Exception ex)
@@ -368,11 +380,18 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     return authRedirect;
                 }
 
-                var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-                TempData["Warning"] = apiError
-                    ?? (response == null
-                        ? "No fue posible conectar con el servidor. Intenta nuevamente."
-                        : BuildDetailedHttpStatusMessage(response.StatusCode, "No fue posible eliminar el usuario."));
+                if (response?.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    TempData["Warning"] = ApiHttpErrorHelper.ForbiddenDefaultMessage;
+                }
+                else
+                {
+                    var apiError = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
+                    TempData["Warning"] = apiError
+                        ?? (response == null
+                            ? "No fue posible conectar con el servidor. Intenta nuevamente."
+                            : BuildDetailedHttpStatusMessage(response.StatusCode, "No fue posible eliminar el usuario."));
+                }
             }
             catch (Exception ex)
             {
@@ -636,7 +655,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
             if (response.StatusCode == HttpStatusCode.Forbidden)
             {
-                ModelState.AddModelError(string.Empty, "No cuentas con permisos para realizar esta accion.");
+                ModelState.AddModelError(string.Empty, ApiHttpErrorHelper.ForbiddenDefaultMessage);
                 return;
             }
 

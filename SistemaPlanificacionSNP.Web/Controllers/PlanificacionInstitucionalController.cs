@@ -79,6 +79,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		{
 			var model = new PlanEstrategicoCreateViewModel();
 			await CargarEntidadesDisponibles(model);
+			await CargarPeriodosDisponibles(model);
 			return View(model);
 		}
 
@@ -86,20 +87,40 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearPlan(PlanEstrategicoCreateViewModel model)
 		{
-			if (model.PeriodoInicio > model.PeriodoFin)
-			{
-				ModelState.AddModelError(nameof(model.PeriodoFin), "El año de fin debe ser mayor o igual al de inicio.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				await CargarEntidadesDisponibles(model);
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
+
+			await CargarPeriodosDisponibles(model);
+
+			var periodoSeleccionado = model.PeriodosDisponibles
+				.FirstOrDefault(p => p.PeriodoPlanificacionId == model.PeriodoPlanificacionId);
+
+			if (periodoSeleccionado == null)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado no es válido.");
+				await CargarEntidadesDisponibles(model);
+				await CargarPeriodosDisponibles(model);
+				return View(model);
+			}
+
+			model.PeriodoInicio = periodoSeleccionado.FechaInicio.Year;
+			model.PeriodoFin = periodoSeleccionado.FechaFin.Year;
+
+			if (model.PeriodoInicio > model.PeriodoFin)
+			{
+				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado tiene un rango de fechas inválido.");
+				await CargarEntidadesDisponibles(model);
+				await CargarPeriodosDisponibles(model);
 				return View(model);
 			}
 
 			try
 			{
-				var payload = new { model.Entidad, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
+				var payload = new { model.Entidad, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
 				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/planesestrategicos/crear", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -108,8 +129,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					return RedirectToAction(nameof(Index));
 				}
 
-				var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-				ModelState.AddModelError(string.Empty, errorMsg ?? "No fue posible crear el Plan Institucional.");
+				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible crear el Plan Institucional.");
+				ModelState.AddModelError(string.Empty, errorMsg);
 			}
 			catch (Exception ex)
 			{
@@ -118,6 +139,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			await CargarEntidadesDisponibles(model);
+			await CargarPeriodosDisponibles(model);
 			return View(model);
 		}
 
@@ -172,8 +194,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				}
 				else
 				{
-					var errorMsg = await ApiHttpErrorHelper.TryExtractApiMessageAsync(response);
-					TempData["Warning"] = errorMsg ?? "No se pudo registrar el proyecto de inversión.";
+					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo registrar el proyecto de inversión.");
+					TempData["Warning"] = errorMsg;
 				}
 			}
 			catch (Exception ex)
@@ -200,6 +222,27 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			catch
 			{
 				// Ignorar error, lista quedará vacía
+			}
+		}
+
+		private async Task CargarPeriodosDisponibles(PlanEstrategicoCreateViewModel model)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var json = await response.Content.ReadAsStringAsync();
+					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+					model.PeriodosDisponibles = (envelope?.Data ?? new List<PeriodoPlanificacionApiDto>())
+						.Where(p => p.Activo)
+						.OrderByDescending(p => p.FechaInicio)
+						.ToList();
+				}
+			}
+			catch
+			{
+				model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
 			}
 		}
 	}

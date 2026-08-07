@@ -61,17 +61,28 @@
                             <span asp-validation-for="Entidad" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                         </div>
 
-                        <div class="row g-4 mb-4">
-                            <div class="col-12 col-md-6">
-                                <label asp-for="PeriodoInicio" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Año de Inicio <span class="text-danger">*</span></label>
-                                <input asp-for="PeriodoInicio" class="form-control form-control-lg" type="number" />
-                                <span asp-validation-for="PeriodoInicio" class="text-danger text-xs fw-medium mt-1 d-block"></span>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label asp-for="PeriodoFin" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Año de Fin <span class="text-danger">*</span></label>
-                                <input asp-for="PeriodoFin" class="form-control form-control-lg" type="number" />
-                                <span asp-validation-for="PeriodoFin" class="text-danger text-xs fw-medium mt-1 d-block"></span>
-                            </div>
+                        <div class="mb-4">
+                            <label asp-for="PeriodoPlanificacionId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Período de Planificación <span class="text-danger">*</span></label>
+                            @if (Model.PeriodosDisponibles.Count > 0)
+                            {
+                                <select asp-for="PeriodoPlanificacionId" class="form-select form-select-lg" id="periodoSelect">
+                                    <option value="">-- Seleccione el período --</option>
+                                    @foreach (var periodo in Model.PeriodosDisponibles)
+                                    {
+                                        <option value="@periodo.PeriodoPlanificacionId" data-inicio="@periodo.FechaInicio.Year" data-fin="@periodo.FechaFin.Year">
+                                            @periodo.Nombre (@periodo.FechaInicio.Year - @periodo.FechaFin.Year)
+                                        </option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mb-0">
+                                    No existen períodos activos. Crea primero un período en Parametrización > Instituciones.
+                                </div>
+                            }
+                            <span asp-validation-for="PeriodoPlanificacionId" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                            <div class="form-text" id="periodoPreview">Seleccione un período para derivar automáticamente los años del PEI.</div>
                         </div>
 
                         <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center rounded-3 p-3">
@@ -99,6 +110,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
+        function actualizarResumenPeriodo() {
+            const select = document.getElementById('periodoSelect');
+            const preview = document.getElementById('periodoPreview');
+            if (!select || !preview) return;
+
+            const option = select.options[select.selectedIndex];
+            const inicio = option?.getAttribute('data-inicio');
+            const fin = option?.getAttribute('data-fin');
+
+            if (inicio && fin) {
+                preview.textContent = `Rango derivado del período: ${inicio} - ${fin}.`;
+                return;
+            }
+
+            preview.textContent = 'Seleccione un período para derivar automáticamente los años del PEI.';
+        }
+
+        document.getElementById('periodoSelect')?.addEventListener('change', actualizarResumenPeriodo);
+        actualizarResumenPeriodo();
+
         document.getElementById('formCreatePEI').addEventListener('submit', function(e) {
             if ($(this).valid()) {
                 const btn = document.getElementById('btnSubmit');

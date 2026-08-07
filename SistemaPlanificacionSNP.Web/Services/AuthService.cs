@@ -1,3 +1,8 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace SistemaPlanificacionSNP.Web.Services
@@ -21,14 +26,18 @@ namespace SistemaPlanificacionSNP.Web.Services
     public class AuthService : IAuthService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly string _apiGatewayBaseUrl;
         private readonly ILogger<AuthService> _logger;
         private const string AccessTokenKey = "accessToken";
         private const string RefreshTokenKey = "refreshToken";
         private const string UserNameKey = "userName";
 
-        public AuthService(IHttpContextAccessor httpContextAccessor, ILogger<AuthService> logger)
+        public AuthService(IHttpContextAccessor httpContextAccessor, IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+            _apiGatewayBaseUrl = configuration["ApiGateway:BaseUrl"] ?? "https://localhost:52555";
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -46,8 +55,87 @@ namespace SistemaPlanificacionSNP.Web.Services
 
         public async Task<bool> RefreshTokenAsync()
         {
-            // Implementado en AccountController
-            return await Task.FromResult(false);
+            var context = _httpContextAccessor.HttpContext;
+            if (context == null)
+            {
+                return false;
+            }
+
+            var accessToken = GetAccessToken();
+            var refreshToken = GetRefreshToken();
+
+            if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return false;
+            }
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(_apiGatewayBaseUrl);
+
+                var response = await client.PostAsJsonAsync("/api/auth/refresh-token", new
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                });
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return false;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return false;
+                }
+
+                var payload = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (!payload.TryGetProperty("data", out var data))
+                {
+                    return false;
+                }
+
+                var newAccessToken = data.GetProperty("accessToken").GetString();
+                var newRefreshToken = data.GetProperty("refreshToken").GetString();
+
+                if (string.IsNullOrWhiteSpace(newAccessToken) || string.IsNullOrWhiteSpace(newRefreshToken))
+                {
+                    return false;
+                }
+
+                var principal = BuildPrincipalFromJwt(newAccessToken);
+                if (principal == null)
+                {
+                    return false;
+                }
+
+                var userName = principal.FindFirstValue(ClaimTypes.Name)
+                    ?? principal.FindFirstValue("unique_name")
+                    ?? GetUserName()
+                    ?? "Usuario";
+
+                SaveAuthData(newAccessToken, newRefreshToken, userName);
+
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = GetTokenExpiration(newAccessToken)
+                };
+
+                await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Refresh token failed: {ex.Message}", ex);
+                return false;
+            }
         }
 
         public bool IsAuthenticated()
@@ -103,8 +191,8 @@ namespace SistemaPlanificacionSNP.Web.Services
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = context.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             };
 
@@ -114,8 +202,8 @@ namespace SistemaPlanificacionSNP.Web.Services
             var userCookieOptions = new CookieOptions
             {
                 HttpOnly = false,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = context.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddDays(7)
             };
             
@@ -130,6 +218,34 @@ namespace SistemaPlanificacionSNP.Web.Services
             context.Response.Cookies.Delete(AccessTokenKey);
             context.Response.Cookies.Delete(RefreshTokenKey);
             context.Response.Cookies.Delete(UserNameKey);
+        }
+
+        private static ClaimsPrincipal? BuildPrincipalFromJwt(string accessToken)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(accessToken);
+
+            var claims = token.Claims
+                .Where(c => !string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (!claims.Any())
+            {
+                return null;
+            }
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            return new ClaimsPrincipal(identity);
+        }
+
+        private static DateTimeOffset GetTokenExpiration(string accessToken)
+        {
+            var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+            return token.Payload.Expiration.HasValue
+                ? DateTimeOffset.FromUnixTimeSeconds(token.Payload.Expiration.Value)
+                : DateTimeOffset.UtcNow.AddHours(1);
         }
     }
 }

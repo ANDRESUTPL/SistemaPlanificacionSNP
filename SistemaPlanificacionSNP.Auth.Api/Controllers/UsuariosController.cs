@@ -384,6 +384,10 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                     rolesNuevos.Add(rol);
                 }
 
+                // Obliga a renovar sesión para que nuevos permisos se reflejen en claims JWT.
+                usuario.RefreshToken = null;
+                usuario.RefreshTokenExpiracion = null;
+
                 await _unitOfWork.Usuarios.UpdateAsync(usuario);
                 await _unitOfWork.SaveChangesAsync();
 
