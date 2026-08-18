@@ -37,3 +37,71 @@ BEGIN
     );
 END;
 GO
+
+/****** Object:  Table [dbo].[EntidadesPublicas]    Script Date: 13/8/2026 20:21:14 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[EntidadesPublicas](
+	[EntidadPublicaId] [int] IDENTITY(1,1) NOT NULL,
+	[Codigo] [nvarchar](50) NOT NULL,
+	[Nombre] [nvarchar](200) NOT NULL,
+	[Sigla] [nvarchar](50) NOT NULL,
+	[Mision] [nvarchar](max) NULL,
+	[PeriodoPlanificacionId] [int] NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[FechaCreacion] [datetime2](7) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[EntidadPublicaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[Codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[EntidadesPublicas] ADD  CONSTRAINT [DF_Param_Entidades_Activo]  DEFAULT ((1)) FOR [Activo]
+GO
+
+ALTER TABLE [dbo].[EntidadesPublicas] ADD  CONSTRAINT [DF_Param_Entidades_FechaCreacion]  DEFAULT (sysutcdatetime()) FOR [FechaCreacion]
+GO
+
+ALTER TABLE [dbo].[EntidadesPublicas]  WITH CHECK ADD  CONSTRAINT [FK_Param_Entidades_Periodos] FOREIGN KEY([PeriodoPlanificacionId])
+REFERENCES [dbo].[PeriodosPlanificacion] ([PeriodoPlanificacionId])
+GO
+
+ALTER TABLE [dbo].[EntidadesPublicas] CHECK CONSTRAINT [FK_Param_Entidades_Periodos]
+GO
+
+
+CREATE TABLE [dbo].[PeriodosPlanificacion](
+	[PeriodoPlanificacionId] [int] IDENTITY(1,1) NOT NULL,
+	[Codigo] [nvarchar](50) NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[FechaInicio] [datetime2](7) NOT NULL,
+	[FechaFin] [datetime2](7) NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[FechaCreacion] [datetime2](7) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[PeriodoPlanificacionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED 
+(
+	[Codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[PeriodosPlanificacion] ADD  CONSTRAINT [DF_Param_Periodos_Activo]  DEFAULT ((1)) FOR [Activo]
+GO
+
+ALTER TABLE [dbo].[PeriodosPlanificacion] ADD  CONSTRAINT [DF_Param_Periodos_FechaCreacion]  DEFAULT (sysutcdatetime()) FOR [FechaCreacion]
+GO
+
+

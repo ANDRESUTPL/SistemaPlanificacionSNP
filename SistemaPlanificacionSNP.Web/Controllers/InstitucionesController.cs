@@ -50,7 +50,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				return RedirectToAccessDenied("No cuentas con permisos para visualizar Entidades Públicas.");
 			}
 
-			model.PuedeLeer = true;
+			model.PuedeLeer = HasPermission(ClaimLectura);
 			model.PuedeCrear = HasPermission(ClaimCreacion);
 			model.PuedeEditar = HasPermission(ClaimEdicion);
 			model.PuedeEliminar = HasPermission(ClaimEliminacion);

@@ -37,7 +37,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				return RedirectToAccessDenied("No cuentas con permisos para visualizar Planes Nacionales.");
 			}
 
-			model.PuedeLeer = true;
+			model.PuedeLeer = HasPermission(ClaimLectura);
 			model.PuedeCrear = HasPermission(ClaimCreacion);
 			model.PuedeEditar = HasPermission(ClaimEdicion);
 			model.PuedeEliminar = HasPermission(ClaimEliminacion);
@@ -587,6 +587,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         [HttpGet("exportar")]
         public async Task<IActionResult> ExportarExcel(string? buscar)
         {
+            if (!HasPermission(ClaimLectura))
+            {
+                return RedirectToAccessDenied("No cuentas con permisos para exportar Planes Nacionales.");
+            }
+
             try
             {
                 // Obtenemos los datos desde la API
@@ -679,7 +684,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				return true;
 			}
 
-			return User.IsInRole("Administrador");
+			// El JWT emite el rol como "role" y como el URI largo; IsInRole solo cubre el RoleClaimType configurado.
+			return User.IsInRole("Administrador") || User.Claims.Any(c =>
+				(string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+				 || string.Equals(c.Type, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role", StringComparison.OrdinalIgnoreCase))
+				&& string.Equals(c.Value, "Administrador", StringComparison.OrdinalIgnoreCase));
 		}
     }
 }

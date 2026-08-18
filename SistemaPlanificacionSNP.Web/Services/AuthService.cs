@@ -236,7 +236,8 @@ namespace SistemaPlanificacionSNP.Web.Services
                 return null;
             }
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            // El JWT emite los roles con el tipo corto "role"; sin esto User.IsInRole no los encuentra.
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, "role");
             return new ClaimsPrincipal(identity);
         }
 

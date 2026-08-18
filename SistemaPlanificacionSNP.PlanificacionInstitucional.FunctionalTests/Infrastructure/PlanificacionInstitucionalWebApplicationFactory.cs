@@ -1,0 +1,8 @@
+using SistemaPlanificacionSNP.Infrastructure.Data;
+using SistemaPlanificacionSNP.TestUtilities.Infrastructure;
+
+namespace SistemaPlanificacionSNP.PlanificacionInstitucional.FunctionalTests.Infrastructure;
+
+public sealed class PlanificacionInstitucionalWebApplicationFactory : MsSqlWebApplicationFactoryBase<SistemaPlanificacionSNP.PlanificacionInstitucional.Api.Program, PlanificacionInstitucionalDbContext>
+{
+}

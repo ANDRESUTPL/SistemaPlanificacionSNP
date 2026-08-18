@@ -1,0 +1,8 @@
+using SistemaPlanificacionSNP.Infrastructure.Data;
+using SistemaPlanificacionSNP.TestUtilities.Infrastructure;
+
+namespace SistemaPlanificacionSNP.MacroPlanificacion.FunctionalTests.Infrastructure;
+
+public sealed class MacroPlanificacionWebApplicationFactory : MsSqlWebApplicationFactoryBase<Program, MacroPlanificacionDbContext>
+{
+}

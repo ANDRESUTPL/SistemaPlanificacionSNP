@@ -147,7 +147,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                             && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            // El JWT emite los roles con el tipo corto "role"; sin esto User.IsInRole no los encuentra.
+            return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, "role");
         }
 
         [HttpGet]
