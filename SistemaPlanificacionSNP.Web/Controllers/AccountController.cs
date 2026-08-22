@@ -218,8 +218,9 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     model.PasswordConfirmar
                 };
 
-                var response = await _apiClient.SendAsync(HttpMethod.Post, ConstanteAPI.URL_AUT + "/api/auth/cambiar-password", changeDto);
-                if (response == null)
+				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/auth/cambiar-password", changeDto);
+
+				if (response == null)
                 {
                     ModelState.AddModelError(string.Empty, "No fue posible conectar con el servidor. Intenta nuevamente.");
                     return View(model);
