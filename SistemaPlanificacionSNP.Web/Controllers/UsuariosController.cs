@@ -401,8 +401,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        private async Task<ApiCallResult<List<UsuarioApiDto>>> GetUsuariosAsync()
+		private async Task<ApiCallResult<List<RolApiDto>>> GetRolesAsync()
+		{
+			return await GetFromApiAsync<List<RolApiDto>>("/api/roles", "No fue posible cargar el catálogo de roles.");
+		}
+		private async Task<ApiCallResult<List<UsuarioApiDto>>> GetUsuariosAsync()
         {
             return await GetFromApiAsync<List<UsuarioApiDto>>(
                 "/api/usuarios/con-roles",
@@ -501,25 +504,31 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
             var usuario = usuarioResult.Data;
 
-            var usuariosResult = await GetUsuariosAsync();
-            if (!usuariosResult.IsSuccess || usuariosResult.Data == null)
-            {
-                return ApiCallResult<RolesUsuariosEditViewModel>.Failure(
-                    usuariosResult.StatusCode,
-                    usuariosResult.ErrorMessage ?? "No fue posible cargar el catalogo de usuarios/roles.");
-            }
+			var rolesResult = await GetRolesAsync();
+			if (!rolesResult.IsSuccess || rolesResult.Data == null)
+			{
+				return ApiCallResult<RolesUsuariosEditViewModel>.Failure(
+					rolesResult.StatusCode,
+					rolesResult.ErrorMessage ?? "No fue posible cargar el catálogo de roles.");
+			}
 
-            var usuarios = usuariosResult.Data;
-            var rolesDisponibles = BuildRoleOptions(usuarios);
+			var rolesCatalogoApi = rolesResult.Data;
 
-            var roleCatalog = usuarios
-                .Where(u => u != null)
-                .SelectMany(u => u.Roles ?? Enumerable.Empty<RolApiDto>())
-                .Where(r => r != null && r.RolId > 0)
-                .GroupBy(r => r.RolId)
-                .Select(g => g.First())
-                .ToDictionary(r => r.RolId, r => r);
+			var rolesDisponibles = rolesCatalogoApi
+				.Where(r => r != null && r.Activo)
+				.OrderBy(r => r.Nombre)
+				.Select(r => new RolOptionViewModel
+				{
+					RolId = r.RolId,
+					Nombre = r.Nombre ?? string.Empty
+				})
+				.ToList();
 
+			var roleCatalog = rolesCatalogoApi
+				.Where(r => r != null && r.RolId > 0)
+				.ToDictionary(r => r.RolId, r => r);
+
+			
             foreach (var rol in usuario.Roles ?? Enumerable.Empty<RolApiDto>())
             {
                 if (rol != null && !roleCatalog.ContainsKey(rol.RolId))
@@ -611,28 +620,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 .ToList();
         }
 
-        private static List<RolOptionViewModel> BuildRoleOptions(IEnumerable<UsuarioApiDto> usuarios)
-        {
-            if (usuarios == null)
-            {
-                return new List<RolOptionViewModel>();
-            }
-
-            return usuarios
-                .Where(u => u != null)
-                .SelectMany(u => u.Roles ?? Enumerable.Empty<RolApiDto>())
-                .Where(r => r != null && r.RolId > 0 && r.Activo)
-                .GroupBy(r => r.RolId)
-                .Select(g => g.First())
-                .OrderBy(r => r.Nombre)
-                .Select(r => new RolOptionViewModel
-                {
-                    RolId = r.RolId,
-                    Nombre = r.Nombre ?? string.Empty
-                })
-                .ToList();
-        }
-
+      
         private bool IsAjaxRequest()
         {
             return string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
