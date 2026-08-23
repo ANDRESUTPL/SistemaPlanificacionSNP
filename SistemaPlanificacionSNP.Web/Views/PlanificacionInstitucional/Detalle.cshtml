@@ -89,6 +89,7 @@
                                         <th class="border-0 text-xs text-muted fw-bold ps-4">CÓDIGO / PROYECTO</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-end">MONTO ($)</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-center">ESTADO</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">RESPALDOS</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-center">ACCIONES</th>
                                     </tr>
                                 </thead>
@@ -102,6 +103,9 @@
                                             </td>
                                             <td class="text-end fw-bold text-secondary">
                                                 @proy.Monto.ToString("N2")
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-light text-dark border"><i class="fas fa-paperclip me-1 text-muted"></i>@proy.RespaldosEjecucion.Count</span>
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-light text-dark border">@proy.Estado</span>
@@ -131,7 +135,7 @@
                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-file-invoice-dollar me-2 text-primary"></i>Formular Proyecto de Inversión</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="/planificacion/institucional/proyectos/crear">
+            <form method="post" action="/planificacion/institucional/proyectos/crear" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="PlanEstrategicoId" value="@nuevoProyecto.PlanEstrategicoId" />
 
@@ -148,6 +152,11 @@
                         <div class="col-12">
                             <label class="form-label fw-medium text-sm">Nombre Oficial del Proyecto</label>
                             <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Construcción y Equipamiento de Subcentro de Salud..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium text-sm">Respaldos de ejecución</label>
+                            <input type="file" name="RespaldosEjecucion" class="form-control" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
+                            <div class="form-text">Puede adjuntar varios archivos de hasta 10 MB cada uno.</div>
                         </div>
                     </div>
                 </div>

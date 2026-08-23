@@ -13,12 +13,14 @@ GO
 
 PRINT 'Insertando Revisiones Técnicas...';
 
+-- IDs alineados con "4 seed_data_planificaci_n_institucional.sql":
+-- PEI 1 = MSP (entidad 1, proyectos 1 y 2), PEI 2 = MINEDUC (entidad 2, proyecto 3).
 SET IDENTITY_INSERT [dbo].[Revisiones] ON;
-INSERT INTO [dbo].[Revisiones] ([RevisionId], [CodigoRevision], [Modulo], [Estado], [FechaRevision], [Observaciones])
+INSERT INTO [dbo].[Revisiones] ([RevisionId], [CodigoRevision], [Modulo], [PlanEstrategicoId], [ProyectoInversionId], [EntidadPublicaId], [EntidadNombre], [CodigoProyecto], [Estado], [FechaRevision], [Observaciones])
 VALUES 
-(1, 'REV-PEI-MSP-2026', 'Plan Estratégico Ministerio de Salud Pública', 'Aprobada', DATEADD(DAY, -15, SYSUTCDATETIME()), 'El PEI cumple con los lineamientos del PND.'),
-(2, 'REV-CUP-MINEDUC-001', 'Proyecto: Laboratorios Escuelas Rurales', 'Pendiente', SYSUTCDATETIME(), 'A la espera de justificación técnica del presupuesto.'),
-(3, 'REV-PEI-MIES-2026', 'Plan Estratégico MIES', 'Rechazada', DATEADD(DAY, -5, SYSUTCDATETIME()), 'Falta alinear los programas al EJE-1 del PND.');
+(1, 'REV-CUP-MSP-2026-001', 'MSP · PEI #1 · CUP-MSP-2026-001', 1, 1, 1, 'Ministerio de Salud Pública (MSP)', 'CUP-MSP-2026-001', 'Aprobada', DATEADD(DAY, -15, SYSUTCDATETIME()), 'El proyecto hospitalario cumple con los lineamientos del PND.'),
+(2, 'REV-CUP-MINEDUC-001', 'MINEDUC · PEI #2 · CUP-MINEDUC-2026-001', 2, 3, 2, 'Ministerio de Educación (MINEDUC)', 'CUP-MINEDUC-2026-001', 'Pendiente', SYSUTCDATETIME(), 'A la espera de justificación técnica del presupuesto.'),
+(3, 'REV-CUP-MSP-2026-002', 'MSP · PEI #1 · CUP-MSP-2026-002', 1, 2, 1, 'Ministerio de Salud Pública (MSP)', 'CUP-MSP-2026-002', 'Rechazada', DATEADD(DAY, -5, SYSUTCDATETIME()), 'Falta alinear el plan de vacunación al EJE-2 del PND.');
 SET IDENTITY_INSERT [dbo].[Revisiones] OFF;
 
 PRINT 'Insertando Auditorías...';

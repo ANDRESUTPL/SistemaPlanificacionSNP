@@ -11,6 +11,17 @@ public partial class Revisione
 
     public string Modulo { get; set; } = null!;
 
+    public int? PlanEstrategicoId { get; set; }
+
+    public int? ProyectoInversionId { get; set; }
+
+    public int? EntidadPublicaId { get; set; }
+
+    // Snapshot: ControlCalidad vive en otra base, no puede unir contra PlanificacionInstitucional.
+    public string? EntidadNombre { get; set; }
+
+    public string? CodigoProyecto { get; set; }
+
     public string Estado { get; set; } = null!;
 
     public DateTime FechaRevision { get; set; }

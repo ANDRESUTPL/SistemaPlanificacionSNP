@@ -59,9 +59,34 @@
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Modulo" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Módulo / Objeto de Revisión <span class="text-danger">*</span></label>
-                            <input asp-for="Modulo" class="form-control form-control-lg" placeholder="Ej. Plan Estratégico Ministerio de Salud" autocomplete="off" />
-                            <span asp-validation-for="Modulo" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                            <label asp-for="PlanEstrategicoId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Plan Estratégico / PEI <span class="text-danger">*</span></label>
+                            @if (Model.PlanesDisponibles.Any())
+                            {
+                                <select asp-for="PlanEstrategicoId" class="form-select form-select-lg" required>
+                                    <option value="">-- Seleccione un PEI --</option>
+                                    @foreach (var plan in Model.PlanesDisponibles)
+                                    {
+                                        if (plan.PlanEstrategicoId == Model.PlanEstrategicoId)
+                                        {
+                                            <option value="@plan.PlanEstrategicoId" selected>@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@plan.PlanEstrategicoId">@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <select asp-for="PlanEstrategicoId" class="form-select form-select-lg" disabled>
+                                    <option value="">No hay PEIs disponibles para seleccionar</option>
+                                </select>
+                                <div class="form-text text-warning mt-2">
+                                    No existen planes estratégicos cargados. Primero debe registrar al menos un PEI para poder asociar la revisión.
+                                </div>
+                            }
+                            <span asp-validation-for="PlanEstrategicoId" class="text-danger text-xs fw-medium mt-1 d-block">Debe seleccionar un PEI.</span>
                         </div>
 
                         <div class="mb-4">

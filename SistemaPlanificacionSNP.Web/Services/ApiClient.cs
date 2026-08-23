@@ -14,6 +14,7 @@ namespace SistemaPlanificacionSNP.Web.Services
         Task<bool> DeleteAsync(string endpoint);
         Task<string?> GetStringAsync(string endpoint);
         Task<HttpResponseMessage?> SendAsync(HttpMethod method, string endpoint, object? data = null);
+        Task<HttpResponseMessage?> SendMultipartAsync(string endpoint, MultipartFormDataContent content);
     }
 
     public class ApiClient : IApiClient
@@ -55,6 +56,25 @@ namespace SistemaPlanificacionSNP.Web.Services
             catch (Exception ex)
             {
                 _logger.LogError($"Error in SendAsync: {ex.Message}", ex);
+                return null;
+            }
+        }
+
+        public async Task<HttpResponseMessage?> SendMultipartAsync(string endpoint, MultipartFormDataContent content)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = content };
+                var token = _authService.GetAccessToken();
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+                return await _httpClient.SendAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in SendMultipartAsync: {ex.Message}", ex);
                 return null;
             }
         }

@@ -5,6 +5,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public int RevisionId { get; set; }
         public string CodigoRevision { get; set; } = null!;
         public string Modulo { get; set; } = null!;
+        public int? PlanEstrategicoId { get; set; }
+        public int? ProyectoInversionId { get; set; }
+        public int? EntidadPublicaId { get; set; }
+        public string? EntidadNombre { get; set; }
+        public string? CodigoProyecto { get; set; }
         public string Estado { get; set; } = null!;
         public DateTime FechaRevision { get; set; }
         public string? Observaciones { get; set; }
@@ -15,6 +20,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public string CodigoRevision { get; set; } = null!;
         public string Modulo { get; set; } = null!;
+        public int? PlanEstrategicoId { get; set; }
+        public int? ProyectoInversionId { get; set; }
+        public int? EntidadPublicaId { get; set; }
+        public string? EntidadNombre { get; set; }
+        public string? CodigoProyecto { get; set; }
         public string Estado { get; set; } = null!;
         public DateTime? FechaRevision { get; set; }
         public string? Observaciones { get; set; }
@@ -23,6 +33,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class RevisioneUpdateDto
     {
         public string? Modulo { get; set; }
+        public int? PlanEstrategicoId { get; set; }
+        public int? ProyectoInversionId { get; set; }
+        public int? EntidadPublicaId { get; set; }
+        public string? EntidadNombre { get; set; }
+        public string? CodigoProyecto { get; set; }
         public string? Estado { get; set; }
         public DateTime? FechaRevision { get; set; }
         public string? Observaciones { get; set; }
@@ -57,6 +72,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public string? Estado { get; set; }
         public string? Modulo { get; set; }
+        public int? PlanEstrategicoId { get; set; }
+        public int? ProyectoInversionId { get; set; }
+        public int? EntidadPublicaId { get; set; }
         public string? CodigoRevision { get; set; }
         public DateTime? FechaDesde { get; set; }
         public DateTime? FechaHasta { get; set; }

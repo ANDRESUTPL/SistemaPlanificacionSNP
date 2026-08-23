@@ -46,6 +46,11 @@ public class ControlCalidadApiIntegrationTests : IClassFixture<ControlCalidadApi
         {
             CodigoRevision = $"REV-INT-{Guid.NewGuid():N}"[..16],
             Modulo = "Planificacion",
+            PlanEstrategicoId = 77,
+            ProyectoInversionId = 501,
+            EntidadPublicaId = 9,
+            EntidadNombre = "Entidad Integracion",
+            CodigoProyecto = "CUP-INT-001",
             Estado = "Pendiente",
             Observaciones = "Integracion E2E"
         };
@@ -60,6 +65,9 @@ public class ControlCalidadApiIntegrationTests : IClassFixture<ControlCalidadApi
 
         var revisionId = createdRevisionBody.Data!.RevisionId;
         revisionId.Should().BeGreaterThan(0);
+        createdRevisionBody.Data.PlanEstrategicoId.Should().Be(77);
+        createdRevisionBody.Data.ProyectoInversionId.Should().Be(501);
+        createdRevisionBody.Data.CodigoProyecto.Should().Be("CUP-INT-001");
 
         var getRevisionResponse = await client.GetAsync($"/api/revisiones/{revisionId}");
         getRevisionResponse.EnsureSuccessStatusCode();
@@ -69,6 +77,27 @@ public class ControlCalidadApiIntegrationTests : IClassFixture<ControlCalidadApi
         getRevisionBody!.Success.Should().BeTrue();
         getRevisionBody.Data.Should().NotBeNull();
         getRevisionBody.Data!.CodigoRevision.Should().Be(createRevisionPayload.CodigoRevision);
+        getRevisionBody.Data.PlanEstrategicoId.Should().Be(77);
+        getRevisionBody.Data.ProyectoInversionId.Should().Be(501);
+
+        var updateRevisionPayload = new RevisioneUpdateDto
+        {
+            Modulo = "Planificacion Actualizada",
+            PlanEstrategicoId = 88,
+            ProyectoInversionId = 502,
+            Estado = "Aprobada",
+            Observaciones = "Integracion E2E actualizada"
+        };
+
+        var updateRevisionResponse = await client.PutAsJsonAsync($"/api/revisiones/{revisionId}", updateRevisionPayload);
+        updateRevisionResponse.EnsureSuccessStatusCode();
+
+        var updatedRevisionBody = await updateRevisionResponse.Content.ReadFromJsonAsync<ApiResponse<RevisioneDto>>();
+        updatedRevisionBody.Should().NotBeNull();
+        updatedRevisionBody!.Success.Should().BeTrue();
+        updatedRevisionBody.Data.Should().NotBeNull();
+        updatedRevisionBody.Data!.PlanEstrategicoId.Should().Be(88);
+        updatedRevisionBody.Data.ProyectoInversionId.Should().Be(502);
 
         var createAuditoriaPayload = new AuditoriaCreateDto
         {

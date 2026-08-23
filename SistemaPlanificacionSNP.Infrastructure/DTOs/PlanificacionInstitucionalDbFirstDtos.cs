@@ -18,11 +18,13 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public int PlanEstrategicoId { get; set; }
         public string Entidad { get; set; } = string.Empty;
         public int? EntidadPublicaId { get; set; }
+        public int? PlanNacionalId { get; set; }
         public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
         public string Estado { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; }
+        public int CantidadProyectos { get; set; }
     }
 
     public class PlanesEstrategicoDetailDto : PlanesEstrategicoReadDto
@@ -34,6 +36,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int EntidadPublicaId { get; set; }
         public string Entidad { get; set; } = string.Empty;
+        public int? PlanNacionalId { get; set; }
         public int? PeriodoPlanificacionId { get; set; }
         public int PeriodoInicio { get; set; }
         public int PeriodoFin { get; set; }
@@ -44,6 +47,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int? EntidadPublicaId { get; set; }
         public string? Entidad { get; set; }
+        public int? PlanNacionalId { get; set; }
         public int? PeriodoPlanificacionId { get; set; }
         public int? PeriodoInicio { get; set; }
         public int? PeriodoFin { get; set; }
@@ -70,6 +74,24 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public string Nombre { get; set; } = string.Empty;
         public decimal Monto { get; set; }
         public string Estado { get; set; } = string.Empty;
+        public List<RespaldoEjecucionReadDto> RespaldosEjecucion { get; set; } = new();
+    }
+
+    public class RespaldoEjecucionReadDto
+    {
+        public int RespaldoEjecucionId { get; set; }
+        public string NombreArchivo { get; set; } = string.Empty;
+        public string TipoContenido { get; set; } = string.Empty;
+        public long TamanoBytes { get; set; }
+        public DateTime FechaCarga { get; set; }
+    }
+
+    public class RespaldoEjecucionCreateDto
+    {
+        public string NombreArchivo { get; set; } = string.Empty;
+        public string TipoContenido { get; set; } = string.Empty;
+        public long TamanoBytes { get; set; }
+        public Stream Contenido { get; set; } = Stream.Null;
     }
 
     public class ProyectosInversionDetailDto : ProyectosInversionReadDto

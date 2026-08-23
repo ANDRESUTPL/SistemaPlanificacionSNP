@@ -63,7 +63,7 @@ public class ControlCalidadControllerTests : ControllerTestBase
     }
 
     [Fact]
-    public async Task CrearRevision_WhenModelStateIsInvalid_ShouldReturnViewAndNotCallApi()
+    public async Task CrearRevision_WhenModelStateIsInvalid_ShouldReturnViewAndNotCallCreateApi()
     {
         var apiClientMock = new Mock<IApiClient>();
         var controller = BuildController(apiClientMock);
@@ -74,20 +74,23 @@ public class ControlCalidadControllerTests : ControllerTestBase
 
         var view = result.Should().BeOfType<ViewResult>().Subject;
         view.Model.Should().BeSameAs(model);
-        apiClientMock.Verify(x => x.SendAsync(It.IsAny<HttpMethod>(), It.IsAny<string>(), It.IsAny<object?>()), Times.Never);
+        apiClientMock.Verify(x => x.SendAsync(HttpMethod.Post, "/api/revisiones/crear", It.IsAny<object?>()), Times.Never);
     }
 
     [Fact]
     public async Task CrearRevision_WhenApiSucceeds_ShouldSetSuccessAndRedirectToIndex()
     {
         var apiClientMock = new Mock<IApiClient>();
+        SetupCascada(apiClientMock);
         apiClientMock.Setup(x => x.SendAsync(HttpMethod.Post, "/api/revisiones/crear", It.IsAny<object>()))
             .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiResponse(new { revisionId = 15 })));
         var controller = BuildController(apiClientMock);
         var model = new RevisionCreateViewModel
         {
             CodigoRevision = "REV-001",
-            Modulo = "MacroPlanificacion",
+            EntidadPublicaId = 5,
+            PlanEstrategicoId = 1,
+            ProyectoInversionId = 10,
             Estado = "Pendiente"
         };
 
@@ -99,16 +102,42 @@ public class ControlCalidadControllerTests : ControllerTestBase
     }
 
     [Fact]
+    public async Task CrearRevision_WhenProyectoDoesNotBelongToPlan_ShouldAddModelErrorAndNotCallCreateApi()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        SetupCascada(apiClientMock);
+        var controller = BuildController(apiClientMock);
+        var model = new RevisionCreateViewModel
+        {
+            CodigoRevision = "REV-001",
+            EntidadPublicaId = 5,
+            PlanEstrategicoId = 1,
+            ProyectoInversionId = 999,
+            Estado = "Pendiente"
+        };
+
+        var result = await controller.CrearRevision(model);
+
+        result.Should().BeOfType<ViewResult>();
+        controller.ModelState[nameof(model.ProyectoInversionId)]!.Errors
+            .Should().ContainSingle(x => x.ErrorMessage == "El proyecto seleccionado no pertenece al PEI indicado.");
+        apiClientMock.Verify(x => x.SendAsync(HttpMethod.Post, "/api/revisiones/crear", It.IsAny<object?>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CrearRevision_WhenApiRejects_ShouldAddModelErrorAndReturnView()
     {
         var apiClientMock = new Mock<IApiClient>();
+        SetupCascada(apiClientMock);
         apiClientMock.Setup(x => x.SendAsync(HttpMethod.Post, "/api/revisiones/crear", It.IsAny<object>()))
             .ReturnsAsync(WebTestData.JsonResponse(new { message = "Código duplicado" }, HttpStatusCode.BadRequest));
         var controller = BuildController(apiClientMock);
         var model = new RevisionCreateViewModel
         {
             CodigoRevision = "REV-001",
-            Modulo = "MacroPlanificacion",
+            EntidadPublicaId = 5,
+            PlanEstrategicoId = 1,
+            ProyectoInversionId = 10,
             Estado = "Pendiente"
         };
 
@@ -117,6 +146,56 @@ public class ControlCalidadControllerTests : ControllerTestBase
         var view = result.Should().BeOfType<ViewResult>().Subject;
         view.Model.Should().BeSameAs(model);
         controller.ModelState[string.Empty]!.Errors.Should().ContainSingle(x => x.ErrorMessage == "Código duplicado");
+    }
+
+    [Fact]
+    public async Task PlanesPorEntidad_ShouldReturnOnlyPlansOfRequestedEntidad()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        SetupCascada(apiClientMock);
+        var controller = BuildController(apiClientMock);
+
+        var result = await controller.PlanesPorEntidad(5);
+
+        var json = result.Should().BeOfType<JsonResult>().Subject;
+        var payload = json.Value.Should().BeAssignableTo<System.Collections.IEnumerable>().Subject
+            .Cast<object>()
+            .ToList();
+
+        payload.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ProyectosPorPlan_ShouldReturnProjectsOfRequestedPlan()
+    {
+        var apiClientMock = new Mock<IApiClient>();
+        SetupCascada(apiClientMock);
+        var controller = BuildController(apiClientMock);
+
+        var result = await controller.ProyectosPorPlan(1);
+
+        var json = result.Should().BeOfType<JsonResult>().Subject;
+        var payload = json.Value.Should().BeAssignableTo<System.Collections.IEnumerable>().Subject
+            .Cast<object>()
+            .ToList();
+
+        payload.Should().HaveCount(1);
+    }
+
+    private static void SetupCascada(Mock<IApiClient> apiClientMock)
+    {
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planesestrategicos?pageNumber=1&pageSize=1000", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiPaginatedResponse(new[]
+            {
+                new { planEstrategicoId = 1, entidad = "Ministerio de Salud", entidadPublicaId = 5, periodoInicio = 2026, periodoFin = 2030, estado = "Aprobado" },
+                new { planEstrategicoId = 2, entidad = "Ministerio de Educación", entidadPublicaId = 6, periodoInicio = 2026, periodoFin = 2030, estado = "Borrador" }
+            }, totalItems: 2)));
+
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/proyectosinversion?planEstrategicoId=1&pageNumber=1&pageSize=1000", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiPaginatedResponse(new[]
+            {
+                new { proyectoInversionId = 10, planEstrategicoId = 1, codigoProyecto = "CUP-001", nombre = "Hospital General", monto = 100m, estado = "Ejecucion" }
+            })));
     }
 
     private static ControlCalidadController BuildController(Mock<IApiClient> apiClientMock)

@@ -11,6 +11,8 @@ namespace SistemaPlanificacionSNP.Domain.Entities.Parametrizacion
         public string Codigo { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Sigla { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public string NivelGobierno { get; set; } = string.Empty;
         public string Mision { get; set; } = string.Empty;
         public int PeriodoPlanificacionId { get; set; }
         public bool Activo { get; set; } = true;

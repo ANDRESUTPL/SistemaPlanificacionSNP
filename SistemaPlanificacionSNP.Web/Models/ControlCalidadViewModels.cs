@@ -17,6 +17,11 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public int RevisionId { get; set; }
 		public string CodigoRevision { get; set; } = string.Empty;
 		public string Modulo { get; set; } = string.Empty;
+		public int? PlanEstrategicoId { get; set; }
+		public int? ProyectoInversionId { get; set; }
+		public int? EntidadPublicaId { get; set; }
+		public string? EntidadNombre { get; set; }
+		public string? CodigoProyecto { get; set; }
 		public string Estado { get; set; } = string.Empty;
 		public DateTime FechaRevision { get; set; }
 		public string? Observaciones { get; set; }
@@ -50,9 +55,19 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[StringLength(40, ErrorMessage = "Máximo 40 caracteres.")]
 		public string CodigoRevision { get; set; } = string.Empty;
 
-		[Display(Name = "Módulo o Entidad Evaluada")]
-		[Required(ErrorMessage = "Debe indicar qué se está revisando (ej. PEI-MSP-2026).")]
-		[StringLength(100, ErrorMessage = "Máximo 100 caracteres.")]
+		[Display(Name = "Entidad Pública")]
+		[Required(ErrorMessage = "Debe seleccionar la entidad pública a auditar.")]
+		public int? EntidadPublicaId { get; set; }
+
+		[Display(Name = "Plan Estratégico / PEI")]
+		[Required(ErrorMessage = "Debe seleccionar un PEI asociado a la revisión.")]
+		public int? PlanEstrategicoId { get; set; }
+
+		[Display(Name = "Proyecto de Inversión a Auditar")]
+		[Required(ErrorMessage = "Debe seleccionar el proyecto de inversión a auditar.")]
+		public int? ProyectoInversionId { get; set; }
+
+		// Se deriva de la selección entidad/PEI/proyecto, no se captura en el formulario.
 		public string Modulo { get; set; } = string.Empty;
 
 		[Display(Name = "Estado de la Revisión")]
@@ -62,6 +77,16 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Display(Name = "Observaciones (Opcional)")]
 		[StringLength(500, ErrorMessage = "Máximo 500 caracteres.")]
 		public string? Observaciones { get; set; }
+
+		public List<EntidadConPlanesViewModel> EntidadesDisponibles { get; set; } = new();
+		public List<PlanesEstrategicoApiDto> PlanesDisponibles { get; set; } = new();
+		public List<ProyectosInversionApiDto> ProyectosDisponibles { get; set; } = new();
+	}
+
+	public class EntidadConPlanesViewModel
+	{
+		public int EntidadPublicaId { get; set; }
+		public string Nombre { get; set; } = string.Empty;
 	}
 
 	public class RevisionEditViewModel : RevisionCreateViewModel

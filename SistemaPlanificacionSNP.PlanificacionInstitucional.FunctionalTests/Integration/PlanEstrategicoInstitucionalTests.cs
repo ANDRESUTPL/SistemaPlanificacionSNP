@@ -24,9 +24,10 @@ public sealed class PlanEstrategicoInstitucionalTests
         {
             EntidadPublicaId = 10,
             Entidad = "Ministerio de Planificación e Inversión Pública",
-            PeriodoPlanificacionId = 1,
-            PeriodoInicio = 2025,
-            PeriodoFin = 2030,
+            PlanNacionalId = 1,
+            PeriodoPlanificacionId = 999,
+            PeriodoInicio = 2031,
+            PeriodoFin = 2036,
             Estado = "Borrador"
         };
 
@@ -44,6 +45,10 @@ public sealed class PlanEstrategicoInstitucionalTests
         body.Data!.PlanEstrategicoId.Should().BeGreaterThan(0);
         body.Data.EntidadPublicaId.Should().Be(10);
         body.Data.Entidad.Should().Be("Ministerio de Planificación e Inversión Pública");
+        body.Data.PlanNacionalId.Should().Be(1);
+        body.Data.PeriodoPlanificacionId.Should().Be(1);
+        body.Data.PeriodoInicio.Should().Be(2025);
+        body.Data.PeriodoFin.Should().Be(2030);
     }
 
 	[Fact]
@@ -59,6 +64,7 @@ public sealed class PlanEstrategicoInstitucionalTests
 		{
 			EntidadPublicaId = 10,
 			Entidad = "Ministerio de Planificación e Inversión Pública",
+            PlanNacionalId = 1,
 			PeriodoPlanificacionId = 1,
 			PeriodoInicio = 2030, // Inválido: Inicio > Fin
 			PeriodoFin = 2025,

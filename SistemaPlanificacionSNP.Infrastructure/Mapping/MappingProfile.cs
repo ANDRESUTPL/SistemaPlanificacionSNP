@@ -66,7 +66,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.ObjetivosEstrategicos, opt => opt.Ignore());
 
             // ==================== PLANIFICACION DB-FIRST ====================
-            CreateMap<PlanesEstrategico, PlanesEstrategicoReadDto>();
+            CreateMap<PlanesEstrategico, PlanesEstrategicoReadDto>()
+                .ForMember(dest => dest.CantidadProyectos, opt => opt.MapFrom(src => src.ProyectosInversions.Count));
 
             CreateMap<PlanesEstrategico, PlanesEstrategicoDetailDto>()
                 .ForMember(dest => dest.Proyectos, opt => opt.MapFrom(src => src.ProyectosInversions));
@@ -77,6 +78,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore());
 
             CreateMap<ProyectosInversion, ProyectosInversionReadDto>();
+            CreateMap<RespaldoEjecucion, RespaldoEjecucionReadDto>();
 
             CreateMap<ProyectosInversion, ProyectosInversionDetailDto>()
                 .ForMember(dest => dest.EntidadPlan, opt => opt.MapFrom(src => src.PlanEstrategico.Entidad))
@@ -104,9 +106,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
 
             // ==================== ENTIDAD PÚBLICA ====================
             CreateMap<EntidadPublica, EntidadPublicaDto>()
-                .ForMember(dest => dest.Activa, opt => opt.MapFrom(src => src.Activo))
-                .ForMember(dest => dest.Tipo, opt => opt.MapFrom(_ => string.Empty))
-                .ForMember(dest => dest.NivelGobierno, opt => opt.MapFrom(_ => string.Empty));
+                .ForMember(dest => dest.Activa, opt => opt.MapFrom(src => src.Activo));
 
             CreateMap<EntidadPublicaCreateUpdateDto, EntidadPublica>()
                 .ForMember(dest => dest.EntidadPublicaId, opt => opt.Ignore())

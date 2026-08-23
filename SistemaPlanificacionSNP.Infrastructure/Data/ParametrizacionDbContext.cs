@@ -50,6 +50,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.Data
 				entity.ToTable("EntidadesPublicas");
 				entity.HasKey(e => e.EntidadPublicaId);
 				entity.HasIndex(e => e.Codigo).IsUnique();
+				entity.Property(e => e.Tipo).HasMaxLength(100).IsRequired();
+				entity.Property(e => e.NivelGobierno).HasMaxLength(100).IsRequired();
 				entity.HasOne(d => d.PeriodoPlanificacion)
 					  .WithMany(p => p.EntidadesPublicas)
 					  .HasForeignKey(d => d.PeriodoPlanificacionId)

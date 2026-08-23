@@ -1,4 +1,6 @@
 using SistemaPlanificacionSNP.Domain.Entities.PlanificacionInstitucional;
+using Microsoft.EntityFrameworkCore;
+using SistemaPlanificacionSNP.Infrastructure.Data;
 using SistemaPlanificacionSNP.Infrastructure.DTOs;
 using SistemaPlanificacionSNP.Infrastructure.UnitOfWork;
 
@@ -21,15 +23,20 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
         Task<ProyectosInversion> CreateAsync(ProyectosInversionCreateDto dto);
         Task<ProyectosInversion?> UpdateAsync(int proyectoId, ProyectosInversionUpdateDto dto);
         Task<bool> SoftDeleteAsync(int proyectoId);
+        Task<List<RespaldoEjecucion>> AddRespaldosAsync(int proyectoId, IEnumerable<RespaldoEjecucionCreateDto> respaldos);
     }
 
     public class PlanesEstrategicosPiService : IPlanesEstrategicosPiService
     {
         private readonly IPlanificacionInstitucionalUnitOfWork _unitOfWork;
+        private readonly MacroPlanificacionDbContext _macroPlanificacionContext;
 
-        public PlanesEstrategicosPiService(IPlanificacionInstitucionalUnitOfWork unitOfWork)
+        public PlanesEstrategicosPiService(
+            IPlanificacionInstitucionalUnitOfWork unitOfWork,
+            MacroPlanificacionDbContext macroPlanificacionContext)
         {
             _unitOfWork = unitOfWork;
+            _macroPlanificacionContext = macroPlanificacionContext;
         }
 
         public async Task<(List<PlanesEstrategico> Items, int Total)> GetPagedAsync(PlanesEstrategicoQueryDto query)
@@ -53,6 +60,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
         public async Task<PlanesEstrategico> CreateAsync(PlanesEstrategicoCreateDto dto)
         {
             ValidateCreate(dto);
+            await SincronizarPeriodoConPlanNacionalAsync(dto);
 
             var entidad = dto.Entidad.Trim();
             var estado = dto.Estado.Trim();
@@ -67,6 +75,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             {
                 Entidad = entidad,
                 EntidadPublicaId = dto.EntidadPublicaId,
+                PlanNacionalId = dto.PlanNacionalId,
                 PeriodoPlanificacionId = dto.PeriodoPlanificacionId,
                 PeriodoInicio = dto.PeriodoInicio,
                 PeriodoFin = dto.PeriodoFin,
@@ -88,9 +97,26 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 return null;
             }
 
+            var planNacionalId = dto.PlanNacionalId ?? entity.PlanNacionalId;
+            if (!planNacionalId.HasValue || planNacionalId.Value <= 0)
+            {
+                throw new InvalidOperationException("PlanNacionalId es requerido para actualizar el plan");
+            }
+
+            var planNacional = await ObtenerPlanNacionalAsync(planNacionalId.Value);
+            dto.PlanNacionalId = planNacional.PlanNacionalId;
+            dto.PeriodoPlanificacionId = planNacional.PeriodoPlanificacionId;
+            dto.PeriodoInicio = planNacional.PeriodoInicio;
+            dto.PeriodoFin = planNacional.PeriodoFin;
+
             if (dto.PeriodoPlanificacionId.HasValue && dto.PeriodoPlanificacionId.Value <= 0)
             {
                 throw new InvalidOperationException("PeriodoPlanificacionId inválido");
+            }
+
+            if (!dto.PlanNacionalId.HasValue || dto.PlanNacionalId.Value <= 0)
+            {
+                throw new InvalidOperationException("PlanNacionalId es requerido");
             }
 
             if (dto.EntidadPublicaId.HasValue && dto.EntidadPublicaId.Value <= 0)
@@ -129,7 +155,12 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.PeriodoPlanificacionId = dto.PeriodoPlanificacionId.Value;
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.Estado))
+			if (dto.PlanNacionalId.HasValue)
+			{
+				entity.PlanNacionalId = dto.PlanNacionalId.Value;
+			}
+
+			if (!string.IsNullOrWhiteSpace(dto.Estado))
             {
                 entity.Estado = dto.Estado.Trim();
             }
@@ -164,10 +195,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 return false;
             }
 
-            var hasActiveProjects = await _unitOfWork.PlanesEstrategicos.HasActiveProjectsAsync(planId);
-            if (hasActiveProjects)
+            var hasProjects = await _unitOfWork.PlanesEstrategicos.HasProjectsAsync(planId);
+            if (hasProjects)
             {
-                throw new InvalidOperationException("No se puede inactivar el plan porque tiene proyectos activos");
+                throw new InvalidOperationException("No se puede eliminar el plan porque tiene proyectos asociados");
             }
 
             entity.Estado = "Inactivo";
@@ -218,6 +249,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 throw new InvalidOperationException("EntidadPublicaId es requerido");
             }
 
+            if (!dto.PlanNacionalId.HasValue || dto.PlanNacionalId.Value <= 0)
+            {
+                throw new InvalidOperationException("PlanNacionalId es requerido");
+            }
+
             if (string.IsNullOrWhiteSpace(dto.Entidad) || string.IsNullOrWhiteSpace(dto.Estado))
             {
                 throw new InvalidOperationException("Entidad y estado son requeridos");
@@ -239,6 +275,29 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             }
 
             ValidatePeriodo(dto.PeriodoInicio, dto.PeriodoFin);
+        }
+
+        private async Task SincronizarPeriodoConPlanNacionalAsync(PlanesEstrategicoCreateDto dto)
+        {
+            var planNacional = await ObtenerPlanNacionalAsync(dto.PlanNacionalId!.Value);
+            dto.PeriodoPlanificacionId = planNacional.PeriodoPlanificacionId;
+            dto.PeriodoInicio = planNacional.PeriodoInicio;
+            dto.PeriodoFin = planNacional.PeriodoFin;
+        }
+
+        private async Task<Domain.Entities.MacroPlanificacion.PlanesNacionalesDesarrollo> ObtenerPlanNacionalAsync(int planNacionalId)
+        {
+            var planNacional = await _macroPlanificacionContext.PlanesNacionalesDesarrollos
+                .AsNoTracking()
+                .SingleOrDefaultAsync(plan => plan.PlanNacionalId == planNacionalId);
+
+            if (planNacional?.PeriodoPlanificacionId is not int periodoPlanificacionId || periodoPlanificacionId <= 0)
+            {
+                throw new InvalidOperationException("El Plan Nacional seleccionado no existe o no tiene un período de planificación válido");
+            }
+
+            ValidatePeriodo(planNacional.PeriodoInicio, planNacional.PeriodoFin);
+            return planNacional;
         }
 
         private static void ValidatePeriodo(int periodoInicio, int periodoFin)
@@ -362,6 +421,56 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             await _unitOfWork.ProyectosInversion.UpdateAsync(entity);
             await _unitOfWork.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<RespaldoEjecucion>> AddRespaldosAsync(int proyectoId, IEnumerable<RespaldoEjecucionCreateDto> respaldos)
+        {
+            var proyecto = await _unitOfWork.ProyectosInversion.GetByIdAsync(proyectoId);
+            if (proyecto == null)
+            {
+                throw new InvalidOperationException("Proyecto no encontrado");
+            }
+
+            var permitidas = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png" };
+            var carpeta = Path.Combine(AppContext.BaseDirectory, "uploads", "respaldos-ejecucion", proyectoId.ToString());
+            Directory.CreateDirectory(carpeta);
+            var resultado = new List<RespaldoEjecucion>();
+
+            foreach (var respaldo in respaldos)
+            {
+                var nombre = Path.GetFileName(respaldo.NombreArchivo);
+                var extension = Path.GetExtension(nombre).ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(nombre) || !permitidas.Contains(extension))
+                {
+                    throw new InvalidOperationException("Solo se permiten respaldos PDF, Word, Excel o imágenes.");
+                }
+                if (respaldo.TamanoBytes <= 0 || respaldo.TamanoBytes > 10 * 1024 * 1024)
+                {
+                    throw new InvalidOperationException("Cada respaldo debe tener un tamaño máximo de 10 MB.");
+                }
+
+                var nombreGuardado = $"{Guid.NewGuid():N}{extension}";
+                var ruta = Path.Combine(carpeta, nombreGuardado);
+                await using (var archivo = File.Create(ruta))
+                {
+                    await respaldo.Contenido.CopyToAsync(archivo);
+                }
+
+                var entidad = new RespaldoEjecucion
+                {
+                    ProyectoInversionId = proyectoId,
+                    NombreArchivo = nombre,
+                    RutaArchivo = Path.Combine("uploads", "respaldos-ejecucion", proyectoId.ToString(), nombreGuardado),
+                    TipoContenido = respaldo.TipoContenido,
+                    TamanoBytes = respaldo.TamanoBytes,
+                    FechaCarga = DateTime.UtcNow
+                };
+                await _unitOfWork.ProyectosInversion.AddRespaldoAsync(entidad);
+                resultado.Add(entidad);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            return resultado;
         }
 
         private static void ValidateCreate(ProyectosInversionCreateDto dto)

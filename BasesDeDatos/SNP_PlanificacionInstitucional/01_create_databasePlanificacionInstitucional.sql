@@ -11,74 +11,7 @@ USE [SNP_PlanificacionInstitucional];
 GO
 
 -- ==========================================
--- 2. TABLAS DE MACRO PLANIFICACIÓN (Según Entidades)
--- ==========================================
-
--- Tabla: ObjetivoDesarrolloSostenible
-IF OBJECT_ID(N'dbo.ObjetivoDesarrolloSostenible', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.ObjetivoDesarrolloSostenible (
-        OdsId INT IDENTITY(1,1) PRIMARY KEY,
-        Codigo NVARCHAR(50) NOT NULL,
-        Nombre NVARCHAR(250) NOT NULL,
-        Descripcion NVARCHAR(MAX) NOT NULL,
-        Activo BIT NOT NULL CONSTRAINT DF_ODS_Activo DEFAULT 1,
-        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_ODS_FechaCreacion DEFAULT (SYSUTCDATETIME())
-    );
-END;
-GO
-
--- Tabla: PlanNacionalDesarrollo
-IF OBJECT_ID(N'dbo.PlanNacionalDesarrollo', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.PlanNacionalDesarrollo (
-        PndId INT IDENTITY(1,1) PRIMARY KEY,
-        Codigo NVARCHAR(50) NOT NULL,
-        Nombre NVARCHAR(250) NOT NULL,
-        Descripcion NVARCHAR(MAX) NOT NULL,
-        OdsId INT NOT NULL,
-        Activo BIT NOT NULL CONSTRAINT DF_PND_Activo DEFAULT 1,
-        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_PND_FechaCreacion DEFAULT (SYSUTCDATETIME()),
-        CONSTRAINT FK_PND_Ods FOREIGN KEY (OdsId) REFERENCES dbo.ObjetivoDesarrolloSostenible(OdsId)
-    );
-END;
-GO
-
--- Tabla: PlanesNacionalesDesarrollo
-IF OBJECT_ID(N'dbo.PlanesNacionalesDesarrollo', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.PlanesNacionalesDesarrollo (
-        PlanNacionalId INT IDENTITY(1,1) PRIMARY KEY,
-        Nombre NVARCHAR(250) NOT NULL,
-        PeriodoPlanificacionId INT NULL,
-        PeriodoInicio INT NOT NULL,
-        PeriodoFin INT NOT NULL,
-        Estado NVARCHAR(30) NOT NULL,
-        FechaCreacion DATETIME2 NOT NULL CONSTRAINT DF_PlanesNac_FechaCreacion DEFAULT (SYSUTCDATETIME())
-    );
-END;
-GO
-
--- Tabla: ObjetivosEstrategico
-IF OBJECT_ID(N'dbo.ObjetivosEstrategico', N'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.ObjetivosEstrategico (
-        ObjetivoEstrategicoId INT IDENTITY(1,1) PRIMARY KEY,
-        PlanNacionalId INT NOT NULL,
-        Codigo NVARCHAR(50) NOT NULL,
-        Nombre NVARCHAR(250) NOT NULL,
-        Descripcion NVARCHAR(MAX) NULL,
-        -- Campos de auditoría incorporados desde la entidad C#
-        IsDeleted BIT NOT NULL CONSTRAINT DF_ObjEstrategico_IsDeleted DEFAULT 0,
-        DeletedAtUtc DATETIME2 NULL,
-        DeletedBy NVARCHAR(250) NULL,
-        CONSTRAINT FK_ObjEstrategico_PlanNacional FOREIGN KEY (PlanNacionalId) REFERENCES dbo.PlanesNacionalesDesarrollo(PlanNacionalId)
-    );
-END;
-GO
-
--- ==========================================
--- 3. TABLAS DE PLANIFICACIÓN INSTITUCIONAL
+-- 2. TABLAS DE PLANIFICACIÓN INSTITUCIONAL
 -- ==========================================
 
 -- Tabla: PlanesEstrategicos
@@ -88,6 +21,9 @@ BEGIN
         PlanEstrategicoId INT IDENTITY(1,1) PRIMARY KEY,
         Entidad NVARCHAR(200) NOT NULL,
         EntidadPublicaId INT NULL, -- Campo consolidado desde el ALTER TABLE
+        -- Referencia lógica al PND administrado por SNP_MacroPlanificacion.
+        -- No se crea una FK entre bases de datos.
+        PlanNacionalId INT NULL,
         PeriodoPlanificacionId INT NULL,
         PeriodoInicio INT NOT NULL,
         PeriodoFin INT NOT NULL,
@@ -104,6 +40,15 @@ IF NOT EXISTS (
 )
 BEGIN
     CREATE INDEX IX_PlanesEstrategicos_PeriodoPlanificacionId ON dbo.PlanesEstrategicos(PeriodoPlanificacionId);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_PlanesEstrategicos_PlanNacionalId' AND object_id = OBJECT_ID(N'dbo.PlanesEstrategicos')
+)
+BEGIN
+    CREATE INDEX IX_PlanesEstrategicos_PlanNacionalId ON dbo.PlanesEstrategicos(PlanNacionalId);
 END;
 GO
 

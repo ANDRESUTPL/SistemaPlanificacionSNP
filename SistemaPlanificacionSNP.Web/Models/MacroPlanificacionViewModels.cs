@@ -113,6 +113,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public int PeriodoFin { get; set; }
 
 		[Display(Name = "Estado")]
+		[Required(ErrorMessage = "Debe seleccionar un estado.")]
 		[StringLength(30, ErrorMessage = "No puede superar los 30 caracteres.")]
 		public string Estado { get; set; } = "Borrador";
 	}

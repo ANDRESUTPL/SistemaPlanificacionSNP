@@ -244,13 +244,54 @@ public class ParametrizacionServiceTests
         result.EntidadPublicaId.Should().BeGreaterThan(0);
         result.Nombre.Should().Be("Ministerio de Prueba");
         result.Sigla.Should().Be("MDP");
+        result.Tipo.Should().Be("Ministerio");
+        result.NivelGobierno.Should().Be("Central");
 
         var persisted = await fixture.DbContext.EntidadesPublicas.FindAsync(result.EntidadPublicaId);
         persisted.Should().NotBeNull();
         persisted!.PeriodoPlanificacionId.Should().Be(1);
         persisted.Codigo.Should().Be("MDP");
+        persisted.Tipo.Should().Be("Ministerio");
+        persisted.NivelGobierno.Should().Be("Central");
         persisted.Activo.Should().BeTrue();
         persisted.FechaCreacion.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
+    }
+
+    [Fact]
+    public async Task UpdateEntidadAsync_ShouldPersistTipoAndNivelGobierno()
+    {
+        await using var fixture = new ServiceFixture();
+        await fixture.InitializeAsync();
+
+        var periodo = BuildPeriodo("PBASE", "Periodo base", new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+        fixture.DbContext.PeriodosPlanificacion.Add(periodo);
+        await fixture.DbContext.SaveChangesAsync();
+
+        var entidad = BuildEntidad(periodo.PeriodoPlanificacionId, "Entidad Original", "EO");
+        fixture.DbContext.EntidadesPublicas.Add(entidad);
+        await fixture.DbContext.SaveChangesAsync();
+
+        var service = fixture.CreateService();
+        var dto = new EntidadPublicaCreateUpdateDto
+        {
+            Codigo = "ENT-ACT",
+            Nombre = "Entidad Actualizada",
+            Sigla = "EA",
+            Tipo = "Empresa Pública",
+            NivelGobierno = "Gobierno Descentralizado (GAD)",
+            PeriodoPlanificacionId = periodo.PeriodoPlanificacionId
+        };
+
+        var result = await service.UpdateEntidadAsync(entidad.EntidadPublicaId, dto);
+
+        result.Should().NotBeNull();
+        result!.Tipo.Should().Be("Empresa Pública");
+        result.NivelGobierno.Should().Be("Gobierno Descentralizado (GAD)");
+
+        var persisted = await fixture.DbContext.EntidadesPublicas.FindAsync(entidad.EntidadPublicaId);
+        persisted.Should().NotBeNull();
+        persisted!.Tipo.Should().Be("Empresa Pública");
+        persisted.NivelGobierno.Should().Be("Gobierno Descentralizado (GAD)");
     }
 
     [Fact]
@@ -331,6 +372,8 @@ public class ParametrizacionServiceTests
             Codigo = Guid.NewGuid().ToString("N")[..8],
             Nombre = nombre,
             Sigla = sigla,
+            Tipo = "Ministerio",
+            NivelGobierno = "Gobierno Central",
             Mision = "Misión de prueba",
             PeriodoPlanificacionId = periodoId,
             Activo = true,

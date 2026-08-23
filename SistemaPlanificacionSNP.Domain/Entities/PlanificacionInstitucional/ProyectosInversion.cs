@@ -18,4 +18,6 @@ public partial class ProyectosInversion
     public string Estado { get; set; } = null!;
 
     public virtual PlanesEstrategico PlanEstrategico { get; set; } = null!;
+
+    public virtual ICollection<RespaldoEjecucion> RespaldosEjecucion { get; set; } = new List<RespaldoEjecucion>();
 }

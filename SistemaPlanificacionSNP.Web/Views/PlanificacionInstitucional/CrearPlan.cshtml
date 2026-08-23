@@ -63,10 +63,32 @@
                         </div>
 
                         <div class="mb-4">
+                            <label asp-for="PlanNacionalId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Plan Nacional de Desarrollo</label>
+                            @if (Model.PlanesNacionalesDisponibles.Count > 0)
+                            {
+                                <select asp-for="PlanNacionalId" class="form-select form-select-lg" id="planNacionalSelect">
+                                    <option value="">-- Seleccione un plan nacional --</option>
+                                    @foreach (var plan in Model.PlanesNacionalesDisponibles.OrderBy(p => p.Nombre))
+                                    {
+                                        <option value="@plan.PlanNacionalId" data-periodo-id="@plan.PeriodoPlanificacionId">@plan.Nombre (@plan.PeriodoInicio - @plan.PeriodoFin)</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mb-0">
+                                    No existen planes nacionales disponibles. Primero crea un plan en Macro Planificación.
+                                </div>
+                            }
+                            <span asp-validation-for="PlanNacionalId" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                        </div>
+
+                        <div class="mb-4">
                             <label asp-for="PeriodoPlanificacionId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Período de Planificación <span class="text-danger">*</span></label>
                             @if (Model.PeriodosDisponibles.Count > 0)
                             {
-                                <select asp-for="PeriodoPlanificacionId" class="form-select form-select-lg" id="periodoSelect">
+                                <input asp-for="PeriodoPlanificacionId" type="hidden" id="periodoPlanificacionId" />
+                                <select class="form-select form-select-lg" id="periodoSelect" disabled>
                                     <option value="">-- Seleccione el período --</option>
                                     @foreach (var periodo in Model.PeriodosDisponibles)
                                     {
@@ -83,7 +105,7 @@
                                 </div>
                             }
                             <span asp-validation-for="PeriodoPlanificacionId" class="text-danger text-xs fw-medium mt-1 d-block"></span>
-                            <div class="form-text" id="periodoPreview">Seleccione un período para derivar automáticamente los años del PEI.</div>
+                            <div class="form-text" id="periodoPreview">El período se completa automáticamente al seleccionar el Plan Nacional.</div>
                         </div>
 
                         <div class="alert alert-info border-0 bg-info bg-opacity-10 d-flex align-items-center rounded-3 p-3">
@@ -112,9 +134,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         function actualizarResumenPeriodo() {
+            const planNacionalSelect = document.getElementById('planNacionalSelect');
             const select = document.getElementById('periodoSelect');
+            const periodoPlanificacionId = document.getElementById('periodoPlanificacionId');
             const preview = document.getElementById('periodoPreview');
-            if (!select || !preview) return;
+            if (!planNacionalSelect || !select || !periodoPlanificacionId || !preview) return;
+
+            const planNacional = planNacionalSelect.options[planNacionalSelect.selectedIndex];
+            const periodoId = planNacional?.getAttribute('data-periodo-id') ?? '';
+            select.value = periodoId;
+            periodoPlanificacionId.value = periodoId;
 
             const option = select.options[select.selectedIndex];
             const inicio = option?.getAttribute('data-inicio');
@@ -125,10 +154,10 @@
                 return;
             }
 
-            preview.textContent = 'Seleccione un período para derivar automáticamente los años del PEI.';
+            preview.textContent = 'El período se completa automáticamente al seleccionar el Plan Nacional.';
         }
 
-        document.getElementById('periodoSelect')?.addEventListener('change', actualizarResumenPeriodo);
+        document.getElementById('planNacionalSelect')?.addEventListener('change', actualizarResumenPeriodo);
         actualizarResumenPeriodo();
 
         document.getElementById('formCreatePEI').addEventListener('submit', function(e) {

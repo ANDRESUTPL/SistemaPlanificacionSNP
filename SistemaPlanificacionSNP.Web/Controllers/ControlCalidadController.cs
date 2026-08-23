@@ -78,20 +78,49 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		}
 
 		[HttpGet("crear")]
-		public IActionResult CrearRevision()
+		public async Task<IActionResult> CrearRevision()
 		{
-			return View(new RevisionCreateViewModel());
+			var planes = await CargarPlanesDisponiblesAsync();
+			var model = new RevisionCreateViewModel
+			{
+				PlanesDisponibles = planes,
+				EntidadesDisponibles = ExtraerEntidadesConPlanes(planes)
+			};
+			return View(model);
 		}
 
 		[HttpPost("crear")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearRevision(RevisionCreateViewModel model)
 		{
+			model.PlanesDisponibles = await CargarPlanesDisponiblesAsync();
+			model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
+			model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
 			if (!ModelState.IsValid) return View(model);
 
 			try
 			{
-				var payload = new { model.CodigoRevision, model.Modulo, model.Estado, model.Observaciones };
+				var planSeleccionado = model.PlanesDisponibles.FirstOrDefault(p => p.PlanEstrategicoId == model.PlanEstrategicoId);
+				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId);
+
+				if (proyectoSeleccionado == null)
+				{
+					ModelState.AddModelError(nameof(model.ProyectoInversionId), "El proyecto seleccionado no pertenece al PEI indicado.");
+					return View(model);
+				}
+
+				var payload = new
+				{
+					model.CodigoRevision,
+					Modulo = ConstruirModulo(planSeleccionado, proyectoSeleccionado),
+					model.Estado,
+					model.Observaciones,
+					model.PlanEstrategicoId,
+					model.ProyectoInversionId,
+					EntidadPublicaId = planSeleccionado?.EntidadPublicaId ?? model.EntidadPublicaId,
+					EntidadNombre = planSeleccionado?.Entidad,
+					CodigoProyecto = proyectoSeleccionado.CodigoProyecto
+				};
 				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/revisiones/crear", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -174,10 +203,23 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					RevisionId = envelope.Data.RevisionId,
 					CodigoRevision = envelope.Data.CodigoRevision,
 					Modulo = envelope.Data.Modulo,
+					PlanEstrategicoId = envelope.Data.PlanEstrategicoId,
+					ProyectoInversionId = envelope.Data.ProyectoInversionId,
+					EntidadPublicaId = envelope.Data.EntidadPublicaId,
 					Estado = envelope.Data.Estado,
 					Observaciones = envelope.Data.Observaciones,
-					FechaRevision = envelope.Data.FechaRevision
+					FechaRevision = envelope.Data.FechaRevision,
+					PlanesDisponibles = await CargarPlanesDisponiblesAsync()
 				};
+
+				model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
+				model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
+
+				if (!model.EntidadPublicaId.HasValue)
+				{
+					model.EntidadPublicaId = model.PlanesDisponibles
+						.FirstOrDefault(p => p.PlanEstrategicoId == model.PlanEstrategicoId)?.EntidadPublicaId;
+				}
 
 				return View(model);
 			}
@@ -193,6 +235,10 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditarRevision(int id, RevisionEditViewModel model)
 		{
+			model.PlanesDisponibles = await CargarPlanesDisponiblesAsync();
+			model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
+			model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
+
 			if (id != model.RevisionId)
 			{
 				return BadRequest();
@@ -205,7 +251,27 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			try
 			{
-				var payload = new { model.Modulo, model.Estado, model.FechaRevision, model.Observaciones };
+				var planSeleccionado = model.PlanesDisponibles.FirstOrDefault(p => p.PlanEstrategicoId == model.PlanEstrategicoId);
+				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId);
+
+				if (proyectoSeleccionado == null)
+				{
+					ModelState.AddModelError(nameof(model.ProyectoInversionId), "El proyecto seleccionado no pertenece al PEI indicado.");
+					return View(model);
+				}
+
+				var payload = new
+				{
+					Modulo = ConstruirModulo(planSeleccionado, proyectoSeleccionado),
+					model.PlanEstrategicoId,
+					model.ProyectoInversionId,
+					EntidadPublicaId = planSeleccionado?.EntidadPublicaId ?? model.EntidadPublicaId,
+					EntidadNombre = planSeleccionado?.Entidad,
+					CodigoProyecto = proyectoSeleccionado.CodigoProyecto,
+					model.Estado,
+					model.FechaRevision,
+					model.Observaciones
+				};
 				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/revisiones/{id}", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -224,6 +290,118 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return View(model);
+		}
+
+		private async Task<List<PlanesEstrategicoApiDto>> CargarPlanesDisponiblesAsync()
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planesestrategicos?pageNumber=1&pageSize=1000");
+				if (response?.IsSuccessStatusCode != true)
+				{
+					return new List<PlanesEstrategicoApiDto>();
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				using var doc = JsonDocument.Parse(json);
+				if (doc.RootElement.TryGetProperty("data", out var dataElement) &&
+				    dataElement.TryGetProperty("data", out var itemsElement))
+				{
+					return JsonSerializer.Deserialize<List<PlanesEstrategicoApiDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando planes estratégicos para revisiones: {ex.Message}");
+			}
+
+			return new List<PlanesEstrategicoApiDto>();
+		}
+
+		[HttpGet("planes-por-entidad")]
+		public async Task<IActionResult> PlanesPorEntidad(int entidadPublicaId)
+		{
+			var planes = await CargarPlanesDisponiblesAsync();
+			var filtrados = planes
+				.Where(p => p.EntidadPublicaId == entidadPublicaId)
+				.OrderByDescending(p => p.PeriodoInicio)
+				.Select(p => new
+				{
+					p.PlanEstrategicoId,
+					Descripcion = $"PEI #{p.PlanEstrategicoId} · {p.PeriodoInicio}-{p.PeriodoFin} · {p.Estado}"
+				})
+				.ToList();
+
+			return Json(filtrados);
+		}
+
+		[HttpGet("proyectos-por-plan")]
+		public async Task<IActionResult> ProyectosPorPlan(int planEstrategicoId)
+		{
+			var proyectos = await CargarProyectosPorPlanAsync(planEstrategicoId);
+			var resultado = proyectos
+				.OrderBy(p => p.CodigoProyecto)
+				.Select(p => new
+				{
+					p.ProyectoInversionId,
+					Descripcion = $"{p.CodigoProyecto} · {p.Nombre}"
+				})
+				.ToList();
+
+			return Json(resultado);
+		}
+
+		private async Task<List<ProyectosInversionApiDto>> CargarProyectosPorPlanAsync(int? planEstrategicoId)
+		{
+			if (!planEstrategicoId.HasValue || planEstrategicoId.Value <= 0)
+			{
+				return new List<ProyectosInversionApiDto>();
+			}
+
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/proyectosinversion?planEstrategicoId={planEstrategicoId.Value}&pageNumber=1&pageSize=1000");
+				if (response?.IsSuccessStatusCode != true)
+				{
+					return new List<ProyectosInversionApiDto>();
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				using var doc = JsonDocument.Parse(json);
+				if (doc.RootElement.TryGetProperty("data", out var dataElement) &&
+				    dataElement.TryGetProperty("data", out var itemsElement))
+				{
+					return JsonSerializer.Deserialize<List<ProyectosInversionApiDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando proyectos de inversión para revisiones: {ex.Message}");
+			}
+
+			return new List<ProyectosInversionApiDto>();
+		}
+
+		private static List<EntidadConPlanesViewModel> ExtraerEntidadesConPlanes(List<PlanesEstrategicoApiDto> planes)
+		{
+			return planes
+				.Where(p => p.EntidadPublicaId.HasValue && !string.IsNullOrWhiteSpace(p.Entidad))
+				.GroupBy(p => p.EntidadPublicaId!.Value)
+				.Select(g => new EntidadConPlanesViewModel
+				{
+					EntidadPublicaId = g.Key,
+					Nombre = g.First().Entidad
+				})
+				.OrderBy(e => e.Nombre)
+				.ToList();
+		}
+
+		private static string ConstruirModulo(PlanesEstrategicoApiDto? plan, ProyectosInversionApiDto proyecto)
+		{
+			var entidad = plan?.Entidad ?? "Entidad no identificada";
+			var modulo = $"{entidad} · PEI #{plan?.PlanEstrategicoId} · {proyecto.CodigoProyecto}";
+
+			return modulo.Length > 100 ? modulo[..100] : modulo;
 		}
 
 		[HttpPost("auditorias/crear")]

@@ -32,11 +32,11 @@ SET IDENTITY_INSERT [dbo].[PeriodosPlanificacion] OFF;
 PRINT 'Insertando Entidades Públicas...';
 
 SET IDENTITY_INSERT [dbo].[EntidadesPublicas] ON;
-INSERT INTO [dbo].[EntidadesPublicas] ([EntidadPublicaId], [Codigo], [Nombre], [Sigla], [Mision], [PeriodoPlanificacionId], [Activo])
+INSERT INTO [dbo].[EntidadesPublicas] ([EntidadPublicaId], [Codigo], [Nombre], [Sigla], [Tipo], [NivelGobierno], [Mision], [PeriodoPlanificacionId], [Activo])
 VALUES 
-(1, 'ENT-MSP', 'Ministerio de Salud Pública', 'MSP', 'Garantizar el derecho a la salud integral de la población.', 1, 1),
-(2, 'ENT-MINEDUC', 'Ministerio de Educación', 'MINEDUC', 'Garantizar una educación inclusiva, equitativa y de calidad.', 1, 1),
-(3, 'ENT-MIES', 'Ministerio de Inclusión Económica y Social', 'MIES', 'Definir y ejecutar políticas para la inclusión social de grupos vulnerables.', 1, 1);
+(1, 'ENT-MSP', 'Ministerio de Salud Pública', 'MSP', 'Ministerio', 'Gobierno Central', 'Garantizar el derecho a la salud integral de la población.', 1, 1),
+(2, 'ENT-MINEDUC', 'Ministerio de Educación', 'MINEDUC', 'Ministerio', 'Gobierno Central', 'Garantizar una educación inclusiva, equitativa y de calidad.', 1, 1),
+(3, 'ENT-MIES', 'Ministerio de Inclusión Económica y Social', 'MIES', 'Ministerio', 'Gobierno Central', 'Definir y ejecutar políticas para la inclusión social de grupos vulnerables.', 1, 1);
 SET IDENTITY_INSERT [dbo].[EntidadesPublicas] OFF;
 
 -- ==========================================

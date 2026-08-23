@@ -11,6 +11,8 @@ public partial class PlanesEstrategico
 
     public int? EntidadPublicaId { get; set; }
 
+    public int? PlanNacionalId { get; set; }
+
     public int? PeriodoPlanificacionId { get; set; }
 
     public int PeriodoInicio { get; set; }

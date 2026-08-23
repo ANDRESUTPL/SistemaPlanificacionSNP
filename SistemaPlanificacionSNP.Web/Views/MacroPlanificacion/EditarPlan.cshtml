@@ -73,8 +73,18 @@
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="Estado" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Estado</label>
-                            <input asp-for="Estado" class="form-control" readonly />
+                            <label asp-for="Estado" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Estado <span class="text-danger">*</span></label>
+                            <select asp-for="Estado" class="form-select">
+                                <option value="Borrador">Borrador</option>
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                                @if (!string.IsNullOrWhiteSpace(Model.Estado)
+                                    && !new[] { "Borrador", "Activo", "Inactivo" }.Contains(Model.Estado, StringComparer.OrdinalIgnoreCase))
+                                {
+                                    @* Conserva estados heredados para no alterarlos al guardar *@
+                                    <option value="@Model.Estado">@Model.Estado</option>
+                                }
+                            </select>
                             <span asp-validation-for="Estado" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                         </div>
 

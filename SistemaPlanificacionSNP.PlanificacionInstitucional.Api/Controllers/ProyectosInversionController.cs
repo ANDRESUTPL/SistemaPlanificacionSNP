@@ -110,6 +110,38 @@ namespace SistemaPlanificacionSNP.PlanificacionInstitucional.Api.Controllers
 			}
 		}
 
+		[HttpPost("{id:int}/respaldos-ejecucion")]
+		[RequestSizeLimit(50 * 1024 * 1024)]
+		public async Task<ActionResult<ApiResponse<List<RespaldoEjecucionReadDto>>>> UploadRespaldos(int id, [FromForm] List<IFormFile> archivos)
+		{
+			try
+			{
+				if (archivos == null || archivos.Count == 0)
+				{
+					return BadRequest(ApiResponse<List<RespaldoEjecucionReadDto>>.FailureWith("Debe seleccionar al menos un respaldo."));
+				}
+
+				var createDtos = archivos.Select(archivo => new RespaldoEjecucionCreateDto
+				{
+					NombreArchivo = archivo.FileName,
+					TipoContenido = archivo.ContentType,
+					TamanoBytes = archivo.Length,
+					Contenido = archivo.OpenReadStream()
+				});
+				var respaldos = await _service.AddRespaldosAsync(id, createDtos);
+				return Ok(ApiResponse<List<RespaldoEjecucionReadDto>>.SuccessWith(_mapper.Map<List<RespaldoEjecucionReadDto>>(respaldos), "Respaldos cargados exitosamente"));
+			}
+			catch (InvalidOperationException ex)
+			{
+				return BadRequest(ApiResponse<List<RespaldoEjecucionReadDto>>.FailureWith(ex.Message));
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error al cargar respaldos del proyecto {ProyectoId}", id);
+				return StatusCode(500, ApiResponse<List<RespaldoEjecucionReadDto>>.FailureWith("Error interno al cargar los respaldos"));
+			}
+		}
+
 		[HttpDelete("{id:int}")]
 		public async Task<ActionResult<ApiResponse<string>>> Delete(int id)
 		{

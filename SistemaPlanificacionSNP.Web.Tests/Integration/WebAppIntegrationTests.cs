@@ -147,4 +147,9 @@ internal sealed class FakeApiClient : IApiClient
 
         return Task.FromResult<HttpResponseMessage?>(response);
     }
+
+    public Task<HttpResponseMessage?> SendMultipartAsync(string endpoint, MultipartFormDataContent content)
+    {
+        return Task.FromResult<HttpResponseMessage?>(WebTestData.JsonResponse(new { message = "Fake endpoint not configured" }, HttpStatusCode.NotFound));
+    }
 }

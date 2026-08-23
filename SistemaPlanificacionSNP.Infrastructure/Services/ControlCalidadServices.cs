@@ -76,6 +76,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             {
                 CodigoRevision = dto.CodigoRevision.Trim(),
                 Modulo = dto.Modulo.Trim(),
+                PlanEstrategicoId = dto.PlanEstrategicoId,
+                ProyectoInversionId = dto.ProyectoInversionId,
+                EntidadPublicaId = dto.EntidadPublicaId,
+                EntidadNombre = string.IsNullOrWhiteSpace(dto.EntidadNombre) ? null : dto.EntidadNombre.Trim(),
+                CodigoProyecto = string.IsNullOrWhiteSpace(dto.CodigoProyecto) ? null : dto.CodigoProyecto.Trim(),
                 Estado = dto.Estado.Trim(),
                 FechaRevision = dto.FechaRevision?.ToUniversalTime() ?? DateTime.UtcNow,
                 Observaciones = string.IsNullOrWhiteSpace(dto.Observaciones) ? null : dto.Observaciones.Trim()
@@ -102,6 +107,54 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                     throw new InvalidOperationException("El módulo supera el máximo de 100 caracteres");
                 }
                 revisione.Modulo = dto.Modulo.Trim();
+            }
+
+            if (dto.PlanEstrategicoId.HasValue)
+            {
+                if (dto.PlanEstrategicoId.Value <= 0)
+                {
+                    throw new InvalidOperationException("PlanEstrategicoId no es válido");
+                }
+
+                revisione.PlanEstrategicoId = dto.PlanEstrategicoId.Value;
+            }
+
+            if (dto.ProyectoInversionId.HasValue)
+            {
+                if (dto.ProyectoInversionId.Value <= 0)
+                {
+                    throw new InvalidOperationException("ProyectoInversionId no es válido");
+                }
+
+                revisione.ProyectoInversionId = dto.ProyectoInversionId.Value;
+            }
+
+            if (dto.EntidadPublicaId.HasValue)
+            {
+                if (dto.EntidadPublicaId.Value <= 0)
+                {
+                    throw new InvalidOperationException("EntidadPublicaId no es válido");
+                }
+
+                revisione.EntidadPublicaId = dto.EntidadPublicaId.Value;
+            }
+
+            if (dto.EntidadNombre != null)
+            {
+                if (dto.EntidadNombre.Length > 200)
+                {
+                    throw new InvalidOperationException("El nombre de la entidad supera el máximo de 200 caracteres");
+                }
+                revisione.EntidadNombre = string.IsNullOrWhiteSpace(dto.EntidadNombre) ? null : dto.EntidadNombre.Trim();
+            }
+
+            if (dto.CodigoProyecto != null)
+            {
+                if (dto.CodigoProyecto.Length > 50)
+                {
+                    throw new InvalidOperationException("El código de proyecto supera el máximo de 50 caracteres");
+                }
+                revisione.CodigoProyecto = string.IsNullOrWhiteSpace(dto.CodigoProyecto) ? null : dto.CodigoProyecto.Trim();
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Estado))
@@ -176,6 +229,26 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(dto.CodigoRevision) || string.IsNullOrWhiteSpace(dto.Modulo) || string.IsNullOrWhiteSpace(dto.Estado))
             {
                 throw new InvalidOperationException("Código, módulo y estado son requeridos");
+            }
+
+            if (!dto.PlanEstrategicoId.HasValue || dto.PlanEstrategicoId.Value <= 0)
+            {
+                throw new InvalidOperationException("PlanEstrategicoId es requerido");
+            }
+
+            if (!dto.ProyectoInversionId.HasValue || dto.ProyectoInversionId.Value <= 0)
+            {
+                throw new InvalidOperationException("ProyectoInversionId es requerido");
+            }
+
+            if (dto.EntidadNombre != null && dto.EntidadNombre.Length > 200)
+            {
+                throw new InvalidOperationException("El nombre de la entidad supera el máximo de 200 caracteres");
+            }
+
+            if (dto.CodigoProyecto != null && dto.CodigoProyecto.Length > 50)
+            {
+                throw new InvalidOperationException("El código de proyecto supera el máximo de 50 caracteres");
             }
 
             if (dto.CodigoRevision.Length > 40)

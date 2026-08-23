@@ -39,6 +39,18 @@ namespace SistemaPlanificacionSNP.PlanificacionInstitucional.Api
 				}
 			});
 
+			var macroPlanificacionConnectionString = builder.Configuration.GetConnectionString("MacroPlanificacionConnection")
+				?? throw new InvalidOperationException("Cadena de conexion 'MacroPlanificacionConnection' no configurada");
+
+			builder.Services.AddDbContext<MacroPlanificacionDbContext>(options =>
+			{
+				options.UseSqlServer(macroPlanificacionConnectionString, sqlOptions =>
+				{
+					sqlOptions.MigrationsAssembly("SistemaPlanificacionSNP.Infrastructure");
+					sqlOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
+				});
+			});
+
 			builder.Services.AddSingleton(jwtSettings);
 			builder.Services.AddAutoMapper(config =>
 			{

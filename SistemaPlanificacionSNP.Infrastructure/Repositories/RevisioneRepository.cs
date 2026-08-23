@@ -96,6 +96,21 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
                 q = q.Where(r => r.Modulo.Contains(query.Modulo));
             }
 
+            if (query.PlanEstrategicoId.HasValue)
+            {
+                q = q.Where(r => r.PlanEstrategicoId == query.PlanEstrategicoId.Value);
+            }
+
+            if (query.ProyectoInversionId.HasValue)
+            {
+                q = q.Where(r => r.ProyectoInversionId == query.ProyectoInversionId.Value);
+            }
+
+            if (query.EntidadPublicaId.HasValue)
+            {
+                q = q.Where(r => r.EntidadPublicaId == query.EntidadPublicaId.Value);
+            }
+
             if (!string.IsNullOrWhiteSpace(query.CodigoRevision))
             {
                 q = q.Where(r => r.CodigoRevision.Contains(query.CodigoRevision));

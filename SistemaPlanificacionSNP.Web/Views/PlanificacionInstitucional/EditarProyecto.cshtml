@@ -26,7 +26,7 @@
                         <div asp-validation-summary="ModelOnly" class="alert alert-warning border-0"></div>
                     }
 
-                    <form method="post" action="/planificacion/institucional/@Model.PlanEstrategicoId/proyectos/@Model.ProyectoInversionId/editar">
+                    <form method="post" action="/planificacion/institucional/@Model.PlanEstrategicoId/proyectos/@Model.ProyectoInversionId/editar" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="PlanEstrategicoId" />
                         <input type="hidden" asp-for="ProyectoInversionId" />
@@ -59,6 +59,22 @@
                                     <option value="Inactivo">Inactivo</option>
                                 </select>
                                 <span asp-validation-for="Estado" class="text-danger text-sm"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="RespaldosEjecucion" class="form-label fw-medium text-sm"></label>
+                                <input asp-for="RespaldosEjecucion" class="form-control" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
+                                <div class="form-text">Puede adjuntar varios respaldos de ejecución de hasta 10 MB cada uno.</div>
+                                @if (Model.Respaldos.Count > 0)
+                                {
+                                    <div class="mt-3">
+                                        <div class="text-muted text-xs text-uppercase fw-bold mb-2">Respaldos existentes</div>
+                                        @foreach (var respaldo in Model.Respaldos)
+                                        {
+                                            <div class="small text-secondary"><i class="fas fa-paperclip me-2"></i>@respaldo.NombreArchivo</div>
+                                        }
+                                    </div>
+                                }
                             </div>
                         </div>
 

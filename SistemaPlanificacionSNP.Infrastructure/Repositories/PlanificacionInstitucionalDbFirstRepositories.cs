@@ -13,6 +13,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         Task<PlanesEstrategico?> GetByIdWithProyectosAsync(int planId);
         Task<bool> ExistsByEntidadPublicaPeriodoAsync(int entidadPublicaId, int periodoInicio, int periodoFin, int? excludeId = null, int? periodoPlanificacionId = null);
         Task<bool> HasActiveProjectsAsync(int planId);
+        Task<bool> HasProjectsAsync(int planId);
         Task AddAsync(PlanesEstrategico entity);
         Task UpdateAsync(PlanesEstrategico entity);
     }
@@ -27,6 +28,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         Task<bool> ExistsCodigoAsync(string codigoProyecto, int? excludeId = null);
         Task AddAsync(ProyectosInversion entity);
         Task UpdateAsync(ProyectosInversion entity);
+        Task AddRespaldoAsync(RespaldoEjecucion entity);
     }
 
     public class PlanesEstrategicoPiRepository : IPlanesEstrategicoPiRepository
@@ -40,7 +42,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
 
         public async Task<List<PlanesEstrategico>> GetPagedAsync(PlanesEstrategicoQueryDto query)
         {
-            var q = BuildQuery(query);
+            IQueryable<PlanesEstrategico> q = BuildQuery(query).Include(x => x.ProyectosInversions);
             q = ApplySort(q, query.SortBy, query.SortDirection);
 
             return await q
@@ -63,6 +65,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         {
             return _context.PlanesEstrategicos
                 .Include(x => x.ProyectosInversions)
+                .ThenInclude(x => x.RespaldosEjecucion)
                 .FirstOrDefaultAsync(x => x.PlanEstrategicoId == planId);
         }
 
@@ -92,6 +95,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
             return _context.ProyectosInversions.AnyAsync(x =>
                 x.PlanEstrategicoId == planId &&
                 !string.Equals(x.Estado, "Inactivo", StringComparison.OrdinalIgnoreCase));
+        }
+
+        public Task<bool> HasProjectsAsync(int planId)
+        {
+            return _context.ProyectosInversions.AnyAsync(x => x.PlanEstrategicoId == planId);
         }
 
         public async Task AddAsync(PlanesEstrategico entity)
@@ -187,6 +195,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         {
             return _context.ProyectosInversions
                 .Include(x => x.PlanEstrategico)
+                .Include(x => x.RespaldosEjecucion)
                 .FirstOrDefaultAsync(x => x.ProyectoInversionId == proyectoId);
         }
 
@@ -215,6 +224,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         {
             _context.ProyectosInversions.Update(entity);
             return Task.CompletedTask;
+        }
+
+        public async Task AddRespaldoAsync(RespaldoEjecucion entity)
+        {
+            await _context.RespaldosEjecucion.AddAsync(entity);
         }
 
         private IQueryable<ProyectosInversion> BuildQuery(ProyectosInversionQueryDto query)

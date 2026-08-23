@@ -215,6 +215,8 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 			entidad.Codigo = codigo;
 			entidad.Nombre = dto.Nombre.Trim();
 			entidad.Sigla = dto.Sigla.Trim().ToUpperInvariant();
+			entidad.Tipo = dto.Tipo.Trim();
+			entidad.NivelGobierno = dto.NivelGobierno.Trim();
 			entidad.Mision = (dto.Mision ?? string.Empty).Trim();
 			entidad.PeriodoPlanificacionId = periodoId;
 			entidad.FechaCreacion = DateTime.UtcNow;
@@ -253,6 +255,8 @@ namespace SistemaPlanificacionSNP.Parametrizacion.Api.Services
 			entidad.Codigo = codigo;
 			entidad.Nombre = dto.Nombre.Trim();
 			entidad.Sigla = dto.Sigla.Trim().ToUpperInvariant();
+			entidad.Tipo = dto.Tipo.Trim();
+			entidad.NivelGobierno = dto.NivelGobierno.Trim();
 			entidad.Mision = (dto.Mision ?? string.Empty).Trim();
 			entidad.PeriodoPlanificacionId = periodoId;
 

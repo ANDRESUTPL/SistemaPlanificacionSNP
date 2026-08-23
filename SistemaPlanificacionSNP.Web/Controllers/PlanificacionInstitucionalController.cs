@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SistemaPlanificacionSNP.Web.Common;
 using SistemaPlanificacionSNP.Web.Models;
 using SistemaPlanificacionSNP.Web.Services;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
@@ -80,7 +81,33 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			var model = new PlanEstrategicoCreateViewModel();
 			await CargarEntidadesDisponibles(model);
 			await CargarPeriodosDisponibles(model);
+			await CargarPlanesNacionalesDisponibles(model);
 			return View(model);
+		}
+
+		[HttpPost("{id:int}/eliminar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EliminarPlan(int id)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/planesestrategicos/{id}");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Plan Estratégico Institucional eliminado exitosamente.";
+				}
+				else
+				{
+					TempData["Warning"] = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se puede eliminar el plan porque tiene proyectos asociados.");
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error eliminando PEI: {ex.Message}");
+				TempData["Warning"] = "Error interno al eliminar el plan.";
+			}
+
+			return RedirectToAction(nameof(Index));
 		}
 
 		[HttpPost("crear")]
@@ -91,30 +118,15 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			{
 				await CargarEntidadesDisponibles(model);
 				await CargarPeriodosDisponibles(model);
+				await CargarPlanesNacionalesDisponibles(model);
 				return View(model);
 			}
 
 			await CargarPeriodosDisponibles(model);
-
-			var periodoSeleccionado = model.PeriodosDisponibles
-				.FirstOrDefault(p => p.PeriodoPlanificacionId == model.PeriodoPlanificacionId);
-
-			if (periodoSeleccionado == null)
+			await CargarPlanesNacionalesDisponibles(model);
+			if (!SincronizarPeriodoConPlanNacional(model))
 			{
-				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado no es válido.");
 				await CargarEntidadesDisponibles(model);
-				await CargarPeriodosDisponibles(model);
-				return View(model);
-			}
-
-			model.PeriodoInicio = periodoSeleccionado.FechaInicio.Year;
-			model.PeriodoFin = periodoSeleccionado.FechaFin.Year;
-
-			if (model.PeriodoInicio > model.PeriodoFin)
-			{
-				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado tiene un rango de fechas inválido.");
-				await CargarEntidadesDisponibles(model);
-				await CargarPeriodosDisponibles(model);
 				return View(model);
 			}
 
@@ -140,7 +152,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			try
 			{
-				var payload = new { model.EntidadPublicaId, Entidad = entidadDisplay, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
+				var payload = new { model.EntidadPublicaId, Entidad = entidadDisplay, model.PlanNacionalId, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, Estado = "Borrador" };
 				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/planesestrategicos/crear", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -223,6 +235,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				{
 					PlanEstrategicoId = envelope.Data.PlanEstrategicoId,
 					EntidadPublicaId = envelope.Data.EntidadPublicaId,
+					PlanNacionalId = envelope.Data.PlanNacionalId,
 					PeriodoPlanificacionId = envelope.Data.PeriodoPlanificacionId,
 					PeriodoInicio = envelope.Data.PeriodoInicio,
 					PeriodoFin = envelope.Data.PeriodoFin,
@@ -230,6 +243,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				};
 
 				await CargarEntidadesDisponibles(model);
+				await CargarPlanesNacionalesDisponibles(model);
 				if (!model.EntidadPublicaId.HasValue || model.EntidadPublicaId.Value <= 0)
 				{
 					model.EntidadPublicaId = ResolveEntidadPublicaId(model.EntidadesDisponibles, envelope.Data.Entidad);
@@ -259,33 +273,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			{
 				await CargarEntidadesDisponibles(model);
 				await CargarPeriodosDisponibles(model);
+				await CargarPlanesNacionalesDisponibles(model);
 				return View(model);
 			}
 
 			await CargarPeriodosDisponibles(model);
-			if (!model.PeriodoPlanificacionId.HasValue)
+			await CargarPlanesNacionalesDisponibles(model);
+			if (!SincronizarPeriodoConPlanNacional(model))
 			{
-				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "Debe seleccionar un período de planificación.");
-				await CargarEntidadesDisponibles(model);
-				return View(model);
-			}
-
-			var periodoSeleccionado = model.PeriodosDisponibles
-				.FirstOrDefault(p => p.PeriodoPlanificacionId == model.PeriodoPlanificacionId.Value);
-
-			if (periodoSeleccionado == null)
-			{
-				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado no es válido.");
-				await CargarEntidadesDisponibles(model);
-				return View(model);
-			}
-
-			model.PeriodoInicio = periodoSeleccionado.FechaInicio.Year;
-			model.PeriodoFin = periodoSeleccionado.FechaFin.Year;
-
-			if (model.PeriodoInicio > model.PeriodoFin)
-			{
-				ModelState.AddModelError(nameof(model.PeriodoPlanificacionId), "El período seleccionado tiene un rango de fechas inválido.");
 				await CargarEntidadesDisponibles(model);
 				return View(model);
 			}
@@ -310,7 +305,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			try
 			{
-				var payload = new { model.EntidadPublicaId, Entidad = entidadDisplay, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, model.Estado };
+				var payload = new { model.EntidadPublicaId, Entidad = entidadDisplay, model.PlanNacionalId, model.PeriodoPlanificacionId, model.PeriodoInicio, model.PeriodoFin, model.Estado };
 				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/planesestrategicos/{id}", payload);
 
 				if (response?.IsSuccessStatusCode == true)
@@ -350,6 +345,12 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				if (response?.IsSuccessStatusCode == true)
 				{
 					TempData["Success"] = "Proyecto de Inversión registrado exitosamente.";
+					var json = await response.Content.ReadAsStringAsync();
+					var envelope = JsonSerializer.Deserialize<ApiEnvelope<ProyectosInversionApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+					if (envelope?.Data != null && model.RespaldosEjecucion.Count > 0)
+					{
+						await CargarRespaldosAsync(envelope.Data.ProyectoInversionId, model.RespaldosEjecucion);
+					}
 				}
 				else
 				{
@@ -406,7 +407,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					CodigoProyecto = envelope.Data.CodigoProyecto,
 					Nombre = envelope.Data.Nombre,
 					Monto = envelope.Data.Monto,
-					Estado = envelope.Data.Estado
+					Estado = envelope.Data.Estado,
+					Respaldos = envelope.Data.RespaldosEjecucion
 				};
 
 				return View(model);
@@ -441,6 +443,10 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				if (response?.IsSuccessStatusCode == true)
 				{
 					TempData["Success"] = "Proyecto de inversión actualizado exitosamente.";
+					if (model.RespaldosEjecucion.Count > 0)
+					{
+						await CargarRespaldosAsync(proyectoId, model.RespaldosEjecucion);
+					}
 					return RedirectToAction(nameof(Detalle), new { id = planId });
 				}
 
@@ -454,6 +460,28 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return View(model);
+		}
+
+		private async Task CargarRespaldosAsync(int proyectoId, IEnumerable<IFormFile> archivos)
+		{
+			using var contenido = new MultipartFormDataContent();
+			foreach (var archivo in archivos.Where(a => a.Length > 0))
+			{
+				var archivoHttp = new StreamContent(archivo.OpenReadStream());
+				archivoHttp.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(archivo.ContentType) ? "application/octet-stream" : archivo.ContentType);
+				contenido.Add(archivoHttp, "archivos", archivo.FileName);
+			}
+
+			if (contenido.Count() == 0)
+			{
+				return;
+			}
+
+			var response = await _apiClient.SendMultipartAsync($"/api/proyectosinversion/{proyectoId}/respaldos-ejecucion", contenido);
+			if (response?.IsSuccessStatusCode != true)
+			{
+				TempData["Warning"] = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible cargar los respaldos de ejecución.");
+			}
 		}
 
 		private async Task CargarEntidadesDisponibles(PlanEstrategicoCreateViewModel model)
@@ -495,6 +523,53 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 		}
 
+		private async Task CargarPlanesNacionalesDisponibles(PlanEstrategicoCreateViewModel model)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planesnacionales");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var json = await response.Content.ReadAsStringAsync();
+					using var doc = JsonDocument.Parse(json);
+					if (doc.RootElement.TryGetProperty("data", out var dataElement) && dataElement.TryGetProperty("data", out var itemsElement))
+					{
+						model.PlanesNacionalesDisponibles = JsonSerializer.Deserialize<List<MacroPlanNacionalApiDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+					}
+				}
+			}
+			catch
+			{
+				model.PlanesNacionalesDisponibles = new List<MacroPlanNacionalApiDto>();
+			}
+		}
+
+		private bool SincronizarPeriodoConPlanNacional(PlanEstrategicoCreateViewModel model)
+		{
+			var planNacional = model.PlanesNacionalesDisponibles
+				.FirstOrDefault(plan => plan.PlanNacionalId == model.PlanNacionalId);
+
+			if (planNacional?.PeriodoPlanificacionId is not int periodoPlanificacionId || periodoPlanificacionId <= 0)
+			{
+				ModelState.AddModelError(nameof(model.PlanNacionalId), "El Plan Nacional seleccionado no tiene un período de planificación válido.");
+				return false;
+			}
+
+			var periodo = model.PeriodosDisponibles
+				.FirstOrDefault(item => item.PeriodoPlanificacionId == periodoPlanificacionId);
+
+			if (periodo == null)
+			{
+				ModelState.AddModelError(nameof(model.PlanNacionalId), "No fue posible obtener el período asociado al Plan Nacional seleccionado.");
+				return false;
+			}
+
+			model.PeriodoPlanificacionId = periodo.PeriodoPlanificacionId;
+			model.PeriodoInicio = periodo.FechaInicio.Year;
+			model.PeriodoFin = periodo.FechaFin.Year;
+			return true;
+		}
+
 		private async Task CargarEntidadesDisponibles(PlanEstrategicoEditViewModel model)
 		{
 			try
@@ -531,6 +606,27 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			catch
 			{
 				model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
+			}
+		}
+
+		private async Task CargarPlanesNacionalesDisponibles(PlanEstrategicoEditViewModel model)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/planesnacionales");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var json = await response.Content.ReadAsStringAsync();
+					using var doc = JsonDocument.Parse(json);
+					if (doc.RootElement.TryGetProperty("data", out var dataElement) && dataElement.TryGetProperty("data", out var itemsElement))
+					{
+						model.PlanesNacionalesDisponibles = JsonSerializer.Deserialize<List<MacroPlanNacionalApiDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+					}
+				}
+			}
+			catch
+			{
+				model.PlanesNacionalesDisponibles = new List<MacroPlanNacionalApiDto>();
 			}
 		}
 

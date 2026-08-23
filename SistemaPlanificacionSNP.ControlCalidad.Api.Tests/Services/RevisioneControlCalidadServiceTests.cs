@@ -35,6 +35,11 @@ public class RevisioneControlCalidadServiceTests
             CodigoRevision = " REV-001 ",
             Modulo = " Planificacion ",
             Estado = " Pendiente ",
+            PlanEstrategicoId = 17,
+            ProyectoInversionId = 42,
+            EntidadPublicaId = 5,
+            EntidadNombre = " Ministerio de Salud ",
+            CodigoProyecto = " CUP-001 ",
             Observaciones = " Revisión inicial "
         };
 
@@ -43,13 +48,20 @@ public class RevisioneControlCalidadServiceTests
         result.CodigoRevision.Should().Be("REV-001");
         result.Modulo.Should().Be("Planificacion");
         result.Estado.Should().Be("Pendiente");
+        result.PlanEstrategicoId.Should().Be(17);
+        result.ProyectoInversionId.Should().Be(42);
+        result.EntidadPublicaId.Should().Be(5);
+        result.EntidadNombre.Should().Be("Ministerio de Salud");
+        result.CodigoProyecto.Should().Be("CUP-001");
         result.Observaciones.Should().Be("Revisión inicial");
         result.FechaRevision.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
 
         revisionesRepoMock.Verify(r => r.AddAsync(It.Is<Revisione>(x =>
             x.CodigoRevision == "REV-001" &&
             x.Modulo == "Planificacion" &&
-            x.Estado == "Pendiente")), Times.Once);
+            x.Estado == "Pendiente" &&
+            x.PlanEstrategicoId == 17 &&
+            x.ProyectoInversionId == 42)), Times.Once);
         unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Once);
     }
 
@@ -127,7 +139,9 @@ public class RevisioneControlCalidadServiceTests
         {
             CodigoRevision = "REV-001",
             Modulo = "Planificacion",
-            Estado = "Pendiente"
+            Estado = "Pendiente",
+            PlanEstrategicoId = 11,
+            ProyectoInversionId = 42
         };
 
         var action = async () => await service.CreateAsync(dto);
@@ -136,6 +150,50 @@ public class RevisioneControlCalidadServiceTests
             .WithMessage("El código de revisión ya existe");
 
         unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShouldThrow_WhenPlanEstrategicoIdIsMissing()
+    {
+        var service = new RevisioneControlCalidadService(BuildUnitOfWork(
+            new Mock<IRevisioneRepository>(),
+            new Mock<IControlCalidadAuditoriaRepository>()).Object);
+
+        var dto = new RevisioneCreateDto
+        {
+            CodigoRevision = "REV-777",
+            Modulo = "Planificacion",
+            Estado = "Pendiente",
+            PlanEstrategicoId = null,
+            ProyectoInversionId = 42
+        };
+
+        var action = async () => await service.CreateAsync(dto);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("PlanEstrategicoId es requerido");
+    }
+
+    [Fact]
+    public async Task CreateAsync_ShouldThrow_WhenProyectoInversionIdIsMissing()
+    {
+        var service = new RevisioneControlCalidadService(BuildUnitOfWork(
+            new Mock<IRevisioneRepository>(),
+            new Mock<IControlCalidadAuditoriaRepository>()).Object);
+
+        var dto = new RevisioneCreateDto
+        {
+            CodigoRevision = "REV-778",
+            Modulo = "Planificacion",
+            Estado = "Pendiente",
+            PlanEstrategicoId = 11,
+            ProyectoInversionId = null
+        };
+
+        var action = async () => await service.CreateAsync(dto);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("ProyectoInversionId es requerido");
     }
 
     [Fact]
@@ -149,7 +207,9 @@ public class RevisioneControlCalidadServiceTests
         {
             CodigoRevision = "REV-777",
             Modulo = "Planificacion",
-            Estado = "En Proceso"
+            Estado = "En Proceso",
+            PlanEstrategicoId = 11,
+            ProyectoInversionId = 42
         };
 
         var action = async () => await service.CreateAsync(dto);
@@ -170,6 +230,8 @@ public class RevisioneControlCalidadServiceTests
             CodigoRevision = "REV-888",
             Modulo = "Planificacion",
             Estado = "Pendiente",
+            PlanEstrategicoId = 13,
+            ProyectoInversionId = 42,
             FechaRevision = DateTime.UtcNow.AddHours(1)
         };
 

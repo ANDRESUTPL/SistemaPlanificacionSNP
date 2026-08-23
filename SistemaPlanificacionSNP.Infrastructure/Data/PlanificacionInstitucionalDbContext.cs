@@ -16,6 +16,8 @@ public partial class PlanificacionInstitucionalDbContext : DbContext
 
 	public virtual DbSet<ProyectosInversion> ProyectosInversions { get; set; }
 
+	public virtual DbSet<RespaldoEjecucion> RespaldosEjecucion { get; set; }
+
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
 		modelBuilder.Entity<PlanesEstrategico>(entity =>
@@ -27,9 +29,11 @@ public partial class PlanificacionInstitucionalDbContext : DbContext
 
 			entity.HasIndex(e => e.PeriodoPlanificacionId, "IX_PlanesEstrategicos_PeriodoPlanificacionId");
 			entity.HasIndex(e => e.EntidadPublicaId, "IX_PlanesEstrategicos_EntidadPublicaId");
+			entity.HasIndex(e => e.PlanNacionalId, "IX_PlanesEstrategicos_PlanNacionalId");
 
 			entity.Property(e => e.Entidad).HasMaxLength(200);
 			entity.Property(e => e.EntidadPublicaId).IsRequired(false);
+			entity.Property(e => e.PlanNacionalId).IsRequired(false);
 			entity.Property(e => e.Estado).HasMaxLength(30);
 			entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(sysutcdatetime())");
 			entity.Property(e => e.PeriodoPlanificacionId).IsRequired(false);
@@ -52,6 +56,20 @@ public partial class PlanificacionInstitucionalDbContext : DbContext
 				.HasForeignKey(d => d.PlanEstrategicoId)
 				.OnDelete(DeleteBehavior.ClientSetNull)
 				.HasConstraintName("FK_PI_Proyectos_Planes");
+		});
+
+		modelBuilder.Entity<RespaldoEjecucion>(entity =>
+		{
+			entity.HasKey(e => e.RespaldoEjecucionId);
+			entity.ToTable("RespaldosEjecucion");
+			entity.Property(e => e.NombreArchivo).HasMaxLength(255).IsRequired();
+			entity.Property(e => e.RutaArchivo).HasMaxLength(500).IsRequired();
+			entity.Property(e => e.TipoContenido).HasMaxLength(150).IsRequired();
+			entity.Property(e => e.FechaCarga).HasDefaultValueSql("(sysutcdatetime())");
+			entity.HasOne(d => d.ProyectoInversion).WithMany(p => p.RespaldosEjecucion)
+				.HasForeignKey(d => d.ProyectoInversionId)
+				.OnDelete(DeleteBehavior.Cascade)
+				.HasConstraintName("FK_RespaldosEjecucion_ProyectosInversion");
 		});
 
 		OnModelCreatingPartial(modelBuilder);

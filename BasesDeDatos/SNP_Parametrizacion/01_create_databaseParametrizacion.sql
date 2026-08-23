@@ -50,6 +50,8 @@ CREATE TABLE [dbo].[EntidadesPublicas](
 	[Codigo] [nvarchar](50) NOT NULL,
 	[Nombre] [nvarchar](200) NOT NULL,
 	[Sigla] [nvarchar](50) NOT NULL,
+	[Tipo] [nvarchar](100) NOT NULL,
+	[NivelGobierno] [nvarchar](100) NOT NULL,
 	[Mision] [nvarchar](max) NULL,
 	[PeriodoPlanificacionId] [int] NOT NULL,
 	[Activo] [bit] NOT NULL,

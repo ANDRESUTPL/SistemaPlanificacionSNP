@@ -122,6 +122,8 @@ public class ParametrizacionApiIntegrationTests : IClassFixture<ParametrizacionA
         createdEntidadBody.Data.Should().NotBeNull();
         createdEntidadBody.Data!.EntidadPublicaId.Should().BeGreaterThan(0);
         createdEntidadBody.Data.Sigla.Should().Be("MI");
+        createdEntidadBody.Data.Tipo.Should().Be("Ministerio");
+        createdEntidadBody.Data.NivelGobierno.Should().Be("Nacional");
 
         var getEntidadesResponse = await client.GetAsync("/api/instituciones/entidades");
         getEntidadesResponse.EnsureSuccessStatusCode();
@@ -129,7 +131,7 @@ public class ParametrizacionApiIntegrationTests : IClassFixture<ParametrizacionA
         var entidadesBody = await getEntidadesResponse.Content.ReadFromJsonAsync<ApiResponse<List<EntidadPublicaDto>>>();
         entidadesBody.Should().NotBeNull();
         entidadesBody!.Success.Should().BeTrue();
-        entidadesBody.Data.Should().ContainSingle(x => x.Sigla == "MI");
+        entidadesBody.Data.Should().ContainSingle(x => x.Sigla == "MI" && x.Tipo == "Ministerio" && x.NivelGobierno == "Nacional");
     }
 
     [Fact]

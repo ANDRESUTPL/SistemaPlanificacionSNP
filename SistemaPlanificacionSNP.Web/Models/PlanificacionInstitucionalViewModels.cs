@@ -8,11 +8,13 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public int PlanEstrategicoId { get; set; }
 		public string Entidad { get; set; } = string.Empty;
 		public int? EntidadPublicaId { get; set; }
+		public int? PlanNacionalId { get; set; }
 		public int? PeriodoPlanificacionId { get; set; }
 		public int PeriodoInicio { get; set; }
 		public int PeriodoFin { get; set; }
 		public string Estado { get; set; } = string.Empty;
 		public DateTime FechaCreacion { get; set; }
+		public int CantidadProyectos { get; set; }
 	}
 
 	public class ProyectosInversionApiDto
@@ -23,6 +25,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public string Nombre { get; set; } = string.Empty;
 		public decimal Monto { get; set; }
 		public string Estado { get; set; } = string.Empty;
+		public List<RespaldoEjecucionApiDto> RespaldosEjecucion { get; set; } = new();
 	}
 
 	public class PlanesEstrategicoDetailApiDto : PlanesEstrategicoApiDto
@@ -55,11 +58,16 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Required(ErrorMessage = "Debe seleccionar una entidad.")]
 		public int? EntidadPublicaId { get; set; }
 
+		[Display(Name = "Plan Nacional de Desarrollo")]
+		[Required(ErrorMessage = "Debe seleccionar un Plan Nacional de Desarrollo.")]
+		public int? PlanNacionalId { get; set; }
+
 		[Display(Name = "Período de Planificación")]
 		[Required(ErrorMessage = "Debe seleccionar un período de planificación.")]
 		public int? PeriodoPlanificacionId { get; set; }
 
 		public List<PeriodoPlanificacionApiDto> PeriodosDisponibles { get; set; } = new();
+		public List<MacroPlanNacionalApiDto> PlanesNacionalesDisponibles { get; set; } = new();
 
 		[Display(Name = "Año de Inicio")]
 		public int PeriodoInicio { get; set; } = DateTime.Now.Year;
@@ -91,6 +99,9 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a cero.")]
 		[DataType(DataType.Currency)]
 		public decimal Monto { get; set; }
+
+		[Display(Name = "Respaldos de ejecución")]
+		public List<IFormFile> RespaldosEjecucion { get; set; } = new();
 	}
 
 	public class ProyectoInversionEditViewModel : ProyectoInversionCreateViewModel
@@ -102,6 +113,15 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Required(ErrorMessage = "El estado es obligatorio.")]
 		[StringLength(30, ErrorMessage = "Máximo 30 caracteres.")]
 		public string Estado { get; set; } = string.Empty;
+		public List<RespaldoEjecucionApiDto> Respaldos { get; set; } = new();
+	}
+
+	public class RespaldoEjecucionApiDto
+	{
+		public int RespaldoEjecucionId { get; set; }
+		public string NombreArchivo { get; set; } = string.Empty;
+		public long TamanoBytes { get; set; }
+		public DateTime FechaCarga { get; set; }
 	}
 
 	public class PlanEstrategicoEditViewModel : PlanEstrategicoCreateViewModel
