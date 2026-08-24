@@ -37,6 +37,8 @@ public sealed class ControlCalidadFunctionalTests : IClassFixture<ControlCalidad
         {
             CodigoRevision = $"REV-INT-{Guid.NewGuid():N}"[..16],
             Modulo = "Planificacion",
+            PlanEstrategicoId = 1,
+            ProyectoInversionId = 1,
             Estado = "Pendiente",
             Observaciones = "Integracion funcional"
         };
@@ -93,6 +95,8 @@ public sealed class ControlCalidadFunctionalTests : IClassFixture<ControlCalidad
         {
             CodigoRevision = "REV-FUT-001",
             Modulo = "Planificacion",
+            PlanEstrategicoId = 1,
+            ProyectoInversionId = 1,
             Estado = "Pendiente",
             FechaRevision = DateTime.UtcNow.AddDays(1),
             Observaciones = "Fallo esperado"
