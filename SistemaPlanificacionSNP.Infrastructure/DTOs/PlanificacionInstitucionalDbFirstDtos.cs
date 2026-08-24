@@ -74,7 +74,10 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public string Nombre { get; set; } = string.Empty;
         public decimal Monto { get; set; }
         public string Estado { get; set; } = string.Empty;
-        public List<RespaldoEjecucionReadDto> RespaldosEjecucion { get; set; } = new();
+		public decimal? AvanceFisico { get; set; }
+		public decimal? AvanceFinanciero { get; set; }
+		public string? Observaciones { get; set; }
+		public List<RespaldoEjecucionReadDto> RespaldosEjecucion { get; set; } = new();
     }
 
     public class RespaldoEjecucionReadDto
@@ -115,7 +118,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public string? Nombre { get; set; }
         public decimal? Monto { get; set; }
         public string? Estado { get; set; }
-    }
+
+		public decimal? AvanceFisico { get; set; }
+		public decimal? AvanceFinanciero { get; set; }
+		public string? Observaciones { get; set; }
+	}
 
     public class PlanificacionInstitucionalDashboardDbFirstDto
     {

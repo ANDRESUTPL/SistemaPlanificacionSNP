@@ -404,7 +404,23 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 entity.Estado = dto.Estado.Trim();
             }
 
-            await _unitOfWork.ProyectosInversion.UpdateAsync(entity);
+			if (dto.AvanceFisico.HasValue)
+			{
+				// Validar que no sea menor a 0 o mayor a 100 si es necesario
+				entity.AvanceFisico = dto.AvanceFisico.Value;
+			}
+
+			if (dto.AvanceFinanciero.HasValue)
+			{
+				entity.AvanceFinanciero = dto.AvanceFinanciero.Value;
+			}
+
+			if (dto.Observaciones != null)
+			{
+				entity.Observaciones = dto.Observaciones.Trim();
+			}
+
+			await _unitOfWork.ProyectosInversion.UpdateAsync(entity);
             await _unitOfWork.SaveChangesAsync();
             return entity;
         }

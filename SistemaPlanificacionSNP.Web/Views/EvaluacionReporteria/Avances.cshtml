@@ -59,8 +59,8 @@
                                     <td class="ps-4 py-3">
                                         <div class="text-xs fw-bold text-primary tracking-wider mb-1">CUP: @proy.Codigo</div>
                                         <div class="fw-semibold text-dark mb-1">@proy.Nombre</div>
-                                        <div class="text-xs text-muted"><i class="fas fa-history me-1"></i> Actualizado: @proy.FechaUltimaActualizacion.ToString("dd/MM/yyyy")</div>
-                                    </td>
+@*                                         <div class="text-xs text-muted"><i class="fas fa-history me-1"></i> Actualizado: @proy.FechaUltimaActualizacion.ToString("dd/MM/yyyy")</div>
+ *@                                    </td>
                                     <td>
                                         <span class="badge bg-light text-dark border px-2 py-1">@proy.Estado</span>
                                     </td>
@@ -84,7 +84,7 @@
                                     </td>
                                     <td class="pe-4 text-end">
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                                onclick="openAvanceModal(@proy.ProyectoId, '@proy.Codigo', '@proy.Nombre', '@proy.Estado', @proy.AvanceFisico, @proy.AvanceFinanciero)">
+                                                onclick="openAvanceModal(@proy.ProyectoId, '@proy.Codigo', '@proy.Nombre', '@proy.Estado', @proy.AvanceFisico, @proy.AvanceFinanciero,'@proy.Observaciones')">
                                             <i class="fas fa-edit me-1"></i>Reportar
                                         </button>
                                     </td>
@@ -161,7 +161,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium text-sm">Justificación Técnica / Observaciones</label>
-                            <textarea name="Observaciones" class="form-control" rows="3" placeholder="Explique las variaciones del período..."></textarea>
+                            <textarea name="Observaciones" id="observacion" class="form-control" rows="3" placeholder="Explique las variaciones del período..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -184,10 +184,11 @@
             if (swalWarning) Swal.fire({ title: 'Atención', text: swalWarning, icon: 'warning', confirmButtonText: 'Revisar' });
         });
 
-        function openAvanceModal(id, codigo, nombre, estado, fisico, financiero) {
+        function openAvanceModal(id, codigo, nombre, estado, fisico, financiero, observacion) {
             document.getElementById('modalProyectoId').value = id;
             document.getElementById('modalCodigo').innerText = `CUP: ${codigo}`;
             document.getElementById('modalNombre').innerText = nombre;
+            document.getElementById('observacion').innerText = observacion;
 
             // Setear selects e inputs
             let selEstado = document.getElementById('modalEstado');

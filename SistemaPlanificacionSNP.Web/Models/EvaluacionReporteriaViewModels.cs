@@ -26,9 +26,10 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public string Entidad { get; set; } = string.Empty;
 		public decimal PresupuestoAsignado { get; set; }
 		public string Estado { get; set; } = string.Empty;
-		public double AvanceFisico { get; set; }
-		public double AvanceFinanciero { get; set; }
-		public DateTime FechaUltimaActualizacion { get; set; }
+		public string Observaciones { get; set; } = string.Empty;
+		public decimal AvanceFisico { get; set; }
+		public decimal AvanceFinanciero { get; set; }
+		//public DateTime FechaUltimaActualizacion { get; set; }
 	}
 
 	public class ListadoAvancesViewModel
@@ -52,11 +53,11 @@ namespace SistemaPlanificacionSNP.Web.Models
 
 		[Display(Name = "Avance Físico (%)")]
 		[Range(0, 100, ErrorMessage = "El avance debe estar entre 0 y 100.")]
-		public double AvanceFisico { get; set; }
+		public decimal AvanceFisico { get; set; }
 
 		[Display(Name = "Avance Financiero (%)")]
 		[Range(0, 100, ErrorMessage = "El avance debe estar entre 0 y 100.")]
-		public double AvanceFinanciero { get; set; }
+		public decimal AvanceFinanciero { get; set; }
 
 		[Display(Name = "Observaciones de Evaluación")]
 		[StringLength(500, ErrorMessage = "Las observaciones no pueden superar los 500 caracteres.")]

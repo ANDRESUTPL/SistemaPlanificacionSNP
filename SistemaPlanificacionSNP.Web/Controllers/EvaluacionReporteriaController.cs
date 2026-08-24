@@ -96,7 +96,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 							var proyectos = JsonSerializer.Deserialize<List<ProyectosInversionReadDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
 
 							// Mapeo simulando valores de avance para la vista (se reemplazarán con datos reales del API cuando se expanda el DTO)
-							Random rnd = new Random();
+							
 							model.Proyectos = proyectos.Select(p => new AvanceProyectoViewModel
 							{
 								ProyectoId = p.ProyectoInversionId,
@@ -104,9 +104,10 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 								Nombre = p.Nombre,
 								PresupuestoAsignado = p.Monto,
 								Estado = p.Estado,
-								AvanceFisico = p.Estado == "Completado" ? 100 : (p.Estado == "Formulacion" ? 0 : rnd.Next(10, 85)),
-								AvanceFinanciero = p.Estado == "Completado" ? 100 : (p.Estado == "Formulacion" ? 0 : rnd.Next(5, 80)),
-								FechaUltimaActualizacion = DateTime.UtcNow.AddDays(-rnd.Next(1, 30))
+								AvanceFisico = p.Estado == "Completado" ? 100 : p.AvanceFisico ?? 0,
+								AvanceFinanciero = p.Estado == "Completado" ? 100 : p.AvanceFinanciero ?? 0,
+								Observaciones = p.Observaciones,
+								//FechaUltimaActualizacion = DateTime.UtcNow.AddDays(-rnd.Next(1, 30))
 							}).ToList();
 						}
 						if (dataElement.TryGetProperty("totalPages", out var pagesElement))
@@ -139,10 +140,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			try
-			{
-				// Enviar la actualización de estado al backend (Actualizando Proyecto)
-				// En el futuro se llamaría a un endpoint específico /api/proyectosinversion/{id}/avance
-				var payload = new ProyectosInversionUpdateDto { Estado = model.Estado };
+			{				
+				var payload = new ProyectosInversionUpdateDto
+				{
+					Estado = model.Estado,
+					AvanceFisico = model.AvanceFisico,
+					AvanceFinanciero = model.AvanceFinanciero,
+					Observaciones = model.Observaciones
+				};
 				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/proyectosinversion/{model.ProyectoId}", payload);
 
 				if (response?.IsSuccessStatusCode == true)
