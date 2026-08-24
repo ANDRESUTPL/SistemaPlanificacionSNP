@@ -151,6 +151,101 @@ namespace SistemaPlanificacionSNP.ControlCalidad.Api.Controllers
             }
         }
 
+        [HttpPost("{id:int}/documentos")]
+        [RequestSizeLimit(50 * 1024 * 1024)]
+        public async Task<ActionResult<ApiResponse<List<AuditoriaDocumentoDto>>>> UploadDocumentos(int id, [FromForm] List<IFormFile> documentos)
+        {
+            var streams = new List<Stream>();
+            try
+            {
+                var createDtos = new List<AuditoriaDocumentoCreateDto>();
+                foreach (var documento in documentos.Where(d => d.Length > 0))
+                {
+                    var stream = documento.OpenReadStream();
+                    streams.Add(stream);
+                    createDtos.Add(new AuditoriaDocumentoCreateDto
+                    {
+                        NombreArchivo = documento.FileName,
+                        TipoContenido = string.IsNullOrWhiteSpace(documento.ContentType) ? "application/octet-stream" : documento.ContentType,
+                        TamanoBytes = documento.Length,
+                        Contenido = stream
+                    });
+                }
+
+                var created = await _service.AddDocumentosAsync(id, createDtos);
+                var data = _mapper.Map<List<AuditoriaDocumentoDto>>(created);
+                return Ok(ApiResponse<List<AuditoriaDocumentoDto>>.SuccessWith(data, "Documentos anexados exitosamente"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (string.Equals(ex.Message, "Auditoría no encontrada", StringComparison.OrdinalIgnoreCase))
+                {
+                    return NotFound(ApiResponse<List<AuditoriaDocumentoDto>>.FailureWith(ex.Message));
+                }
+
+                return BadRequest(ApiResponse<List<AuditoriaDocumentoDto>>.FailureWith(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al anexar documentos a auditoría {AuditoriaId}", id);
+                return StatusCode(500, ApiResponse<List<AuditoriaDocumentoDto>>.FailureWith("Error interno del servidor"));
+            }
+            finally
+            {
+                foreach (var stream in streams)
+                {
+                    await stream.DisposeAsync();
+                }
+            }
+        }
+
+        [HttpGet("{id:int}/documentos/{documentoId:int}")]
+        public async Task<IActionResult> DownloadDocumento(int id, int documentoId)
+        {
+            try
+            {
+                var documento = await _service.GetDocumentoAsync(id, documentoId);
+                if (documento == null)
+                {
+                    return NotFound(ApiResponse<string>.FailureWith("Documento no encontrado"));
+                }
+
+                var basePath = Path.GetFullPath(AppContext.BaseDirectory);
+                var fullPath = Path.GetFullPath(Path.Combine(basePath, documento.RutaArchivo));
+                if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(fullPath))
+                {
+                    return NotFound(ApiResponse<string>.FailureWith("Archivo físico no encontrado"));
+                }
+
+                return PhysicalFile(fullPath, documento.TipoContenido, documento.NombreArchivo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al descargar documento {DocumentoId} de auditoría {AuditoriaId}", documentoId, id);
+                return StatusCode(500, ApiResponse<string>.FailureWith("Error interno del servidor"));
+            }
+        }
+
+        [HttpDelete("{id:int}/documentos/{documentoId:int}")]
+        public async Task<ActionResult<ApiResponse<string>>> DeleteDocumento(int id, int documentoId)
+        {
+            try
+            {
+                var deleted = await _service.DeleteDocumentoAsync(id, documentoId);
+                if (!deleted)
+                {
+                    return NotFound(ApiResponse<string>.FailureWith("Documento no encontrado"));
+                }
+
+                return Ok(ApiResponse<string>.Succeeded("Documento eliminado exitosamente"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar documento {DocumentoId} de auditoría {AuditoriaId}", documentoId, id);
+                return StatusCode(500, ApiResponse<string>.FailureWith("Error interno del servidor"));
+            }
+        }
+
         private static string BuildResponsableFromClaims(ClaimsPrincipal user)
         {
             var nombre = user.FindFirst("Nombre")?.Value;

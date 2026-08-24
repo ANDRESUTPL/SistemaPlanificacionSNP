@@ -26,7 +26,7 @@
                         <div asp-validation-summary="ModelOnly" class="alert alert-warning border-0"></div>
                     }
 
-                    <form method="post" action="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@Model.AuditoriaId/editar">
+                    <form method="post" action="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@Model.AuditoriaId/editar" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="RevisionId" />
                         <input type="hidden" asp-for="AuditoriaId" />
@@ -60,6 +60,12 @@
                                 <input asp-for="FechaRegistro" class="form-control" type="datetime-local" value="@Model.FechaRegistro.ToString("yyyy-MM-ddTHH:mm")" />
                                 <span asp-validation-for="FechaRegistro" class="text-danger text-sm"></span>
                             </div>
+
+                            <div class="col-12">
+                                <label asp-for="DocumentosAuditoria" class="form-label fw-medium text-sm"></label>
+                                <input asp-for="DocumentosAuditoria" class="form-control" type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
+                                <div class="form-text text-xs">Puede anexar documentos PDF, Word, Excel o imágenes de hasta 10 MB cada uno.</div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-4">
@@ -69,6 +75,39 @@
                             </button>
                         </div>
                     </form>
+
+                    <div class="border-top mt-4 pt-4">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-paperclip me-2 text-primary"></i>Documentos anexos</h6>
+                        @if (Model.DocumentosExistentes.Count == 0)
+                        {
+                            <div class="text-muted text-sm bg-light rounded-3 p-3 border">No hay documentos anexos registrados para esta auditoría.</div>
+                        }
+                        else
+                        {
+                            <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                @foreach (var doc in Model.DocumentosExistentes.OrderByDescending(d => d.FechaCarga))
+                                {
+                                    <div class="list-group-item d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
+                                        <div>
+                                            <div class="fw-medium text-dark"><i class="fas fa-file-alt me-2 text-muted"></i>@doc.NombreArchivo</div>
+                                            <div class="text-muted text-xs">@doc.FechaCarga.ToString("dd/MM/yyyy HH:mm") · @((doc.TamanoBytes / 1024.0).ToString("N1")) KB</div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a class="btn btn-sm btn-outline-primary" href="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@Model.AuditoriaId/documentos/@doc.AuditoriaDocumentoId">
+                                                <i class="fas fa-download me-1"></i>Descargar
+                                            </a>
+                                            <form method="post" action="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@Model.AuditoriaId/documentos/@doc.AuditoriaDocumentoId/eliminar" onsubmit="return confirm('¿Eliminar este documento?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>

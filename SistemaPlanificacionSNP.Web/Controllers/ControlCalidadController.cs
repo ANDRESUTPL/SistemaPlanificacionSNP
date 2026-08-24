@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Text.Json;
 using ClosedXML.Excel;
 using System.IO;
+using System.Net.Http.Headers;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
 {
@@ -81,9 +82,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		public async Task<IActionResult> CrearRevision()
 		{
 			var planes = await CargarPlanesDisponiblesAsync();
+			var proyectos = await CargarProyectosDisponiblesAsync();
 			var model = new RevisionCreateViewModel
 			{
 				PlanesDisponibles = planes,
+				ProyectosDisponibles = proyectos,
 				EntidadesDisponibles = ExtraerEntidadesConPlanes(planes)
 			};
 			return View(model);
@@ -95,13 +98,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		{
 			model.PlanesDisponibles = await CargarPlanesDisponiblesAsync();
 			model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
-			model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
+			model.ProyectosDisponibles = await CargarProyectosDisponiblesAsync();
+			SincronizarSeleccionProyecto(model);
 			if (!ModelState.IsValid) return View(model);
 
 			try
 			{
 				var planSeleccionado = model.PlanesDisponibles.FirstOrDefault(p => p.PlanEstrategicoId == model.PlanEstrategicoId);
-				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId);
+				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId && p.PlanEstrategicoId == model.PlanEstrategicoId);
 
 				if (proyectoSeleccionado == null)
 				{
@@ -209,11 +213,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					Estado = envelope.Data.Estado,
 					Observaciones = envelope.Data.Observaciones,
 					FechaRevision = envelope.Data.FechaRevision,
-					PlanesDisponibles = await CargarPlanesDisponiblesAsync()
+					PlanesDisponibles = await CargarPlanesDisponiblesAsync(),
+					ProyectosDisponibles = await CargarProyectosDisponiblesAsync()
 				};
 
 				model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
-				model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
 
 				if (!model.EntidadPublicaId.HasValue)
 				{
@@ -237,7 +241,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		{
 			model.PlanesDisponibles = await CargarPlanesDisponiblesAsync();
 			model.EntidadesDisponibles = ExtraerEntidadesConPlanes(model.PlanesDisponibles);
-			model.ProyectosDisponibles = await CargarProyectosPorPlanAsync(model.PlanEstrategicoId);
+			model.ProyectosDisponibles = await CargarProyectosDisponiblesAsync();
+			SincronizarSeleccionProyecto(model);
 
 			if (id != model.RevisionId)
 			{
@@ -252,7 +257,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			try
 			{
 				var planSeleccionado = model.PlanesDisponibles.FirstOrDefault(p => p.PlanEstrategicoId == model.PlanEstrategicoId);
-				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId);
+				var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId && p.PlanEstrategicoId == model.PlanEstrategicoId);
 
 				if (proyectoSeleccionado == null)
 				{
@@ -382,6 +387,48 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			return new List<ProyectosInversionApiDto>();
 		}
 
+		private async Task<List<ProyectosInversionApiDto>> CargarProyectosDisponiblesAsync()
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/proyectosinversion?pageNumber=1&pageSize=1000");
+				if (response?.IsSuccessStatusCode != true)
+				{
+					return new List<ProyectosInversionApiDto>();
+				}
+
+				var json = await response.Content.ReadAsStringAsync();
+				using var doc = JsonDocument.Parse(json);
+				if (doc.RootElement.TryGetProperty("data", out var dataElement) &&
+				    dataElement.TryGetProperty("data", out var itemsElement))
+				{
+					return JsonSerializer.Deserialize<List<ProyectosInversionApiDto>>(itemsElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error cargando proyectos de inversión para revisiones: {ex.Message}");
+			}
+
+			return new List<ProyectosInversionApiDto>();
+		}
+
+		private void SincronizarSeleccionProyecto(RevisionCreateViewModel model)
+		{
+			var proyectoSeleccionado = model.ProyectosDisponibles.FirstOrDefault(p => p.ProyectoInversionId == model.ProyectoInversionId);
+			if (proyectoSeleccionado == null)
+			{
+				return;
+			}
+
+			model.PlanEstrategicoId = proyectoSeleccionado.PlanEstrategicoId;
+			ModelState.Remove(nameof(model.PlanEstrategicoId));
+
+			var planSeleccionado = model.PlanesDisponibles.FirstOrDefault(p => p.PlanEstrategicoId == proyectoSeleccionado.PlanEstrategicoId);
+			model.EntidadPublicaId = planSeleccionado?.EntidadPublicaId ?? model.EntidadPublicaId;
+			ModelState.Remove(nameof(model.EntidadPublicaId));
+		}
+
 		private static List<EntidadConPlanesViewModel> ExtraerEntidadesConPlanes(List<PlanesEstrategicoApiDto> planes)
 		{
 			return planes
@@ -421,6 +468,13 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 				if (response?.IsSuccessStatusCode == true)
 				{
+					var json = await response.Content.ReadAsStringAsync();
+					var envelope = JsonSerializer.Deserialize<ApiEnvelope<AuditoriaApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+					if (envelope?.Data != null && model.DocumentosAuditoria?.Any(a => a.Length > 0) == true)
+					{
+						await CargarDocumentosAuditoriaAsync(envelope.Data.AuditoriaId, model.DocumentosAuditoria);
+					}
+
 					TempData["Success"] = "Auditoría anexada exitosamente.";
 				}
 				else
@@ -477,7 +531,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 					RevisionId = envelope.Data.RevisionId,
 					Tipo = envelope.Data.Tipo,
 					Resultado = envelope.Data.Resultado,
-					FechaRegistro = envelope.Data.FechaRegistro
+					FechaRegistro = envelope.Data.FechaRegistro,
+					DocumentosExistentes = envelope.Data.Documentos
 				};
 
 				return View(model);
@@ -511,6 +566,11 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 				if (response?.IsSuccessStatusCode == true)
 				{
+					if (model.DocumentosAuditoria?.Any(a => a.Length > 0) == true)
+					{
+						await CargarDocumentosAuditoriaAsync(auditoriaId, model.DocumentosAuditoria);
+					}
+
 					TempData["Success"] = "Auditoría actualizada exitosamente.";
 					return RedirectToAction(nameof(Detalle), new { id = revisionId });
 				}
@@ -525,6 +585,81 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			}
 
 			return View(model);
+		}
+
+		[HttpGet("{revisionId:int}/auditorias/{auditoriaId:int}/documentos/{documentoId:int}")]
+		public async Task<IActionResult> DescargarDocumentoAuditoria(int revisionId, int auditoriaId, int documentoId)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/auditorias/{auditoriaId}/documentos/{documentoId}");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					var content = await response.Content.ReadAsByteArrayAsync();
+					var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+					var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+						?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+						?? $"documento-auditoria-{documentoId}";
+
+					return File(content, contentType, fileName);
+				}
+
+				TempData["Warning"] = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible descargar el documento.");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error descargando documento de auditoría: {ex.Message}");
+				TempData["Warning"] = "Error interno al descargar el documento.";
+			}
+
+			return RedirectToAction(nameof(EditarAuditoria), new { revisionId, auditoriaId });
+		}
+
+		[HttpPost("{revisionId:int}/auditorias/{auditoriaId:int}/documentos/{documentoId:int}/eliminar")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> EliminarDocumentoAuditoria(int revisionId, int auditoriaId, int documentoId)
+		{
+			try
+			{
+				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/auditorias/{auditoriaId}/documentos/{documentoId}");
+				if (response?.IsSuccessStatusCode == true)
+				{
+					TempData["Success"] = "Documento eliminado exitosamente.";
+				}
+				else
+				{
+					TempData["Warning"] = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible eliminar el documento.");
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error eliminando documento de auditoría: {ex.Message}");
+				TempData["Warning"] = "Error interno al eliminar el documento.";
+			}
+
+			return RedirectToAction(nameof(EditarAuditoria), new { revisionId, auditoriaId });
+		}
+
+		private async Task CargarDocumentosAuditoriaAsync(int auditoriaId, IEnumerable<IFormFile> archivos)
+		{
+			using var contenido = new MultipartFormDataContent();
+			foreach (var archivo in archivos.Where(a => a.Length > 0))
+			{
+				var archivoHttp = new StreamContent(archivo.OpenReadStream());
+				archivoHttp.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(archivo.ContentType) ? "application/octet-stream" : archivo.ContentType);
+				contenido.Add(archivoHttp, "documentos", archivo.FileName);
+			}
+
+			if (contenido.Count() == 0)
+			{
+				return;
+			}
+
+			var response = await _apiClient.SendMultipartAsync($"/api/auditorias/{auditoriaId}/documentos", contenido);
+			if (response?.IsSuccessStatusCode != true)
+			{
+				TempData["Warning"] = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "La auditoría se guardó, pero no fue posible cargar los documentos.");
+			}
 		}
 
 

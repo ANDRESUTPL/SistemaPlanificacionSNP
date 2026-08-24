@@ -126,14 +126,18 @@ namespace SistemaPlanificacionSNP.Infrastructure.Mapping
                 .ForMember(dest => dest.CodigoRevision, opt => opt.Ignore())
                 .ForMember(dest => dest.Auditoria, opt => opt.Ignore());
 
-            CreateMap<Auditoria, AuditoriaDto>();
+            CreateMap<AuditoriaDocumento, AuditoriaDocumentoDto>();
+            CreateMap<Auditoria, AuditoriaDto>()
+                .ForMember(dest => dest.Documentos, opt => opt.MapFrom(src => src.Documentos));
             CreateMap<AuditoriaCreateDto, Auditoria>()
                 .ForMember(dest => dest.AuditoriaId, opt => opt.Ignore())
+                .ForMember(dest => dest.Documentos, opt => opt.Ignore())
                 .ForMember(dest => dest.Revision, opt => opt.Ignore());
             CreateMap<AuditoriaUpdateDto, Auditoria>()
                 .ForMember(dest => dest.AuditoriaId, opt => opt.Ignore())
                 .ForMember(dest => dest.RevisionId, opt => opt.Ignore())
                 .ForMember(dest => dest.Responsable, opt => opt.Ignore())
+                .ForMember(dest => dest.Documentos, opt => opt.Ignore())
                 .ForMember(dest => dest.Revision, opt => opt.Ignore());
 
             // ==================== MACRO PLANIFICACION ====================

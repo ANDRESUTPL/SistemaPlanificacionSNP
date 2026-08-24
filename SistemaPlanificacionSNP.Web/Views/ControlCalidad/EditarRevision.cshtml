@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Editar Revision";
+    var planesPorId = Model.PlanesDisponibles.ToDictionary(p => p.PlanEstrategicoId);
 }
 
 <div class="container-fluid p-0">
@@ -30,6 +31,8 @@
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="RevisionId" />
                         <input type="hidden" asp-for="CodigoRevision" />
+                        <input type="hidden" asp-for="PlanEstrategicoId" />
+                        <input type="hidden" asp-for="EntidadPublicaId" />
 
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -48,34 +51,39 @@
                             </div>
 
                             <div class="col-12">
-                                <label asp-for="PlanEstrategicoId" class="form-label fw-medium text-sm"></label>
-                                @if (Model.PlanesDisponibles.Any())
+                                <label asp-for="ProyectoInversionId" class="form-label fw-medium text-sm">Plan Estratégico / PEI</label>
+                                @if (Model.ProyectosDisponibles.Any())
                                 {
-                                    <select asp-for="PlanEstrategicoId" class="form-select" required>
-                                        <option value="">-- Seleccione un PEI --</option>
-                                        @foreach (var plan in Model.PlanesDisponibles)
+                                    <select asp-for="ProyectoInversionId" class="form-select" required>
+                                        <option value="">-- Seleccione un proyecto --</option>
+                                        @foreach (var proyecto in Model.ProyectosDisponibles.OrderBy(p => p.CodigoProyecto))
                                         {
-                                            if (plan.PlanEstrategicoId == Model.PlanEstrategicoId)
+                                            var plan = planesPorId.GetValueOrDefault(proyecto.PlanEstrategicoId);
+                                            var entidad = plan?.Entidad ?? "Institución no identificada";
+                                            var selected = proyecto.ProyectoInversionId == Model.ProyectoInversionId;
+                                            if (selected)
                                             {
-                                                <option value="@plan.PlanEstrategicoId" selected>@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                                <option value="@proyecto.ProyectoInversionId" data-plan-id="@proyecto.PlanEstrategicoId" data-entidad-id="@plan?.EntidadPublicaId" selected>@proyecto.CodigoProyecto · @entidad · PE-@proyecto.PlanEstrategicoId</option>
                                             }
                                             else
                                             {
-                                                <option value="@plan.PlanEstrategicoId">@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                                <option value="@proyecto.ProyectoInversionId" data-plan-id="@proyecto.PlanEstrategicoId" data-entidad-id="@plan?.EntidadPublicaId">@proyecto.CodigoProyecto · @entidad · PE-@proyecto.PlanEstrategicoId</option>
                                             }
                                         }
                                     </select>
                                 }
                                 else
                                 {
-                                    <select asp-for="PlanEstrategicoId" class="form-select" disabled>
-                                        <option value="">No hay PEIs disponibles para seleccionar</option>
+                                    <select asp-for="ProyectoInversionId" class="form-select" disabled>
+                                        <option value="">No hay proyectos disponibles para seleccionar</option>
                                     </select>
                                     <div class="form-text text-warning mt-2">
-                                        No existen planes estratégicos cargados. Primero debe registrar al menos un PEI para asociar esta revisión.
+                                        No existen proyectos de inversión cargados. Primero debe registrar al menos un proyecto en Planificación Institucional.
                                     </div>
                                 }
-                                <span asp-validation-for="PlanEstrategicoId" class="text-danger text-sm">Debe seleccionar un PEI.</span>
+                                <div class="form-text text-muted mt-2">Seleccione por código del proyecto. El PEI y la institución se asignan automáticamente.</div>
+                                <span asp-validation-for="ProyectoInversionId" class="text-danger text-sm"></span>
+                                <span asp-validation-for="PlanEstrategicoId" class="text-danger text-sm"></span>
                             </div>
 
                             <div class="col-12">
@@ -106,4 +114,15 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const proyectoSelect = document.getElementById('ProyectoInversionId');
+        proyectoSelect?.addEventListener('change', syncProyectoSeleccionado);
+        syncProyectoSeleccionado();
+
+        function syncProyectoSeleccionado() {
+            const selected = proyectoSelect?.selectedOptions?.[0];
+            document.getElementById('PlanEstrategicoId').value = selected?.dataset.planId || '';
+            document.getElementById('EntidadPublicaId').value = selected?.dataset.entidadId || '';
+        }
+    </script>
 }

@@ -45,12 +45,15 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
 
         public async Task<Auditoria?> GetByIdAsync(int auditoriaId)
         {
-            return await _context.Auditorias.FirstOrDefaultAsync(a => a.AuditoriaId == auditoriaId);
+            return await _context.Auditorias
+                .Include(a => a.Documentos)
+                .FirstOrDefaultAsync(a => a.AuditoriaId == auditoriaId);
         }
 
         public async Task<List<Auditoria>> GetByRevisionIdAsync(int revisionId)
         {
             return await _context.Auditorias
+                .Include(a => a.Documentos)
                 .Where(a => a.RevisionId == revisionId)
                 .OrderByDescending(a => a.FechaRegistro)
                 .ToListAsync();
@@ -85,7 +88,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
 
         private IQueryable<Auditoria> BuildQuery(AuditoriaQueryDto query)
         {
-            var q = _context.Auditorias.AsQueryable();
+            var q = _context.Auditorias
+                .Include(a => a.Documentos)
+                .AsQueryable();
 
             if (query.RevisionId.HasValue)
             {

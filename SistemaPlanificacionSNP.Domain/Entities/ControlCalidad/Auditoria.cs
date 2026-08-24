@@ -17,5 +17,7 @@ public partial class Auditoria
 
     public DateTime FechaRegistro { get; set; }
 
+    public virtual ICollection<AuditoriaDocumento> Documentos { get; set; } = new List<AuditoriaDocumento>();
+
     public virtual Revisione Revision { get; set; } = null!;
 }

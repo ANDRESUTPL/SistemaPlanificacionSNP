@@ -94,6 +94,7 @@
                                         <th class="border-0 text-xs text-muted fw-bold ps-4">TIPO / FECHA</th>
                                         <th class="border-0 text-xs text-muted fw-bold">RESPONSABLE</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-center">RESULTADO</th>
+                                        <th class="border-0 text-xs text-muted fw-bold text-center">DOCUMENTOS</th>
                                         <th class="border-0 text-xs text-muted fw-bold text-center">ACCIONES</th>
                                     </tr>
                                 </thead>
@@ -123,6 +124,27 @@
                                                 }
                                             </td>
                                             <td class="text-center">
+                                                @if (aud.Documentos.Count > 0)
+                                                {
+                                                    <div class="d-flex flex-wrap justify-content-center gap-1">
+                                                        @foreach (var doc in aud.Documentos.Take(2))
+                                                        {
+                                                            <a class="badge bg-info bg-opacity-10 text-info border border-info-subtle text-decoration-none px-2 py-1" href="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@aud.AuditoriaId/documentos/@doc.AuditoriaDocumentoId" title="@doc.NombreArchivo">
+                                                                <i class="fas fa-paperclip me-1"></i>@doc.NombreArchivo
+                                                            </a>
+                                                        }
+                                                        @if (aud.Documentos.Count > 2)
+                                                        {
+                                                            <span class="badge bg-light text-secondary border px-2 py-1">+@(aud.Documentos.Count - 2)</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted text-xs">Sin documentos</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
                                                 <a href="/controlcalidad/revisiones/@Model.RevisionId/auditorias/@aud.AuditoriaId/editar" class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-pen me-1"></i>Editar
                                                 </a>
@@ -146,7 +168,7 @@
                 <h5 class="modal-title fw-bold text-dark"><i class="fas fa-stamp me-2 text-primary"></i>Registrar Auditoría</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="/controlcalidad/revisiones/auditorias/crear">
+            <form method="post" action="/controlcalidad/revisiones/auditorias/crear" enctype="multipart/form-data">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="RevisionId" value="@nuevaAuditoria.RevisionId" />
 
@@ -169,6 +191,11 @@
                             <option value="Observado">Observado (Requiere ajustes)</option>
                             <option value="No Conforme">No Conforme (Rechazado)</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium text-sm">Documentos de Auditoría</label>
+                        <input type="file" name="DocumentosAuditoria" class="form-control" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" />
+                        <div class="form-text text-xs">Puede adjuntar varios documentos PDF, Word, Excel o imágenes de hasta 10 MB cada uno.</div>
                     </div>
                     <div class="alert alert-info border-0 text-xs mb-0 mt-4">
                         <i class="fas fa-info-circle me-1"></i> Su usuario quedará grabado permanentemente como responsable de esta acción técnica.

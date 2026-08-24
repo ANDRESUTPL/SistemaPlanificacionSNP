@@ -18,6 +18,8 @@ public partial class ControlCalidadDbContext : DbContext
 
     public virtual DbSet<Auditoria> Auditorias { get; set; }
 
+    public virtual DbSet<AuditoriaDocumento> AuditoriaDocumentos { get; set; }
+
     public virtual DbSet<Revisione> Revisiones { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,6 +38,23 @@ public partial class ControlCalidadDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CC_Auditorias_Revisiones");
         });
+
+            modelBuilder.Entity<AuditoriaDocumento>(entity =>
+            {
+                entity.HasKey(e => e.AuditoriaDocumentoId).HasName("PK_CC_AuditoriaDocumentos");
+
+                entity.HasIndex(e => e.AuditoriaId, "IX_AuditoriaDocumentos_AuditoriaId");
+
+                entity.Property(e => e.FechaCarga).HasDefaultValueSql("(sysutcdatetime())");
+                entity.Property(e => e.NombreArchivo).HasMaxLength(255);
+                entity.Property(e => e.RutaArchivo).HasMaxLength(500);
+                entity.Property(e => e.TipoContenido).HasMaxLength(150);
+
+                entity.HasOne(d => d.Auditoria).WithMany(p => p.Documentos)
+                .HasForeignKey(d => d.AuditoriaId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_CC_AuditoriaDocumentos_Auditorias");
+            });
 
         modelBuilder.Entity<Revisione>(entity =>
         {

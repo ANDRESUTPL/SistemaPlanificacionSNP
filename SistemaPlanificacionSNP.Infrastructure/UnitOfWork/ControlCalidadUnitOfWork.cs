@@ -11,6 +11,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.UnitOfWork
 
         private IRevisioneRepository? _revisioneRepository;
         private IControlCalidadAuditoriaRepository? _auditoriaRepository;
+        private IAuditoriaDocumentoRepository? _auditoriaDocumentoRepository;
 
         public ControlCalidadUnitOfWork(ControlCalidadDbContext context)
         {
@@ -25,6 +26,11 @@ namespace SistemaPlanificacionSNP.Infrastructure.UnitOfWork
         public IControlCalidadAuditoriaRepository AuditoriasControlCalidad
         {
             get { return _auditoriaRepository ??= new ControlCalidadAuditoriaRepository(_context); }
+        }
+
+        public IAuditoriaDocumentoRepository AuditoriaDocumentos
+        {
+            get { return _auditoriaDocumentoRepository ??= new AuditoriaDocumentoRepository(_context); }
         }
 
         public async Task<int> SaveChangesAsync()

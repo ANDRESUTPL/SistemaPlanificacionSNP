@@ -23,6 +23,9 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
         Task<Auditoria> CreateAsync(AuditoriaCreateDto dto, string responsable);
         Task<Auditoria?> UpdateAsync(int auditoriaId, AuditoriaUpdateDto dto);
         Task<bool> DeleteAsync(int auditoriaId);
+        Task<List<AuditoriaDocumento>> AddDocumentosAsync(int auditoriaId, IEnumerable<AuditoriaDocumentoCreateDto> documentos);
+        Task<AuditoriaDocumento?> GetDocumentoAsync(int auditoriaId, int documentoId);
+        Task<bool> DeleteDocumentoAsync(int auditoriaId, int documentoId);
     }
 
     public class RevisioneControlCalidadService : IRevisioneControlCalidadService
@@ -296,6 +299,13 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
             "Conforme", "No Conforme", "Observado"
         };
 
+        private static readonly HashSet<string> ExtensionesDocumentoPermitidas = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".jpg", ".jpeg", ".png"
+        };
+
+        private const long TamanoMaximoDocumentoBytes = 10 * 1024 * 1024;
+
         private readonly IControlCalidadUnitOfWork _unitOfWork;
 
         public AuditoriaControlCalidadService(IControlCalidadUnitOfWork unitOfWork)
@@ -396,8 +406,90 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
                 return false;
             }
 
+            var documentos = auditoria.Documentos.ToList();
+
             await _unitOfWork.AuditoriasControlCalidad.RemoveAsync(auditoria);
             await _unitOfWork.SaveChangesAsync();
+
+            foreach (var documento in documentos)
+            {
+                TryDeletePhysicalFile(documento.RutaArchivo);
+            }
+
+            return true;
+        }
+
+        public async Task<List<AuditoriaDocumento>> AddDocumentosAsync(int auditoriaId, IEnumerable<AuditoriaDocumentoCreateDto> documentos)
+        {
+            var auditoria = await _unitOfWork.AuditoriasControlCalidad.GetByIdAsync(auditoriaId);
+            if (auditoria == null)
+            {
+                throw new InvalidOperationException("Auditoría no encontrada");
+            }
+
+            var carpeta = Path.Combine(AppContext.BaseDirectory, "uploads", "auditorias", auditoriaId.ToString());
+            Directory.CreateDirectory(carpeta);
+
+            var resultado = new List<AuditoriaDocumento>();
+            foreach (var documento in documentos)
+            {
+                var nombre = Path.GetFileName(documento.NombreArchivo);
+                var extension = Path.GetExtension(nombre).ToLowerInvariant();
+
+                if (string.IsNullOrWhiteSpace(nombre) || !ExtensionesDocumentoPermitidas.Contains(extension))
+                {
+                    throw new InvalidOperationException("Solo se permiten documentos PDF, Word, Excel o imágenes.");
+                }
+
+                if (documento.TamanoBytes <= 0 || documento.TamanoBytes > TamanoMaximoDocumentoBytes)
+                {
+                    throw new InvalidOperationException("Cada documento debe tener un tamaño máximo de 10 MB.");
+                }
+
+                var nombreGuardado = $"{Guid.NewGuid():N}{extension}";
+                var ruta = Path.Combine(carpeta, nombreGuardado);
+                await using (var archivo = File.Create(ruta))
+                {
+                    await documento.Contenido.CopyToAsync(archivo);
+                }
+
+                resultado.Add(new AuditoriaDocumento
+                {
+                    AuditoriaId = auditoriaId,
+                    NombreArchivo = nombre,
+                    RutaArchivo = Path.Combine("uploads", "auditorias", auditoriaId.ToString(), nombreGuardado),
+                    TipoContenido = string.IsNullOrWhiteSpace(documento.TipoContenido) ? "application/octet-stream" : documento.TipoContenido,
+                    TamanoBytes = documento.TamanoBytes,
+                    FechaCarga = DateTime.UtcNow
+                });
+            }
+
+            if (resultado.Count == 0)
+            {
+                throw new InvalidOperationException("Debe adjuntar al menos un documento válido");
+            }
+
+            await _unitOfWork.AuditoriaDocumentos.AddRangeAsync(resultado);
+            await _unitOfWork.SaveChangesAsync();
+            return resultado;
+        }
+
+        public async Task<AuditoriaDocumento?> GetDocumentoAsync(int auditoriaId, int documentoId)
+        {
+            return await _unitOfWork.AuditoriaDocumentos.GetByIdAsync(auditoriaId, documentoId);
+        }
+
+        public async Task<bool> DeleteDocumentoAsync(int auditoriaId, int documentoId)
+        {
+            var documento = await _unitOfWork.AuditoriaDocumentos.GetByIdAsync(auditoriaId, documentoId);
+            if (documento == null)
+            {
+                return false;
+            }
+
+            await _unitOfWork.AuditoriaDocumentos.RemoveAsync(documento);
+            await _unitOfWork.SaveChangesAsync();
+            TryDeletePhysicalFile(documento.RutaArchivo);
             return true;
         }
 
@@ -453,6 +545,23 @@ namespace SistemaPlanificacionSNP.Infrastructure.Services
         {
             normalizedPageNumber = pageNumber < 1 ? 1 : pageNumber;
             normalizedPageSize = pageSize < 1 ? 20 : Math.Min(pageSize, 100);
+        }
+
+        private static void TryDeletePhysicalFile(string rutaRelativa)
+        {
+            if (string.IsNullOrWhiteSpace(rutaRelativa))
+            {
+                return;
+            }
+
+            var basePath = Path.GetFullPath(AppContext.BaseDirectory);
+            var fullPath = Path.GetFullPath(Path.Combine(basePath, rutaRelativa));
+            if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+            {
+                return;
+            }
+
+            File.Delete(fullPath);
         }
     }
 }

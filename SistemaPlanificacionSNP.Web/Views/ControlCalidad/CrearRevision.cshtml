@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Nueva Revisión";
+    var planesPorId = Model.PlanesDisponibles.ToDictionary(p => p.PlanEstrategicoId);
 }
 
 <div class="container-fluid p-0">
@@ -29,6 +30,8 @@
                 <div class="card-body p-4 p-xl-5">
                     <form method="post" action="/controlcalidad/revisiones/crear" id="formCreateRev">
                         @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="PlanEstrategicoId" />
+                        <input type="hidden" asp-for="EntidadPublicaId" />
 
                         @if (!ViewData.ModelState.IsValid)
                         {
@@ -59,34 +62,39 @@
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="PlanEstrategicoId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Plan Estratégico / PEI <span class="text-danger">*</span></label>
-                            @if (Model.PlanesDisponibles.Any())
+                            <label asp-for="ProyectoInversionId" class="form-label fw-medium text-dark text-xs text-uppercase tracking-wider">Plan Estratégico / PEI <span class="text-danger">*</span></label>
+                            @if (Model.ProyectosDisponibles.Any())
                             {
-                                <select asp-for="PlanEstrategicoId" class="form-select form-select-lg" required>
-                                    <option value="">-- Seleccione un PEI --</option>
-                                    @foreach (var plan in Model.PlanesDisponibles)
+                                <select asp-for="ProyectoInversionId" class="form-select form-select-lg" required>
+                                    <option value="">-- Seleccione un proyecto --</option>
+                                    @foreach (var proyecto in Model.ProyectosDisponibles.OrderBy(p => p.CodigoProyecto))
                                     {
-                                        if (plan.PlanEstrategicoId == Model.PlanEstrategicoId)
+                                        var plan = planesPorId.GetValueOrDefault(proyecto.PlanEstrategicoId);
+                                        var entidad = plan?.Entidad ?? "Institución no identificada";
+                                        var selected = proyecto.ProyectoInversionId == Model.ProyectoInversionId;
+                                        if (selected)
                                         {
-                                            <option value="@plan.PlanEstrategicoId" selected>@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                            <option value="@proyecto.ProyectoInversionId" data-plan-id="@proyecto.PlanEstrategicoId" data-entidad-id="@plan?.EntidadPublicaId" selected>@proyecto.CodigoProyecto · @entidad · PE-@proyecto.PlanEstrategicoId</option>
                                         }
                                         else
                                         {
-                                            <option value="@plan.PlanEstrategicoId">@plan.Entidad (ID: @plan.PlanEstrategicoId)</option>
+                                            <option value="@proyecto.ProyectoInversionId" data-plan-id="@proyecto.PlanEstrategicoId" data-entidad-id="@plan?.EntidadPublicaId">@proyecto.CodigoProyecto · @entidad · PE-@proyecto.PlanEstrategicoId</option>
                                         }
                                     }
                                 </select>
                             }
                             else
                             {
-                                <select asp-for="PlanEstrategicoId" class="form-select form-select-lg" disabled>
-                                    <option value="">No hay PEIs disponibles para seleccionar</option>
+                                <select asp-for="ProyectoInversionId" class="form-select form-select-lg" disabled>
+                                    <option value="">No hay proyectos disponibles para seleccionar</option>
                                 </select>
                                 <div class="form-text text-warning mt-2">
-                                    No existen planes estratégicos cargados. Primero debe registrar al menos un PEI para poder asociar la revisión.
+                                    No existen proyectos de inversión cargados. Primero debe registrar al menos un proyecto en Planificación Institucional.
                                 </div>
                             }
-                            <span asp-validation-for="PlanEstrategicoId" class="text-danger text-xs fw-medium mt-1 d-block">Debe seleccionar un PEI.</span>
+                            <div class="form-text text-muted mt-2">Seleccione por código del proyecto. El PEI y la institución se asignan automáticamente.</div>
+                            <span asp-validation-for="ProyectoInversionId" class="text-danger text-xs fw-medium mt-1 d-block"></span>
+                            <span asp-validation-for="PlanEstrategicoId" class="text-danger text-xs fw-medium mt-1 d-block"></span>
                         </div>
 
                         <div class="mb-4">
@@ -114,11 +122,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         document.getElementById('formCreateRev').addEventListener('submit', function(e) {
+            syncProyectoSeleccionado();
             if ($(this).valid()) {
                 const btn = document.getElementById('btnSubmit');
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...';
             }
         });
+
+        const proyectoSelect = document.getElementById('ProyectoInversionId');
+        proyectoSelect?.addEventListener('change', syncProyectoSeleccionado);
+        syncProyectoSeleccionado();
+
+        function syncProyectoSeleccionado() {
+            const selected = proyectoSelect?.selectedOptions?.[0];
+            document.getElementById('PlanEstrategicoId').value = selected?.dataset.planId || '';
+            document.getElementById('EntidadPublicaId').value = selected?.dataset.entidadId || '';
+        }
     </script>
 }

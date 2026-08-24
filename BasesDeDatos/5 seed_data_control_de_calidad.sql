@@ -7,6 +7,10 @@ USE [SNP_ControlCalidad];
 GO
 
 PRINT 'Limpiando base de datos SNP_ControlCalidad...';
+IF OBJECT_ID(N'dbo.AuditoriaDocumentos', N'U') IS NOT NULL
+BEGIN
+	DELETE FROM [dbo].[AuditoriaDocumentos];
+END;
 DELETE FROM [dbo].[Auditorias];
 DELETE FROM [dbo].[Revisiones];
 GO

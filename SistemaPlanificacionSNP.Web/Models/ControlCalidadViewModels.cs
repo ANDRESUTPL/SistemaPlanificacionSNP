@@ -10,6 +10,17 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public string Resultado { get; set; } = string.Empty;
 		public string Responsable { get; set; } = string.Empty;
 		public DateTime FechaRegistro { get; set; }
+		public List<AuditoriaDocumentoApiDto> Documentos { get; set; } = new();
+	}
+
+	public class AuditoriaDocumentoApiDto
+	{
+		public int AuditoriaDocumentoId { get; set; }
+		public int AuditoriaId { get; set; }
+		public string NombreArchivo { get; set; } = string.Empty;
+		public string TipoContenido { get; set; } = string.Empty;
+		public long TamanoBytes { get; set; }
+		public DateTime FechaCarga { get; set; }
 	}
 
 	public class RevisioneApiDto
@@ -111,6 +122,9 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Display(Name = "Resultado / Dictamen")]
 		[Required(ErrorMessage = "Debe seleccionar un resultado.")]
 		public string Resultado { get; set; } = string.Empty; // Conforme, No Conforme, Observado
+
+		[Display(Name = "Documentos de Auditoría")]
+		public ICollection<IFormFile>? DocumentosAuditoria { get; set; }
 	}
 
 	public class AuditoriaEditViewModel : AuditoriaCreateViewModel
@@ -121,5 +135,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 		[Display(Name = "Fecha de Registro")]
 		[Required(ErrorMessage = "La fecha de registro es obligatoria.")]
 		public DateTime FechaRegistro { get; set; }
+
+		public List<AuditoriaDocumentoApiDto> DocumentosExistentes { get; set; } = new();
 	}
 }

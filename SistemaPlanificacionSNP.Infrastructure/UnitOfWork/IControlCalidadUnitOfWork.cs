@@ -6,6 +6,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.UnitOfWork
     {
         IRevisioneRepository Revisiones { get; }
         IControlCalidadAuditoriaRepository AuditoriasControlCalidad { get; }
+        IAuditoriaDocumentoRepository AuditoriaDocumentos { get; }
 
         Task<int> SaveChangesAsync();
         Task<bool> BeginTransactionAsync();

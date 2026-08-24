@@ -51,6 +51,25 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
         public string Resultado { get; set; } = null!;
         public string Responsable { get; set; } = null!;
         public DateTime FechaRegistro { get; set; }
+        public List<AuditoriaDocumentoDto> Documentos { get; set; } = new();
+    }
+
+    public class AuditoriaDocumentoDto
+    {
+        public int AuditoriaDocumentoId { get; set; }
+        public int AuditoriaId { get; set; }
+        public string NombreArchivo { get; set; } = null!;
+        public string TipoContenido { get; set; } = null!;
+        public long TamanoBytes { get; set; }
+        public DateTime FechaCarga { get; set; }
+    }
+
+    public class AuditoriaDocumentoCreateDto
+    {
+        public string NombreArchivo { get; set; } = null!;
+        public string TipoContenido { get; set; } = null!;
+        public long TamanoBytes { get; set; }
+        public Stream Contenido { get; set; } = null!;
     }
 
     public class AuditoriaCreateDto

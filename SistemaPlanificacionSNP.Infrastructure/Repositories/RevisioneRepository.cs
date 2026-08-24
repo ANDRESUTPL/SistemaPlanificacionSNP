@@ -52,6 +52,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
         {
             return await _context.Revisiones
                 .Include(r => r.Auditoria)
+                    .ThenInclude(a => a.Documentos)
                 .FirstOrDefaultAsync(r => r.RevisionId == revisionId);
         }
 

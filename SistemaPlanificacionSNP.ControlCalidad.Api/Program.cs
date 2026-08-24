@@ -73,6 +73,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<IControlCalidadUnitOfWork, ControlCalidadUnitOfWork>();
 builder.Services.AddScoped<IRevisioneRepository, RevisioneRepository>();
 builder.Services.AddScoped<IControlCalidadAuditoriaRepository, ControlCalidadAuditoriaRepository>();
+builder.Services.AddScoped<IAuditoriaDocumentoRepository, AuditoriaDocumentoRepository>();
 builder.Services.AddScoped<IRevisioneControlCalidadService, RevisioneControlCalidadService>();
 builder.Services.AddScoped<IAuditoriaControlCalidadService, AuditoriaControlCalidadService>();
 
