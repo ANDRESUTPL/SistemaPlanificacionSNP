@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using SistemaPlanificacionSNP.Domain.Entities.Seguridad;
@@ -32,13 +31,13 @@ public class JwtTokenGeneratorTests
         token.Should().NotBeNullOrWhiteSpace();
         jwt.Should().NotBeNull();
 
-        jwt.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value.Should().Be(usuario.UsuarioId.ToString());
-        jwt.Claims.First(c => c.Type == ClaimTypes.Email).Value.Should().Be(usuario.Email);
-        jwt.Claims.Select(c => c.Value).Should().Contain("Administrador");
-        var payloadSegment = token.Split('.')[1];
-        var paddedPayload = payloadSegment.PadRight(payloadSegment.Length + (4 - payloadSegment.Length % 4) % 4, '=');
-        var payloadJson = Encoding.UTF8.GetString(Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/')));
-        payloadJson.Should().Contain("Lectura_10");
+        // Se lee Payload directamente para verificar exactamente lo que viaja en el token.
+        jwt.Payload[ClaimTypes.NameIdentifier]?.ToString().Should().Be(usuario.UsuarioId.ToString());
+        jwt.Payload[ClaimTypes.Email]?.ToString().Should().Be(usuario.Email);
+        jwt.Payload.SerializeToJson().Should().Contain("Administrador");
+
+        // Los permisos se emiten compactos: claim "P" => "{PantallaId}:{L|C|E|D}"
+        jwt.Payload["P"]?.ToString().Should().Be("10:LC");
 
         var expiration = generator.GetTokenExpiration(token);
         expiration.Should().BeAfter(DateTime.UtcNow.AddMinutes(55));

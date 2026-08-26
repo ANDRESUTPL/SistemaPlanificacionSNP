@@ -97,7 +97,7 @@
 <!-- Fila de Gráficos -->
 <div class="row g-4 mb-4">
     <!-- Gráfico de Avance -->
-    <div class="col-lg-8">       
+    <div class="col-lg-8">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-chart-bar me-2 text-primary"></i> Avance Mensual de Proyectos</h6>
@@ -153,7 +153,6 @@
                                 <th class="border-0 text-xs text-muted fw-bold text-center">ESTADO</th>
                                 <th class="border-0 text-xs text-muted fw-bold">PERÍODO</th>
                                 <th class="border-0 text-xs text-muted fw-bold text-center">PROYECTOS</th>
-                                <th class="pe-4 border-0 text-xs text-muted fw-bold text-end">ACCIONES</th>
                             </tr>
                         </thead>
                         <tbody id="planesBody">
@@ -395,11 +394,7 @@
                                 <td class="py-3 text-center">
                                     <span class="text-secondary text-sm fw-medium">${plan.cantidadProyectos}</span>
                                 </td>
-                                <td class="text-end pe-4 py-3">
-                                    <button class="btn btn-sm btn-light border shadow-sm text-primary rounded-circle" style="width: 32px; height: 32px; padding: 0;" title="Ver Detalles" onclick="viewPlan(${plan.planEstrategicoId})">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </button>
-                                </td>
+
                             `;
                     tbody.appendChild(row);
                 });

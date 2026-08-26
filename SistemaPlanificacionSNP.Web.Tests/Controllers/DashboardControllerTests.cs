@@ -24,50 +24,51 @@ public class DashboardControllerTests : ControllerTestBase
     }
 
     [Fact]
-    public async Task GetDashboardData_WhenApiReturnsSuccess_ShouldReturnJsonContent()
+    public async Task GetDashboardData_WhenApisReturnSuccess_ShouldReturnJsonWithSuccessTrue()
     {
         var apiClientMock = new Mock<IApiClient>();
-        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planificacion/dashboard", null))
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{\"success\":true}")
-            });
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planesestrategicos/dashboard", null))
+            .ReturnsAsync(WebTestData.JsonResponse(new { success = true, data = new { } }));
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planesestrategicos?pageNumber=1&pageSize=1000", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiPaginatedResponse(Array.Empty<object>())));
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/proyectosinversion?pageNumber=1&pageSize=1000", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiPaginatedResponse(Array.Empty<object>())));
         var controller = BuildController(apiClientMock);
 
         var result = await controller.GetDashboardData();
 
-        var content = result.Should().BeOfType<ContentResult>().Subject;
-        content.ContentType.Should().Be("application/json");
-        content.Content.Should().Be("{\"success\":true}");
+        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
+        var successProperty = jsonResult.Value!.GetType().GetProperty("success");
+        ((bool)successProperty!.GetValue(jsonResult.Value)!).Should().BeTrue();
     }
 
     [Fact]
-    public async Task GetDashboardData_WhenApiClientReturnsNull_ShouldReturnServiceUnavailable()
+    public async Task GetDashboardData_WhenApiClientReturnsNull_ShouldStillReturnJsonWithSuccessTrue()
     {
         var apiClientMock = new Mock<IApiClient>();
-        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planificacion/dashboard", null))
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, It.IsAny<string>(), null))
             .ReturnsAsync((HttpResponseMessage?)null);
         var controller = BuildController(apiClientMock);
 
         var result = await controller.GetDashboardData();
 
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(503);
+        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
+        var successProperty = jsonResult.Value!.GetType().GetProperty("success");
+        ((bool)successProperty!.GetValue(jsonResult.Value)!).Should().BeTrue();
     }
 
     [Fact]
-    public async Task GetDashboardData_WhenApiReturnsError_ShouldPreserveStatusCode()
+    public async Task GetDashboardData_WhenApiThrows_ShouldReturnInternalServerError()
     {
         var apiClientMock = new Mock<IApiClient>();
-        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/planificacion/dashboard", null))
-            .ReturnsAsync(WebTestData.JsonResponse(new { message = "No autorizado" }, HttpStatusCode.Unauthorized));
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, It.IsAny<string>(), null))
+            .ThrowsAsync(new InvalidOperationException("Fallo de conexión"));
         var controller = BuildController(apiClientMock);
 
         var result = await controller.GetDashboardData();
 
         var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(401);
-        objectResult.Value.Should().NotBeNull();
+        objectResult.StatusCode.Should().Be(500);
     }
 
     [Fact]

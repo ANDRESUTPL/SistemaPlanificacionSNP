@@ -119,6 +119,15 @@
                                                         </button>
                                                     </form>
                                                 }
+                                                @if (!ent.Activa && Model.PuedeEditar)
+                                                {
+                                                    <form method="post" action="/parametrizacion/instituciones/activar-entidad/@ent.EntidadPublicaId" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Activar entidad" onclick="return confirm('¿Deseas activar esta entidad?');">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                }
                                             </td>
                                         </tr>
                                     }
@@ -170,18 +179,17 @@
                                             <td class="text-center">
                                                 @if (Model.PuedeEditar)
                                                 {
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-primary me-1 btn-editar-periodo"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#editPeriodoModal"
-                                                        data-id="@per.PeriodoPlanificacionId"
-                                                        data-codigo="@per.Codigo"
-                                                        data-nombre="@per.Nombre"
-                                                        data-fechainicio="@per.FechaInicio.ToString("yyyy-MM-dd")"
-                                                        data-fechafin="@per.FechaFin.ToString("yyyy-MM-dd")"
-                                                        data-activo="@(per.Activo ? "true" : "false")"
-                                                        title="Editar período">
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-primary me-1 btn-editar-periodo"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#editPeriodoModal"
+                                                            data-id="@per.PeriodoPlanificacionId"
+                                                            data-codigo="@per.Codigo"
+                                                            data-nombre="@per.Nombre"
+                                                            data-fechainicio="@per.FechaInicio.ToString("yyyy-MM-dd")"
+                                                            data-fechafin="@per.FechaFin.ToString("yyyy-MM-dd")"
+                                                            data-activo="@(per.Activo ? "true" : "false")"
+                                                            title="Editar período">
                                                         <i class="fas fa-pen"></i>
                                                     </button>
                                                 }
@@ -209,91 +217,91 @@
 
 @if (Model.PuedeCrear)
 {
-<div class="modal fade" id="addPeriodoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-plus me-2 text-primary"></i>Nuevo Período</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="addPeriodoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fas fa-calendar-plus me-2 text-primary"></i>Nuevo Período</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="/parametrizacion/instituciones/crear-periodo">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-sm">Código del Período</label>
+                            <input type="text" name="Codigo" class="form-control" required placeholder="Ej. PND-2026" style="text-transform: uppercase;" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-sm">Nombre Descriptivo</label>
+                            <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Período Presidencial 2026-2030" />
+                        </div>
+                        <div class="row g-3 mb-1">
+                            <div class="col-6">
+                                <label class="form-label fw-medium text-sm">Fecha Inicio</label>
+                                <input type="date" name="FechaInicio" class="form-control" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-medium text-sm">Fecha Fin</label>
+                                <input type="date" name="FechaFin" class="form-control" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 bg-light">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Período</button>
+                    </div>
+                </form>
             </div>
-            <form method="post" action="/parametrizacion/instituciones/crear-periodo">
-                @Html.AntiForgeryToken()
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-medium text-sm">Código del Período</label>
-                        <input type="text" name="Codigo" class="form-control" required placeholder="Ej. PND-2026" style="text-transform: uppercase;" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-medium text-sm">Nombre Descriptivo</label>
-                        <input type="text" name="Nombre" class="form-control" required placeholder="Ej. Período Presidencial 2026-2030" />
-                    </div>
-                    <div class="row g-3 mb-1">
-                        <div class="col-6">
-                            <label class="form-label fw-medium text-sm">Fecha Inicio</label>
-                            <input type="date" name="FechaInicio" class="form-control" required />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-medium text-sm">Fecha Fin</label>
-                            <input type="date" name="FechaFin" class="form-control" required />
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Período</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
 }
 
 @if (Model.PuedeEditar)
 {
-<div class="modal fade" id="editPeriodoModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen-to-square me-2 text-primary"></i>Editar Período</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="editPeriodoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen-to-square me-2 text-primary"></i>Editar Período</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" id="formEditPeriodo">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-sm">Código del Período</label>
+                            <input type="text" name="Codigo" id="editPeriodoCodigo" class="form-control" required style="text-transform: uppercase;" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium text-sm">Nombre Descriptivo</label>
+                            <input type="text" name="Nombre" id="editPeriodoNombre" class="form-control" required />
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-medium text-sm">Fecha Inicio</label>
+                                <input type="date" name="FechaInicio" id="editPeriodoFechaInicio" class="form-control" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-medium text-sm">Fecha Fin</label>
+                                <input type="date" name="FechaFin" id="editPeriodoFechaFin" class="form-control" required />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-medium text-sm">Estado</label>
+                            <select class="form-select" id="editPeriodoActivo" name="Activo">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 bg-light">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
-            <form method="post" id="formEditPeriodo">
-                @Html.AntiForgeryToken()
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-medium text-sm">Código del Período</label>
-                        <input type="text" name="Codigo" id="editPeriodoCodigo" class="form-control" required style="text-transform: uppercase;" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-medium text-sm">Nombre Descriptivo</label>
-                        <input type="text" name="Nombre" id="editPeriodoNombre" class="form-control" required />
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-medium text-sm">Fecha Inicio</label>
-                            <input type="date" name="FechaInicio" id="editPeriodoFechaInicio" class="form-control" required />
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-medium text-sm">Fecha Fin</label>
-                            <input type="date" name="FechaFin" id="editPeriodoFechaFin" class="form-control" required />
-                        </div>
-                    </div>
-                    <div>
-                        <label class="form-label fw-medium text-sm">Estado</label>
-                        <select class="form-select" id="editPeriodoActivo" name="Activo">
-                            <option value="true">Activo</option>
-                            <option value="false">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-secondary px-4 shadow-sm"><i class="fas fa-save me-1"></i> Guardar Cambios</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
 }
 
 @section Scripts {

@@ -9,370 +9,396 @@ using System.IO;
 
 namespace SistemaPlanificacionSNP.Web.Controllers
 {
-	[Authorize]
-	[Route("parametrizacion/instituciones")]
-	public class InstitucionesController : Controller
-	{
-		private readonly IApiClient _apiClient;
-		private readonly ILogger<InstitucionesController> _logger;
+    [Authorize]
+    [Route("parametrizacion/instituciones")]
+    public class InstitucionesController : Controller
+    {
+        private readonly IApiClient _apiClient;
+        private readonly ILogger<InstitucionesController> _logger;
 
-		public InstitucionesController(IApiClient apiClient, ILogger<InstitucionesController> logger)
-		{
-			_apiClient = apiClient;
-			_logger = logger;
-		}
+        public InstitucionesController(IApiClient apiClient, ILogger<InstitucionesController> logger)
+        {
+            _apiClient = apiClient;
+            _logger = logger;
+        }
 
-		[HttpGet("")]
-		public async Task<IActionResult> Index(string? buscar)
-		{
-			var model = new InstitucionesIndexViewModel { Buscar = buscar };
+        [HttpGet("")]
+        public async Task<IActionResult> Index(string? buscar)
+        {
+            var model = new InstitucionesIndexViewModel { Buscar = buscar };
 
-			var relevantClaims = User.Claims
-				.Where(c => c.Type.StartsWith("Lectura_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Creacion_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Edicion_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Eliminacion_", StringComparison.OrdinalIgnoreCase)
-					|| string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
-					|| string.Equals(c.Type, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role", StringComparison.OrdinalIgnoreCase))
-				.Select(c => $"{c.Type}={c.Value}")
-				.ToList();
+            var relevantClaims = User.Claims
+                .Where(c => c.Type.StartsWith("Lectura_", StringComparison.OrdinalIgnoreCase)
+                    || c.Type.StartsWith("Creacion_", StringComparison.OrdinalIgnoreCase)
+                    || c.Type.StartsWith("Edicion_", StringComparison.OrdinalIgnoreCase)
+                    || c.Type.StartsWith("Eliminacion_", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.Type, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role", StringComparison.OrdinalIgnoreCase))
+                .Select(c => $"{c.Type}={c.Value}")
+                .ToList();
 
-			_logger.LogInformation("Instituciones.Index claims for user {User}: {Claims}", User.Identity?.Name, string.Join(", ", relevantClaims));
+            _logger.LogInformation("Instituciones.Index claims for user {User}: {Claims}", User.Identity?.Name, string.Join(", ", relevantClaims));
 
-			// Asignar permisos al modelo basado en claims del JWT
-			model.PuedeLeer = User.Claims.Any(c => 
-				string.Equals(c.Type, "Lectura_11", StringComparison.OrdinalIgnoreCase) 
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
-			model.PuedeCrear = User.Claims.Any(c => 
-				string.Equals(c.Type, "Creacion_11", StringComparison.OrdinalIgnoreCase) 
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
-			model.PuedeEditar = User.Claims.Any(c => 
-				string.Equals(c.Type, "Edicion_11", StringComparison.OrdinalIgnoreCase) 
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
-			model.PuedeEliminar = User.Claims.Any(c => 
-				string.Equals(c.Type, "Eliminacion_11", StringComparison.OrdinalIgnoreCase) 
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+            // Asignar permisos al modelo basado en claims del JWT
+            model.PuedeLeer = User.Claims.Any(c =>
+                string.Equals(c.Type, "Lectura_11", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+            model.PuedeCrear = User.Claims.Any(c =>
+                string.Equals(c.Type, "Creacion_11", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+            model.PuedeEditar = User.Claims.Any(c =>
+                string.Equals(c.Type, "Edicion_11", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+            model.PuedeEliminar = User.Claims.Any(c =>
+                string.Equals(c.Type, "Eliminacion_11", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
 
-			try
-			{
-				// Consumimos ambos endpoints en paralelo para mayor velocidad
-				var taskEntidades = _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/entidades");
-				var taskPeriodos = _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
+            try
+            {
+                // Consumimos ambos endpoints en paralelo para mayor velocidad
+                var taskEntidades = _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/entidades");
+                var taskPeriodos = _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
 
-				await Task.WhenAll(taskEntidades, taskPeriodos);
+                await Task.WhenAll(taskEntidades, taskPeriodos);
 
-				var responseEntidades = await taskEntidades;
-				var responsePeriodos = await taskPeriodos;
+                var responseEntidades = await taskEntidades;
+                var responsePeriodos = await taskPeriodos;
 
-				// Procesar Entidades
-				if (responseEntidades != null && responseEntidades.IsSuccessStatusCode)
-				{
-					var json = await responseEntidades.Content.ReadAsStringAsync();
-					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<EntidadPublicaApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-					model.Entidades = envelope?.Data ?? new List<EntidadPublicaApiDto>();
-				}
-				else if (responseEntidades?.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-				{
-					return RedirectToAction("Login", "Account");
-				}
+                // Procesar Entidades
+                if (responseEntidades != null && responseEntidades.IsSuccessStatusCode)
+                {
+                    var json = await responseEntidades.Content.ReadAsStringAsync();
+                    var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<EntidadPublicaApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    model.Entidades = envelope?.Data ?? new List<EntidadPublicaApiDto>();
+                }
+                else if (responseEntidades?.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    return RedirectToAction("Login", "Account");
+                }
 
-				// Procesar Periodos
-				if (responsePeriodos != null && responsePeriodos.IsSuccessStatusCode)
-				{
-					var json = await responsePeriodos.Content.ReadAsStringAsync();
-					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-					model.Periodos = envelope?.Data ?? new List<PeriodoPlanificacionApiDto>();
-				}
+                // Procesar Periodos
+                if (responsePeriodos != null && responsePeriodos.IsSuccessStatusCode)
+                {
+                    var json = await responsePeriodos.Content.ReadAsStringAsync();
+                    var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    model.Periodos = envelope?.Data ?? new List<PeriodoPlanificacionApiDto>();
+                }
 
-				// Filtro local si existe búsqueda
-				if (!string.IsNullOrWhiteSpace(buscar))
-				{
-					var term = buscar.Trim().ToLower();
-					model.Entidades = model.Entidades.Where(e => e.Nombre.ToLower().Contains(term) || e.Sigla.ToLower().Contains(term)).ToList();
-				}
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error in Instituciones.Index: {ex.Message}");
-				ViewBag.Error = "Ocurrió un error inesperado al cargar la información.";
-			}
+                // Filtro local si existe búsqueda
+                if (!string.IsNullOrWhiteSpace(buscar))
+                {
+                    var term = buscar.Trim().ToLower();
+                    model.Entidades = model.Entidades.Where(e => e.Nombre.ToLower().Contains(term) || e.Sigla.ToLower().Contains(term)).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in Instituciones.Index: {ex.Message}");
+                ViewBag.Error = "Ocurrió un error inesperado al cargar la información.";
+            }
 
-			if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
-			if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
-			HttpContext.CargarPermisos(model, "/parametrizacion/instituciones");
-			return View(model);
-		}
+            if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
+            if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
+            HttpContext.CargarPermisos(model, "/parametrizacion/instituciones");
+            return View(model);
+        }
 
-		[HttpGet("crear-entidad")]
-		public async Task<IActionResult> CrearEntidad()
-		{
-			var model = new EntidadPublicaCreateViewModel();
-			await CargarPeriodosDisponibles(model);
-			return View(model);
-		}
+        [HttpGet("crear-entidad")]
+        public async Task<IActionResult> CrearEntidad()
+        {
+            var model = new EntidadPublicaCreateViewModel();
+            await CargarPeriodosDisponibles(model);
+            return View(model);
+        }
 
-		[HttpPost("crear-entidad")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> CrearEntidad(EntidadPublicaCreateViewModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				await CargarPeriodosDisponibles(model);
-				return View(model);
-			}
+        [HttpPost("crear-entidad")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearEntidad(EntidadPublicaCreateViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                await CargarPeriodosDisponibles(model);
+                return View(model);
+            }
 
-			try
-			{
-				var payload = new { model.Codigo, model.Nombre, model.Sigla, model.Tipo, model.NivelGobierno, model.Mision, model.PeriodoPlanificacionId };
-				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/instituciones/entidades", payload);
+            try
+            {
+                var payload = new { model.Codigo, model.Nombre, model.Sigla, model.Tipo, model.NivelGobierno, model.Mision, model.PeriodoPlanificacionId };
+                var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/instituciones/entidades", payload);
 
-				if (response != null && response.IsSuccessStatusCode)
-				{
-					TempData["Success"] = "Entidad Pública registrada exitosamente.";
-					return RedirectToAction(nameof(Index));
-				}
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    TempData["Success"] = "Entidad Pública registrada exitosamente.";
+                    return RedirectToAction(nameof(Index));
+                }
 
-				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible registrar la entidad. Verifica los datos.");
-				ModelState.AddModelError(string.Empty, errorMsg);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error creating Entidad: {ex.Message}");
-				ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
-			}
+                var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible registrar la entidad. Verifica los datos.");
+                ModelState.AddModelError(string.Empty, errorMsg);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating Entidad: {ex.Message}");
+                ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+            }
 
-			await CargarPeriodosDisponibles(model);
-			return View(model);
-		}
+            await CargarPeriodosDisponibles(model);
+            return View(model);
+        }
 
-		[HttpPost("crear-periodo")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> CrearPeriodo(PeriodoPlanificacionCreateViewModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				TempData["Warning"] = "Datos del período incompletos o inválidos.";
-				return RedirectToAction(nameof(Index));
-			}
+        [HttpPost("crear-periodo")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CrearPeriodo(PeriodoPlanificacionCreateViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Warning"] = "Datos del período incompletos o inválidos.";
+                return RedirectToAction(nameof(Index));
+            }
 
-			if (model.FechaInicio > model.FechaFin)
-			{
-				TempData["Warning"] = "La fecha de inicio no puede ser posterior a la fecha de fin.";
-				return RedirectToAction(nameof(Index));
-			}
+            if (model.FechaInicio > model.FechaFin)
+            {
+                TempData["Warning"] = "La fecha de inicio no puede ser posterior a la fecha de fin.";
+                return RedirectToAction(nameof(Index));
+            }
 
-			try
-			{
-				var payload = new { model.Codigo, model.Nombre, model.FechaInicio, model.FechaFin, Activo = true };
-				var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/instituciones/periodos", payload);
+            try
+            {
+                var payload = new { model.Codigo, model.Nombre, model.FechaInicio, model.FechaFin, Activo = true };
+                var response = await _apiClient.SendAsync(HttpMethod.Post, "/api/instituciones/periodos", payload);
 
-				if (response != null && response.IsSuccessStatusCode)
-				{
-					TempData["Success"] = "Período de Planificación creado exitosamente.";
-				}
-				else
-				{
-					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo crear el período.");
-					TempData["Warning"] = errorMsg;
-				}
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error creating Periodo: {ex.Message}");
-				TempData["Warning"] = "Error interno al guardar el período.";
-			}
+                if (response != null && response.IsSuccessStatusCode)
+                {
+                    TempData["Success"] = "Período de Planificación creado exitosamente.";
+                }
+                else
+                {
+                    var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo crear el período.");
+                    TempData["Warning"] = errorMsg;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating Periodo: {ex.Message}");
+                TempData["Warning"] = "Error interno al guardar el período.";
+            }
 
-			return RedirectToAction(nameof(Index));
-		}
+            return RedirectToAction(nameof(Index));
+        }
 
-		[HttpGet("editar-entidad/{id:int}")]
-		public async Task<IActionResult> EditarEntidad(int id)
-		{
-			var model = new EntidadPublicaEditViewModel { EntidadPublicaId = id };
+        [HttpGet("editar-entidad/{id:int}")]
+        public async Task<IActionResult> EditarEntidad(int id)
+        {
+            var model = new EntidadPublicaEditViewModel { EntidadPublicaId = id };
 
-			try
-			{
-				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/instituciones/entidades/{id}");
-				if (response?.IsSuccessStatusCode != true)
-				{
-					TempData["Warning"] = "Entidad no encontrada.";
-					return RedirectToAction(nameof(Index));
-				}
+            try
+            {
+                var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/instituciones/entidades/{id}");
+                if (response?.IsSuccessStatusCode != true)
+                {
+                    TempData["Warning"] = "Entidad no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
 
-				var json = await response.Content.ReadAsStringAsync();
-				var envelope = JsonSerializer.Deserialize<ApiEnvelope<EntidadPublicaApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-				if (envelope?.Data == null)
-				{
-					TempData["Warning"] = "Entidad no encontrada.";
-					return RedirectToAction(nameof(Index));
-				}
+                var json = await response.Content.ReadAsStringAsync();
+                var envelope = JsonSerializer.Deserialize<ApiEnvelope<EntidadPublicaApiDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (envelope?.Data == null)
+                {
+                    TempData["Warning"] = "Entidad no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
 
-				model.Codigo = envelope.Data.Codigo;
-				model.Nombre = envelope.Data.Nombre;
-				model.Sigla = envelope.Data.Sigla;
-				model.Tipo = envelope.Data.Tipo;
-				model.NivelGobierno = envelope.Data.NivelGobierno;
-				model.Mision = envelope.Data.Mision;
-				model.PeriodoPlanificacionId = envelope.Data.PeriodoPlanificacionId;
-				model.Activa = envelope.Data.Activa;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error loading Entidad edit form: {ex.Message}");
-				TempData["Warning"] = "No se pudo cargar la entidad para edición.";
-				return RedirectToAction(nameof(Index));
-			}
+                model.Codigo = envelope.Data.Codigo;
+                model.Nombre = envelope.Data.Nombre;
+                model.Sigla = envelope.Data.Sigla;
+                model.Tipo = envelope.Data.Tipo;
+                model.NivelGobierno = envelope.Data.NivelGobierno;
+                model.Mision = envelope.Data.Mision;
+                model.PeriodoPlanificacionId = envelope.Data.PeriodoPlanificacionId;
+                model.Activa = envelope.Data.Activa;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error loading Entidad edit form: {ex.Message}");
+                TempData["Warning"] = "No se pudo cargar la entidad para edición.";
+                return RedirectToAction(nameof(Index));
+            }
 
-			await CargarPeriodosDisponibles(model);
-			return View(model);
-		}
+            await CargarPeriodosDisponibles(model);
+            return View(model);
+        }
 
-		[HttpPost("editar-entidad/{id:int}")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> EditarEntidad(int id, EntidadPublicaEditViewModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				await CargarPeriodosDisponibles(model);
-				return View(model);
-			}
+        [HttpPost("editar-entidad/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarEntidad(int id, EntidadPublicaEditViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                await CargarPeriodosDisponibles(model);
+                return View(model);
+            }
 
-			try
-			{
-				var payload = new { model.Codigo, model.Nombre, model.Sigla, model.Tipo, model.NivelGobierno, model.Mision, model.PeriodoPlanificacionId };
-				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/instituciones/entidades/{id}", payload);
+            try
+            {
+                var payload = new { model.Codigo, model.Nombre, model.Sigla, model.Tipo, model.NivelGobierno, model.Mision, model.PeriodoPlanificacionId };
+                var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/instituciones/entidades/{id}", payload);
 
-				if (response?.IsSuccessStatusCode == true)
-				{
-					TempData["Success"] = "Entidad actualizada exitosamente.";
-					return RedirectToAction(nameof(Index));
-				}
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    TempData["Success"] = "Entidad actualizada exitosamente.";
+                    return RedirectToAction(nameof(Index));
+                }
 
-				var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar la entidad.");
-				ModelState.AddModelError(string.Empty, errorMsg);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error updating Entidad: {ex.Message}");
-				ModelState.AddModelError(string.Empty, "Error interno al actualizar la entidad.");
-			}
+                var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No fue posible actualizar la entidad.");
+                ModelState.AddModelError(string.Empty, errorMsg);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating Entidad: {ex.Message}");
+                ModelState.AddModelError(string.Empty, "Error interno al actualizar la entidad.");
+            }
 
-			await CargarPeriodosDisponibles(model);
-			return View(model);
-		}
+            await CargarPeriodosDisponibles(model);
+            return View(model);
+        }
 
-		[HttpPost("inactivar-entidad/{id:int}")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> InactivarEntidad(int id)
-		{
-			try
-			{
-				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/entidades/{id}");
-				if (response?.IsSuccessStatusCode == true)
-				{
-					TempData["Success"] = "Entidad inactivada exitosamente.";
-				}
-				else
-				{
-					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo inactivar la entidad.");
-					TempData["Warning"] = errorMsg;
-				}
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error deactivating Entidad: {ex.Message}");
-				TempData["Warning"] = "Error interno al inactivar la entidad.";
-			}
+        [HttpPost("inactivar-entidad/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InactivarEntidad(int id)
+        {
+            try
+            {
+                var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/entidades/{id}");
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    TempData["Success"] = "Entidad inactivada exitosamente.";
+                }
+                else
+                {
+                    var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo inactivar la entidad.");
+                    TempData["Warning"] = errorMsg;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deactivating Entidad: {ex.Message}");
+                TempData["Warning"] = "Error interno al inactivar la entidad.";
+            }
 
-			return RedirectToAction(nameof(Index));
-		}
+            return RedirectToAction(nameof(Index));
+        }
 
-		[HttpPost("editar-periodo/{id:int}")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> EditarPeriodo(int id, PeriodoPlanificacionCreateViewModel model)
-		{
-			if (!ModelState.IsValid)
-			{
-				TempData["Warning"] = "Datos del período incompletos o inválidos.";
-				return RedirectToAction(nameof(Index));
-			}
+        [HttpPost("activar-entidad/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ActivarEntidad(int id)
+        {
+            try
+            {
+                var response = await _apiClient.SendAsync(HttpMethod.Post, $"/api/instituciones/entidades/{id}/activar");
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    TempData["Success"] = "Entidad activada exitosamente.";
+                }
+                else
+                {
+                    var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo activar la entidad.");
+                    TempData["Warning"] = errorMsg;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error activating Entidad: {ex.Message}");
+                TempData["Warning"] = "Error interno al activar la entidad.";
+            }
 
-			if (model.FechaInicio >= model.FechaFin)
-			{
-				TempData["Warning"] = "La fecha de inicio debe ser menor a la fecha de fin.";
-				return RedirectToAction(nameof(Index));
-			}
+            return RedirectToAction(nameof(Index));
+        }
 
-			try
-			{
-				var payload = new { model.Codigo, model.Nombre, model.FechaInicio, model.FechaFin, model.Activo };
-				var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/instituciones/periodos/{id}", payload);
+        [HttpPost("editar-periodo/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditarPeriodo(int id, PeriodoPlanificacionCreateViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Warning"] = "Datos del período incompletos o inválidos.";
+                return RedirectToAction(nameof(Index));
+            }
 
-				if (response?.IsSuccessStatusCode == true)
-				{
-					TempData["Success"] = "Período actualizado exitosamente.";
-				}
-				else
-				{
-					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo actualizar el período.");
-					TempData["Warning"] = errorMsg;
-				}
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error updating Periodo: {ex.Message}");
-				TempData["Warning"] = "Error interno al actualizar el período.";
-			}
+            if (model.FechaInicio >= model.FechaFin)
+            {
+                TempData["Warning"] = "La fecha de inicio debe ser menor a la fecha de fin.";
+                return RedirectToAction(nameof(Index));
+            }
 
-			return RedirectToAction(nameof(Index));
-		}
+            try
+            {
+                var payload = new { model.Codigo, model.Nombre, model.FechaInicio, model.FechaFin, model.Activo };
+                var response = await _apiClient.SendAsync(HttpMethod.Put, $"/api/instituciones/periodos/{id}", payload);
 
-		[HttpPost("inactivar-periodo/{id:int}")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> InactivarPeriodo(int id)
-		{
-			try
-			{
-				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/periodos/{id}");
-				if (response?.IsSuccessStatusCode == true)
-				{
-					TempData["Success"] = "Período inactivado exitosamente.";
-				}
-				else
-				{
-					var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo inactivar el período.");
-					TempData["Warning"] = errorMsg;
-				}
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Error deactivating Periodo: {ex.Message}");
-				TempData["Warning"] = "Error interno al inactivar el período.";
-			}
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    TempData["Success"] = "Período actualizado exitosamente.";
+                }
+                else
+                {
+                    var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo actualizar el período.");
+                    TempData["Warning"] = errorMsg;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating Periodo: {ex.Message}");
+                TempData["Warning"] = "Error interno al actualizar el período.";
+            }
 
-			return RedirectToAction(nameof(Index));
-		}
+            return RedirectToAction(nameof(Index));
+        }
 
-		private async Task CargarPeriodosDisponibles(EntidadPublicaCreateViewModel model)
-		{
-			try
-			{
-				var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
-				if (response?.IsSuccessStatusCode == true)
-				{
-					var json = await response.Content.ReadAsStringAsync();
-					var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-					model.PeriodosDisponibles = (envelope?.Data ?? new List<PeriodoPlanificacionApiDto>())
-						.Where(p => p.Activo)
-						.OrderByDescending(p => p.FechaInicio)
-						.ToList();
-				}
-			}
-			catch
-			{
-				model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
-			}
-		}
+        [HttpPost("inactivar-periodo/{id:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InactivarPeriodo(int id)
+        {
+            try
+            {
+                var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/periodos/{id}");
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    TempData["Success"] = "Período inactivado exitosamente.";
+                }
+                else
+                {
+                    var errorMsg = await ApiHttpErrorHelper.ResolveMutationErrorMessageAsync(response, "No se pudo inactivar el período.");
+                    TempData["Warning"] = errorMsg;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deactivating Periodo: {ex.Message}");
+                TempData["Warning"] = "Error interno al inactivar el período.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task CargarPeriodosDisponibles(EntidadPublicaCreateViewModel model)
+        {
+            try
+            {
+                var response = await _apiClient.SendAsync(HttpMethod.Get, "/api/instituciones/periodos");
+                if (response?.IsSuccessStatusCode == true)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    var envelope = JsonSerializer.Deserialize<ApiEnvelope<List<PeriodoPlanificacionApiDto>>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    model.PeriodosDisponibles = (envelope?.Data ?? new List<PeriodoPlanificacionApiDto>())
+                        .Where(p => p.Activo)
+                        .OrderByDescending(p => p.FechaInicio)
+                        .ToList();
+                }
+            }
+            catch
+            {
+                model.PeriodosDisponibles = new List<PeriodoPlanificacionApiDto>();
+            }
+        }
 
         [HttpGet("exportar")]
         public async Task<IActionResult> ExportarExcel(string? buscar)
