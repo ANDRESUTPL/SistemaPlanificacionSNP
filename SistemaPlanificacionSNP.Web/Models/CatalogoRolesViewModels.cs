@@ -45,7 +45,8 @@ namespace SistemaPlanificacionSNP.Web.Models
     public class CatalogoRolPermisoViewModel
     {
         public int PantallaId { get; set; }
-        public string NombrePantalla { get; set; } = string.Empty;
+		public int? PantallaPadrId { get; set; }
+		public string NombrePantalla { get; set; } = string.Empty;
         public string Ruta { get; set; } = string.Empty;
         public string Icono { get; set; } = string.Empty;
         public int Orden { get; set; }
@@ -58,7 +59,8 @@ namespace SistemaPlanificacionSNP.Web.Models
     public class PantallaCatalogoApiDto
     {
         public int PantallaId { get; set; }
-        public string Nombre { get; set; } = string.Empty;
+		public int? PantallaPadrId { get; set; }
+		public string Nombre { get; set; } = string.Empty;
         public string Ruta { get; set; } = string.Empty;
         public string Icono { get; set; } = string.Empty;
         public int Orden { get; set; }

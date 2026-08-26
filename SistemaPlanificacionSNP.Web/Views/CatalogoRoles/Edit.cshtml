@@ -63,39 +63,106 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @for (var i = 0; i < Model.PermisosPantalla.Count; i++)
-                                    {
-                                        <tr>
-                                            <td class="ps-4">
-                                                <input type="hidden" asp-for="PermisosPantalla[i].PantallaId" />
-                                                <input type="hidden" asp-for="PermisosPantalla[i].NombrePantalla" />
-                                                <input type="hidden" asp-for="PermisosPantalla[i].Ruta" />
-                                                <input type="hidden" asp-for="PermisosPantalla[i].Icono" />
-                                                <input type="hidden" asp-for="PermisosPantalla[i].Orden" />
-                                                <div class="fw-semibold text-dark">@Model.PermisosPantalla[i].NombrePantalla</div>
-                                                <div class="text-muted" style="font-size: 0.85rem;">@Model.PermisosPantalla[i].Ruta</div>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="form-check form-check-inline m-0">
-                                                    <input asp-for="PermisosPantalla[i].Lectura" class="form-check-input" type="checkbox" />
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="form-check form-check-inline m-0">
-                                                    <input asp-for="PermisosPantalla[i].Creacion" class="form-check-input" type="checkbox" />
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="form-check form-check-inline m-0">
-                                                    <input asp-for="PermisosPantalla[i].Edicion" class="form-check-input" type="checkbox" />
-                                                </div>
-                                            </td>
-                                            <td class="pe-4 text-center">
-                                                <div class="form-check form-check-inline m-0">
-                                                    <input asp-for="PermisosPantalla[i].Eliminacion" class="form-check-input" type="checkbox" />
-                                                </div>
-                                            </td>
-                                        </tr>
+                                    @{
+                                        // 1. Indexamos la lista para mantener la posición del Model Binding intacta
+                                        var listaIndexada = Model.PermisosPantalla
+                                            .Select((item, index) => new { Item = item, Index = index })
+                                            .ToList();
+
+                                        // 2. Buscamos los padres (aquellos cuyo PantallaPadrId es null o 0)
+                                        var padres = listaIndexada
+                                            .Where(x => x.Item.PantallaPadrId == null || x.Item.PantallaPadrId == 0)
+                                            .ToList();
+
+                                        var procesados = new HashSet<int>();
+
+                                        foreach (var padre in padres)
+                                        {
+                                            var i = padre.Index;
+                                            procesados.Add(i);
+
+                                            <!-- FILA DEL PADRE -->
+                                            <tr class="bg-light bg-opacity-75 border-top">
+                                                <td class="ps-4">
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].PantallaId" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].PantallaPadrId" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].NombrePantalla" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].Ruta" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].Icono" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[i].Orden" />
+
+                                                    <div class="fw-bold text-dark d-flex align-items-center">
+                                                        @if (!string.IsNullOrEmpty(Model.PermisosPantalla[i].Icono))
+                                                        {
+                                                            <i class="@Model.PermisosPantalla[i].Icono text-primary me-2" style="width: 20px; text-align: center;"></i>
+                                                        }
+                                                        @Model.PermisosPantalla[i].NombrePantalla
+                                                    </div>
+                                                </td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[i].Lectura" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[i].Creacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[i].Edicion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="pe-4 text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[i].Eliminacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                            </tr>
+
+                                            // 3. Buscamos los hijos específicos de este padre
+                                            var hijos = listaIndexada
+                                                .Where(x => x.Item.PantallaPadrId == padre.Item.PantallaId)
+                                                .ToList();
+
+                                            foreach (var hijo in hijos)
+                                            {
+                                                var j = hijo.Index;
+                                                procesados.Add(j);
+
+                                                <!-- FILA DEL HIJO -->
+                                                <tr>
+                                                    <td class="ps-5">
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].PantallaId" />
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].PantallaPadrId" />
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].NombrePantalla" />
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].Ruta" />
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].Icono" />
+                                                        <input type="hidden" asp-for="PermisosPantalla[j].Orden" />
+
+                                                        <div class="fw-semibold text-dark d-flex align-items-center ms-3">
+                                                            <i class="fas fa-level-up-alt fa-rotate-90 text-muted me-2" style="font-size: 0.8rem;"></i>
+                                                            @Model.PermisosPantalla[j].NombrePantalla
+                                                        </div>
+                                                        <div class="text-muted ms-5" style="font-size: 0.80rem;">@Model.PermisosPantalla[j].Ruta</div>
+                                                    </td>
+                                                    <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[j].Lectura" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                    <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[j].Creacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                    <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[j].Edicion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                    <td class="pe-4 text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[j].Eliminacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                </tr>
+                                            }
+                                        }
+
+                                        // 4. Contingencia de seguridad: Renderizamos elementos sin padre para no romper el binding en el POST
+                                        var faltantes = listaIndexada.Where(x => !procesados.Contains(x.Index)).ToList();
+                                        foreach (var faltante in faltantes)
+                                        {
+                                            var k = faltante.Index;
+                                            <tr>
+                                                <td class="ps-5">
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].PantallaId" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].PantallaPadrId" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].NombrePantalla" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].Ruta" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].Icono" />
+                                                    <input type="hidden" asp-for="PermisosPantalla[k].Orden" />
+
+                                                    <div class="fw-semibold text-danger d-flex align-items-center ms-3">
+                                                        <i class="fas fa-exclamation-circle me-2"></i> @Model.PermisosPantalla[k].NombrePantalla (Huérfano)
+                                                    </div>
+                                                </td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[k].Lectura" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[k].Creacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[k].Edicion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                                <td class="pe-4 text-center"><div class="form-check form-check-inline m-0"><input asp-for="PermisosPantalla[k].Eliminacion" class="form-check-input shadow-sm" type="checkbox" /></div></td>
+                                            </tr>
+                                        }
                                     }
                                 </tbody>
                             </table>

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- Inyectamos las variables de entorno para el Test Explorer -->
+    <EnvironmentVariables>
+      <E2E__Credentials__Username>admin.e2e</E2E__Credentials__Username>
+      <E2E__Credentials__Password>Admin123</E2E__Credentials__Password>
+      <E2E__BaseUrl>https://localhost:52550</E2E__BaseUrl>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

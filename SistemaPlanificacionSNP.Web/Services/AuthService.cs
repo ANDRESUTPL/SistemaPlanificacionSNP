@@ -82,6 +82,7 @@ namespace SistemaPlanificacionSNP.Web.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    _logger.LogWarning("Refresh endpoint returned {StatusCode}.", response.StatusCode);
                     return false;
                 }
 
@@ -129,6 +130,7 @@ namespace SistemaPlanificacionSNP.Web.Services
                 };
 
                 await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+                context.User = principal;
                 return true;
             }
             catch (Exception ex)
@@ -220,28 +222,55 @@ namespace SistemaPlanificacionSNP.Web.Services
             context.Response.Cookies.Delete(UserNameKey);
         }
 
-        private static ClaimsPrincipal? BuildPrincipalFromJwt(string accessToken)
+        // Short JWT forms + long .NET URI forms for each essential claim type
+        private static readonly HashSet<string> _essentialClaimTypes = new(StringComparer.OrdinalIgnoreCase)
         {
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(accessToken);
+            "sub", ClaimTypes.NameIdentifier,
+            "unique_name", "name", ClaimTypes.Name,
+            "email", ClaimTypes.Email,
+            "role", ClaimTypes.Role,
+            "Nombre", "Apellido"
+        };
 
-            var claims = token.Claims
-                .Where(c => !string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
-                            && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
-                            && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+		private static ClaimsPrincipal? BuildPrincipalFromJwt(string accessToken)
+		{
+			var handler = new JwtSecurityTokenHandler();
+			var token = handler.ReadJwtToken(accessToken);
 
-            if (!claims.Any())
-            {
-                return null;
-            }
+			var claims = new List<Claim>();
+			foreach (var c in token.Claims)
+			{
+				if (c.Type == "P")
+				{
+					var parts = c.Value.Split(':');
+					if (parts.Length == 2)
+					{
+						var pid = parts[0];
+						var flags = parts[1];
+						if (flags.Contains('L')) claims.Add(new Claim($"Lectura_{pid}", "true"));
+						if (flags.Contains('C')) claims.Add(new Claim($"Creacion_{pid}", "true"));
+						if (flags.Contains('E')) claims.Add(new Claim($"Edicion_{pid}", "true"));
+						if (flags.Contains('D')) claims.Add(new Claim($"Eliminacion_{pid}", "true"));
+					}
+				}
+				else if (!string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
+						 && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
+						 && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
+				{
+					claims.Add(c);
+				}
+			}
 
-            // El JWT emite los roles con el tipo corto "role"; sin esto User.IsInRole no los encuentra.
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, "role");
-            return new ClaimsPrincipal(identity);
-        }
+			if (!claims.Any())
+			{
+				return null;
+			}
 
-        private static DateTimeOffset GetTokenExpiration(string accessToken)
+			// Usamos ClaimTypes.Role aquí también
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
+			return new ClaimsPrincipal(identity);
+		}
+		private static DateTimeOffset GetTokenExpiration(string accessToken)
         {
             var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
             return token.Payload.Expiration.HasValue

@@ -45,6 +45,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Obtener todos los usuarios (requiere permiso de Lectura)
         /// </summary>
         [HttpGet]
+        [Authorize(Policy = "Usuarios.Lectura")]
         public async Task<ActionResult<ApiResponse<List<UsuarioDto>>>> GetAll()
         {
             try
@@ -66,6 +67,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Endpoint aditivo para el modulo unificado de gestion de usuarios.
         /// </summary>
         [HttpGet("con-roles")]
+        [Authorize(Policy = "Usuarios.Lectura")]
         public async Task<ActionResult<ApiResponse<List<UsuarioDto>>>> GetAllConRoles()
         {
             try
@@ -85,6 +87,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Obtener usuario por ID
         /// </summary>
         [HttpGet("{id}")]
+        [Authorize(Policy = "Usuarios.Lectura")]
         public async Task<ActionResult<ApiResponse<UsuarioDto>>> GetById(int id)
         {
             try
@@ -109,6 +112,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Crear nuevo usuario (requiere permiso de Creación)
         /// </summary>
         [HttpPost("crear")]
+        [Authorize(Policy = "Usuarios.Creacion")]
         public async Task<ActionResult<ApiResponse<UsuarioDto>>> Crear([FromBody] UsuarioCreateDto usuarioCreateDto)
         {
             try
@@ -180,6 +184,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Actualizar usuario (requiere permiso de Edición)
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Policy = "Usuarios.Edicion")]
         public async Task<ActionResult<ApiResponse<UsuarioDto>>> Actualizar(int id, [FromBody] UsuarioUpdateDto usuarioUpdateDto)
         {
             try
@@ -254,6 +259,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Eliminar usuario (requiere permiso de Eliminación)
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Policy = "Usuarios.Eliminacion")]
         public async Task<ActionResult<ApiResponse<string>>> Eliminar(int id)
         {
             try
@@ -336,6 +342,7 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
         /// Asignar roles a un usuario (requiere permiso especial)
         /// </summary>
         [HttpPost("{usuarioId}/asignar-roles")]
+        [Authorize(Policy = "Usuarios.Edicion")]
         public async Task<ActionResult<ApiResponse<string>>> AsignarRoles(int usuarioId, [FromBody] AsignarRolesDto asignarRolesDto)
         {
             try

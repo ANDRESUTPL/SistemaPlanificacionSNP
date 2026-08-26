@@ -146,13 +146,12 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
                 }
 
                 // Validar access token (aunque esté expirado)
-                var principal = _tokenGenerator.ValidateToken(refreshTokenDto.AccessToken);
-                if (principal == null)
+                //var principal = _tokenGenerator.ValidateToken(refreshTokenDto.AccessToken);
+				var principal = _tokenGenerator.ValidateTokenWithoutLifetime(refreshTokenDto.AccessToken);
+				if (principal == null)
                 {
-                    // Intentar validar sin considerar expiración
-                    // En un caso real, se debería implementar una validación más permisiva
-                    return Unauthorized(ApiResponse<RefreshTokenResponseDto>.FailureWith("Token inválido"));
-                }
+					return Unauthorized(ApiResponse<RefreshTokenResponseDto>.FailureWith("Token inválido"));
+				}
 
                 // Obtener UsuarioId del token
                 var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

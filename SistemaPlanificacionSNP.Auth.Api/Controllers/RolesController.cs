@@ -82,36 +82,63 @@ namespace SistemaPlanificacionSNP.Auth.Api.Controllers
             }
         }
 
-        [HttpGet("pantallas")]
-        public async Task<ActionResult<ApiResponse<List<PantallaCatalogoDto>>>> GetPantallas()
-        {
-            try
-            {
-                var pantallas = await _context.Pantallas
-                    .Where(p => p.Activo)
-                    .OrderBy(p => p.Orden)
-                    .ThenBy(p => p.Nombre)
-                    .Select(p => new PantallaCatalogoDto
-                    {
-                        PantallaId = p.PantallaId,
-                        Nombre = p.Nombre,
-                        Ruta = p.Ruta,
-                        Icono = p.Icono,
-                        Orden = p.Orden,
-                        Activo = p.Activo
-                    })
-                    .ToListAsync();
+		[HttpGet("pantallas")]
+		public async Task<ActionResult<ApiResponse<List<PantallaCatalogoDto>>>> GetPantallas()
+		{
+			try
+			{
+				// 1. Identificar todas las pantallas que son "padres" (tienen submenús)
+				//var pantallasPadreIds = await _context.Pantallas
+				//	.Where(p => p.PantallaPadrId != null)
+				//	.Select(p => p.PantallaPadrId)
+				//	.Distinct()
+				//	.ToListAsync();
 
-                return Ok(ApiResponse<List<PantallaCatalogoDto>>.SuccessWith(pantallas, $"{pantallas.Count} pantalla(s) encontradas"));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in Roles.GetPantallas: {ex.Message}", ex);
-                return StatusCode(500, ApiResponse<List<PantallaCatalogoDto>>.FailureWith("Error interno del servidor"));
-            }
-        }
+				//// 2. Traer solo las pantallas activas que NO son padres (menús finales)
+				//var pantallas = await _context.Pantallas
+				//	.Where(p => p.Activo && !pantallasPadreIds.Contains(p.PantallaId))
+				//	.OrderBy(p => p.Orden)
+				//	.ThenBy(p => p.Nombre)
+				//	.Select(p => new PantallaCatalogoDto
+				//	{
+				//		PantallaId = p.PantallaId,
+				//		Nombre = p.Nombre,
+				//		Ruta = p.Ruta,
+				//		Icono = p.Icono,
+				//		Orden = p.Orden,
+				//		Activo = p.Activo
+				//	})
+				//	.ToListAsync();
 
-        [HttpGet("{id}")]
+				//return Ok(ApiResponse<List<PantallaCatalogoDto>>.SuccessWith(pantallas, $"{pantallas.Count} pantalla(s) finales encontradas"));
+
+				var pantallas = await _context.Pantallas
+				   .Where(p => p.Activo)
+				   .OrderBy(p => p.Orden)
+				   .ThenBy(p => p.Nombre)
+				   .Select(p => new PantallaCatalogoDto
+				   {
+					   PantallaId = p.PantallaId,
+					   PantallaPadrId = p.PantallaPadrId,
+					   Nombre = p.Nombre,
+					   Ruta = p.Ruta,
+					   Icono = p.Icono,
+					   Orden = p.Orden,
+					   Activo = p.Activo
+				   })
+				   .ToListAsync();
+
+                return Ok(ApiResponse<List<PantallaCatalogoDto>>.SuccessWith(pantallas));
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error in Roles.GetPantallas: {ex.Message}", ex);
+				return StatusCode(500, ApiResponse<List<PantallaCatalogoDto>>.FailureWith("Error interno del servidor"));
+			}
+		}
+
+
+		[HttpGet("{id}")]
         public async Task<ActionResult<ApiResponse<RolDto>>> GetById(int id)
         {
             try

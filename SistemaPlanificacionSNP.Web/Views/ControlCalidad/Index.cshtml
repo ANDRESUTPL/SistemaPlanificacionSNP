@@ -13,14 +13,18 @@
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">
             <!-- Botón de Exportar a Excel -->
-            <a href="/controlcalidad/revisiones/exportar?buscar=@Model.Buscar" class="btn btn-success border shadow-sm px-4 fw-medium">
-                <i class="fas fa-file-excel me-2"></i>Exportar Excel
-            </a>
-
-            <!-- Botón existente de Nueva Revisión -->
-            <a href="/controlcalidad/revisiones/crear" class="btn btn-secondary border shadow-sm px-4 fw-medium">
-                <i class="fas fa-plus me-2"></i>Nueva Revisión
-            </a>
+            @if (Model.PuedeLeer)
+            {
+                <a href="/controlcalidad/revisiones/exportar?buscar=@Model.Buscar" class="btn btn-success border shadow-sm px-4 fw-medium">
+                    <i class="fas fa-file-excel me-2"></i>Exportar Excel
+                </a>
+            }
+            @if (Model.PuedeCrear)
+            {
+                <a href="/controlcalidad/revisiones/crear" class="btn btn-secondary border shadow-sm px-4 fw-medium">
+                    <i class="fas fa-plus me-2"></i>Nueva Revisión
+                </a>
+            }
         </div>
     </div>
 
@@ -133,9 +137,12 @@
                                         }
                                     </td>
                                     <td class="pe-4 text-end">
-                                        <a href="/controlcalidad/revisiones/@rev.RevisionId/editar" class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-1">
-                                            <i class="fas fa-pen me-1"></i>Editar
-                                        </a>
+                                        @if (Model.PuedeEditar)
+                                        {
+                                            <a href="/controlcalidad/revisiones/@rev.RevisionId/editar" class="btn btn-sm btn-outline-secondary rounded-pill px-3 me-1">
+                                                <i class="fas fa-pen me-1"></i>Editar
+                                            </a>
+                                        }
                                         <a href="/controlcalidad/revisiones/@rev.RevisionId" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                                             <i class="fas fa-search-plus me-1"></i>Detalle
                                         </a>
@@ -170,7 +177,7 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const swalSuccess = @Html.Raw(JsonSerializer.Serialize((string?)ViewBag.SwalSuccess));
             const swalWarning = @Html.Raw(JsonSerializer.Serialize((string?)ViewBag.SwalWarning));
 

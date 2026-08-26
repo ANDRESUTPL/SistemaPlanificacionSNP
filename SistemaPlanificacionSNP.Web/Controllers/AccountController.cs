@@ -124,6 +124,46 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 				if (string.IsNullOrEmpty(returnUrl) || returnUrl == "/" || returnUrl.Equals("/SNPWeb/", StringComparison.OrdinalIgnoreCase))
 				{
+
+					// === INICIO DE SOLUCIÓN TEMPORAL PARA DEMO ===
+					try
+					{
+						// Intentamos buscar la propiedad "roles" o "rol" dentro de usuario o data
+						JsonElement rolesElement;
+						if (usuario.TryGetProperty("roles", out rolesElement) || data.TryGetProperty("roles", out rolesElement))
+						{
+							var roles = JsonSerializer.Deserialize<List<SistemaPlanificacionSNP.Infrastructure.DTOs.RolDto>>(
+								rolesElement.GetRawText(),
+								new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+							if (roles != null)
+							{
+								// Extraemos todos los PermisoDto de la lista de roles
+								var permisos = roles.SelectMany(r => r.Permisos).ToList();
+								HttpContext.Session.SetObject("PermisosSesion", permisos);
+							}
+						}
+						else if (usuario.TryGetProperty("rol", out var rolElement) || data.TryGetProperty("rol", out rolElement))
+						{
+							// Contingencia por si la API devuelve un solo objeto RolDto
+							var rol = JsonSerializer.Deserialize<SistemaPlanificacionSNP.Infrastructure.DTOs.RolDto>(
+								rolElement.GetRawText(),
+								new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+							if (rol != null && rol.Permisos != null)
+							{
+								HttpContext.Session.SetObject("PermisosSesion", rol.Permisos);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogWarning($"Fallo al guardar permisos en sesión para demo: {ex.Message}");
+					}
+					// === FIN DE SOLUCIÓN TEMPORAL ===
+
+
+
 					return RedirectToAction("Index", "Dashboard");
 				}
 				return LocalRedirect(returnUrl);
@@ -136,22 +176,49 @@ namespace SistemaPlanificacionSNP.Web.Controllers
             }
         }
 
-        private static ClaimsIdentity BuildIdentityFromAccessToken(string accessToken)
+        // Short JWT forms + long .NET URI forms for each essential claim type
+        private static readonly HashSet<string> _essentialClaimTypes = new(StringComparer.OrdinalIgnoreCase)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.ReadJwtToken(accessToken);
+            "sub", ClaimTypes.NameIdentifier,
+            "unique_name", "name", ClaimTypes.Name,
+            "email", ClaimTypes.Email,
+            "role", ClaimTypes.Role,
+            "Nombre", "Apellido"
+        };
 
-            var claims = token.Claims
-                .Where(c => !string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
-                            && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
-                            && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+		private static ClaimsIdentity BuildIdentityFromAccessToken(string accessToken)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var token = tokenHandler.ReadJwtToken(accessToken);
 
-            // El JWT emite los roles con el tipo corto "role"; sin esto User.IsInRole no los encuentra.
-            return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, "role");
-        }
+			var claims = new List<Claim>();
+			foreach (var c in token.Claims)
+			{
+				if (c.Type == "P")
+				{
+					var parts = c.Value.Split(':');
+					if (parts.Length == 2)
+					{
+						var pid = parts[0];
+						var flags = parts[1];
+						if (flags.Contains('L')) claims.Add(new Claim($"Lectura_{pid}", "true"));
+						if (flags.Contains('C')) claims.Add(new Claim($"Creacion_{pid}", "true"));
+						if (flags.Contains('E')) claims.Add(new Claim($"Edicion_{pid}", "true"));
+						if (flags.Contains('D')) claims.Add(new Claim($"Eliminacion_{pid}", "true"));
+					}
+				}
+				else if (!string.Equals(c.Type, "exp", StringComparison.OrdinalIgnoreCase)
+						 && !string.Equals(c.Type, "nbf", StringComparison.OrdinalIgnoreCase)
+						 && !string.Equals(c.Type, "iat", StringComparison.OrdinalIgnoreCase))
+				{
+					claims.Add(c);
+				}
+			}
+			
+			return new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme, ClaimTypes.Name, ClaimTypes.Role);
+		}
 
-        [HttpGet]
+		[HttpGet]
         [Authorize]
         public async Task<IActionResult> Logout()
         {

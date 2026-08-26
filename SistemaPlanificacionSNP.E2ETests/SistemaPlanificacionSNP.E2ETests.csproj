@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <None Update="appsettings.e2e.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

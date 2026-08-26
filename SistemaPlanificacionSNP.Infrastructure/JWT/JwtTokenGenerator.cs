@@ -15,7 +15,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.JWT
         string GenerateRefreshToken();
         ClaimsPrincipal? ValidateToken(string token);
         DateTime GetTokenExpiration(string token);
-    }
+		ClaimsPrincipal? ValidateTokenWithoutLifetime(string token);
+	}
 
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
@@ -28,10 +29,36 @@ namespace SistemaPlanificacionSNP.Infrastructure.JWT
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Genera un JWT Access Token con información del usuario y roles
-        /// </summary>
-        public string GenerateAccessToken(Usuario usuario, List<Rol> roles)
+		public ClaimsPrincipal? ValidateTokenWithoutLifetime(string token)
+		{
+			try
+			{
+				var tokenHandler = new JwtSecurityTokenHandler();
+				var key = System.Text.Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+
+				return tokenHandler.ValidateToken(token, new TokenValidationParameters
+				{
+					ValidateIssuerSigningKey = true,
+					IssuerSigningKey = new SymmetricSecurityKey(key),
+					ValidateIssuer = true,
+					ValidIssuer = _jwtSettings.Issuer,
+					ValidateAudience = true,
+					ValidAudience = _jwtSettings.Audience,
+					ValidateLifetime = false, // <--- LA CLAVE ESTÁ AQUÍ: No validar expiración
+					ClockSkew = TimeSpan.Zero
+				}, out _);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning($"Token validation without lifetime failed: {ex.Message}");
+				return null;
+			}
+		}
+
+		/// <summary>
+		/// Genera un JWT Access Token con información del usuario y roles
+		/// </summary>
+		public string GenerateAccessToken(Usuario usuario, List<Rol> roles)
         {
             try
             {
@@ -47,6 +74,8 @@ namespace SistemaPlanificacionSNP.Infrastructure.JWT
                     new Claim("Apellido", usuario.Apellido),
                 };
 
+                var permisosEfectivos = new Dictionary<int, (bool Lectura, bool Creacion, bool Edicion, bool Eliminacion)>();
+
                 // Agregar roles como claims
                 foreach (var rol in roles)
                 {
@@ -56,20 +85,43 @@ namespace SistemaPlanificacionSNP.Infrastructure.JWT
                     // Agregar permisos específicos del rol
                     foreach (var permiso in rol.RolPermisos)
                     {
-                        claims.Add(new Claim("Permiso", $"{permiso.PantallaId}:{permiso.Pantalla.Nombre}"));
-                        
-                        if (permiso.Lectura)
-                            claims.Add(new Claim($"Lectura_{permiso.PantallaId}", "true"));
-                        if (permiso.Creacion)
-                            claims.Add(new Claim($"Creacion_{permiso.PantallaId}", "true"));
-                        if (permiso.Edicion)
-                            claims.Add(new Claim($"Edicion_{permiso.PantallaId}", "true"));
-                        if (permiso.Eliminacion)
-                            claims.Add(new Claim($"Eliminacion_{permiso.PantallaId}", "true"));
+                        //claims.Add(new Claim("Permiso", $"{permiso.PantallaId}:{permiso.Pantalla.Nombre}"));
+
+                        if (permisosEfectivos.TryGetValue(permiso.PantallaId, out var actual))
+                        {
+                            permisosEfectivos[permiso.PantallaId] = (
+                                actual.Lectura || permiso.Lectura,
+                                actual.Creacion || permiso.Creacion,
+                                actual.Edicion || permiso.Edicion,
+                                actual.Eliminacion || permiso.Eliminacion);
+                        }
+                        else
+                        {
+                            permisosEfectivos[permiso.PantallaId] = (
+                                permiso.Lectura,
+                                permiso.Creacion,
+                                permiso.Edicion,
+                                permiso.Eliminacion);
+                        }
                     }
                 }
 
-                var token = new JwtSecurityToken(
+				foreach (var (pantallaId, permisos) in permisosEfectivos)
+				{
+					var flags = "";
+					if (permisos.Lectura) flags += "L";
+					if (permisos.Creacion) flags += "C";
+					if (permisos.Edicion) flags += "E";
+					if (permisos.Eliminacion) flags += "D"; // D de Delete
+
+					if (flags.Length > 0)
+					{
+						// En lugar de emitir 4 claims largos, emitimos 1 claim minúsculo: ej. "13:LCED"
+						claims.Add(new Claim("P", $"{pantallaId}:{flags}"));
+					}
+				}
+
+				var token = new JwtSecurityToken(
                     issuer: _jwtSettings.Issuer,
                     audience: _jwtSettings.Audience,
                     claims: claims,

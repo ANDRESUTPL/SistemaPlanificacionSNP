@@ -74,7 +74,8 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 			if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
-
+			
+			HttpContext.CargarPermisos(model, "/controlcalidad/revisiones");
 			return View(model);
 		}
 

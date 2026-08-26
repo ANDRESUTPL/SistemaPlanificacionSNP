@@ -40,34 +40,8 @@ builder.Services.AddAutoMapper(config =>
 });
 builder.Services.AddSingleton(jwtSettings);
 
-// 2. Autenticación JWT (Dejamos solo una configuración)
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-	.AddJwtBearer(options =>
-	{
-		options.TokenValidationParameters = new TokenValidationParameters
-		{
-			ValidateIssuerSigningKey = true,
-			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-			ValidateIssuer = true,
-			ValidIssuer = jwtSettings.Issuer,
-			ValidateAudience = true,
-			ValidAudience = jwtSettings.Audience,
-			ValidateLifetime = true,
-			ClockSkew = TimeSpan.Zero
-		};
-
-		options.Events = new JwtBearerEvents
-		{
-			OnAuthenticationFailed = context =>
-			{
-				if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-				{
-					context.Response.Headers.Append("Token-Expired", "true");
-				}
-				return Task.CompletedTask;
-			}
-		};
-	});
+// 2. Autenticación JWT (Delegada a extensión centralizada)
+builder.Services.AddSnpJwtAuthentication(jwtSettings);
 
 // 3. Inyección de Dependencias del módulo
 builder.Services.AddScoped<IControlCalidadUnitOfWork, ControlCalidadUnitOfWork>();

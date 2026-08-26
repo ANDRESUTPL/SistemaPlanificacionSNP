@@ -7,12 +7,14 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     {
         public int PermisoId { get; set; }
         public int PantallaId { get; set; }
-        public string CodigoPermiso { get; set; } = null!;
+		public int? PantallaPadrId { get; set; }
+		public string CodigoPermiso { get; set; } = null!;
         public string NombrePantalla { get; set; } = null!;
         public bool Lectura { get; set; }
         public bool Creacion { get; set; }
         public bool Edicion { get; set; }
         public bool Eliminacion { get; set; }
+        public string Ruta { get; set; } = null!;
     }
 
     /// <summary>

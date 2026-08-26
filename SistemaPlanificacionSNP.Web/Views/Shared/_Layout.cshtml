@@ -1,3 +1,6 @@
+@using Microsoft.AspNetCore.Http
+@using SistemaPlanificacionSNP.Web.Common
+@using SistemaPlanificacionSNP.Infrastructure.DTOs
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -85,7 +88,19 @@
                                 </div>
                             </div>
                         </div>
+                        @{
+                            // Leemos los permisos directamente de la sesión temporal
+                            var permisosMenu = Context.Session.GetObject<List<PermisoDto>>("PermisosSesion");
 
+                            // Validamos si existe algún permiso que coincida con la ruta y tenga Lectura en true
+                            bool tieneAccesoRoles = permisosMenu != null && permisosMenu.Any(p =>
+                                !string.IsNullOrEmpty(p.Ruta) &&
+                                p.Ruta.Contains("/seguridad/catalogo-roles", StringComparison.OrdinalIgnoreCase) &&
+                                p.Lectura);
+                        }
+
+                        @if (tieneAccesoRoles)
+                        {
                         <div class="text-uppercase text-muted fw-bold mt-4 mb-2 px-3" style="font-size: 0.75rem; letter-spacing: 1px;">
                             Configuración del sistema
                         </div>
@@ -97,6 +112,7 @@
                                 </a>
                             </li>
                         </ul>
+                        }
                     </div>
                 </aside>
 

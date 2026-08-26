@@ -45,13 +45,13 @@ namespace SistemaPlanificacionSNP.Infrastructure.Repositories
 
         public async Task<Usuario?> GetWithRolesAsync(int usuarioId)
         {
-            return await _dbSet
-                .Include(u => u.UsuarioRols)
-                    .ThenInclude(ur => ur.Rol)
-                        .ThenInclude(r => r.RolPermisos)
-                            .ThenInclude(rp => rp.Pantalla)
-                .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId);
-        }
+			return await _dbSet
+		    .Include(u => u.UsuarioRols)
+			    .ThenInclude(ur => ur.Rol)
+				    .ThenInclude(r => r.RolPermisos)
+					    .ThenInclude(rp => rp.Pantalla)
+		    .FirstOrDefaultAsync(u => u.UsuarioId == usuarioId);
+		}
 		public async Task<List<Usuario?>> GetAllUsersWithRolesAsync()
 		{
 			return await _dbSet

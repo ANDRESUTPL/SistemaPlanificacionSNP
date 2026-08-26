@@ -86,41 +86,14 @@ public partial class Program
 
 		// ==================== AUTENTICACIÓN Y AUTORIZACIÓN ====================
 
-		builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-			.AddJwtBearer(options =>
-			{
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuerSigningKey = true,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-					ValidateIssuer = true,
-					ValidIssuer = jwtSettings.Issuer,
-					ValidateAudience = true,
-					ValidAudience = jwtSettings.Audience,
-					ValidateLifetime = true,
-					ClockSkew = TimeSpan.Zero
-				};
-
-				options.Events = new JwtBearerEvents
-				{
-					OnAuthenticationFailed = context =>
-					{
-						if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-						{
-							context.Response.Headers.Append("Token-Expired", "true");
-						}
-						return Task.CompletedTask;
-					},
-					OnTokenValidated = context =>
-					{
-						var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-						logger.LogInformation("Token validado");
-						return Task.CompletedTask;
-					}
-				};
-			});
-
-		// ==================== CONTROLADORES Y API ====================
+		builder.Services.AddSnpJwtAuthentication(jwtSettings);
+		builder.Services.AddAuthorization(options =>
+		{
+			options.AddPolicy("Usuarios.Lectura", policy => policy.RequireClaim("Lectura_6", "true"));
+			options.AddPolicy("Usuarios.Creacion", policy => policy.RequireClaim("Creacion_6", "true"));
+			options.AddPolicy("Usuarios.Edicion", policy => policy.RequireClaim("Edicion_6", "true"));
+			options.AddPolicy("Usuarios.Eliminacion", policy => policy.RequireClaim("Eliminacion_6", "true"));
+		});
 
 		builder.Services.AddControllers();
 		builder.Services.AddEndpointsApiExplorer();

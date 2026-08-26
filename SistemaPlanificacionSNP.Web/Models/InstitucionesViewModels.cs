@@ -26,7 +26,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public bool Activo { get; set; }
 	}
 
-	public class InstitucionesIndexViewModel
+	public class InstitucionesIndexViewModel : IPermisosViewModel
 	{
 		public List<EntidadPublicaApiDto> Entidades { get; set; } = new();
 		public List<PeriodoPlanificacionApiDto> Periodos { get; set; } = new();

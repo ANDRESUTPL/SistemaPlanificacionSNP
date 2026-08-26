@@ -10,17 +10,27 @@ var builder = WebApplication.CreateBuilder(args);
 // HttpClientFactory para comunicación con APIs
 var apiGatewayBaseUrl = builder.Configuration["ApiGateway:BaseUrl"] ?? "https://localhost:52555";
 
-builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
+var apiClientBuilder = builder.Services.AddHttpClient<IApiClient, ApiClient>(client =>
 {
 	client.BaseAddress = new Uri(apiGatewayBaseUrl);
 	client.Timeout = TimeSpan.FromSeconds(30);
 });
+
+// Bypass SSL solo en Development para certificados locales no confiables (Hipótesis B)
+if (builder.Environment.IsDevelopment())
+{
+	apiClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+	{
+		ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+	});
+}
 
 // IHttpContextAccessor para acceder al contexto HTTP
 builder.Services.AddHttpContextAccessor();
 
 // Servicios de negocio
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClaimsTransformation, JwtClaimsTransformation>();
 
 // Autenticación con cookies
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -34,6 +44,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 		options.Cookie.HttpOnly = true;
 		options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 		options.Cookie.SameSite = SameSiteMode.Lax;
+		options.Events.OnRedirectToLogin = context =>
+		{
+			var logger = context.HttpContext.RequestServices
+				.GetRequiredService<ILoggerFactory>()
+				.CreateLogger("CookieAuthentication");
+			logger.LogWarning("Cookie challenge for {Path}; authenticated: {Authenticated}; cookie header present: {CookiePresent}",
+				context.Request.Path,
+				context.HttpContext.User.Identity?.IsAuthenticated == true,
+				context.Request.Headers.ContainsKey("Cookie"));
+				context.Response.Redirect(context.RedirectUri);
+				return Task.CompletedTask;
+		};
 	});
 
 // Autorización
@@ -63,61 +85,69 @@ builder.Services.AddCors(options =>
 
 // ==================== APLICACIÓN ====================
 
+builder.Services.AddSession(options =>
+{
+	options.IdleTimeout = TimeSpan.FromHours(1);
+	options.Cookie.HttpOnly = true;
+	options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
 
 app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession();
+
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
 
-// Middleware de consistencia de sesión: mantiene claims del principal alineados con JWT.
+// Middleware de consistencia de sesión
 app.Use(async (context, next) =>
 {
 	if (context.User?.Identity?.IsAuthenticated == true)
 	{
 		var authService = context.RequestServices.GetRequiredService<IAuthService>();
 		var accessToken = authService.GetAccessToken();
-		var refreshToken = authService.GetRefreshToken();
 
-		if (string.IsNullOrWhiteSpace(accessToken) && string.IsNullOrWhiteSpace(refreshToken))
+		// Si no hay token de acceso, dejamos que continúe. 
+		// El atributo [Authorize] del MVC y las APIs se encargarán de rechazar si es necesario.
+		if (string.IsNullOrWhiteSpace(accessToken))
 		{
 			await next();
 			return;
 		}
 
 		bool shouldRefresh = false;
-		if (string.IsNullOrWhiteSpace(accessToken))
+		var remaining = TimeSpan.Zero;
+		try
 		{
-			shouldRefresh = true;
-		}
-		else
-		{
-			try
-			{
-				var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
-				var remaining = token.ValidTo - DateTime.UtcNow;
-				var hasPermissionClaims = context.User.Claims.Any(c =>
-					c.Type.StartsWith("Lectura_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Creacion_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Edicion_", StringComparison.OrdinalIgnoreCase)
-					|| c.Type.StartsWith("Eliminacion_", StringComparison.OrdinalIgnoreCase));
+			var token = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+			remaining = token.ValidTo - DateTime.UtcNow;
 
-				shouldRefresh = remaining <= TimeSpan.FromMinutes(5) || !hasPermissionClaims;
-			}
-			catch
+			// Solo refrescamos si genuinamente está por expirar (menos de 5 minutos)
+			if (remaining <= TimeSpan.FromMinutes(5))
 			{
 				shouldRefresh = true;
 			}
 		}
+		catch(Exception ex)
+		{
+			app.Logger.LogWarning(ex, "Could not parse access token for {Path}; continuing without refresh.", context.Request.Path);
+			// Si hay un error parseando el token, no cerramos la sesión abruptamente.
+			// Dejamos que el flujo continúe.
+		}
 
 		if (shouldRefresh)
 		{
+			app.Logger.LogInformation("Refreshing access token for {Path}; remaining lifetime: {Remaining}", context.Request.Path, remaining);
 			var refreshed = await authService.RefreshTokenAsync();
 			if (!refreshed)
 			{
+				app.Logger.LogWarning("Access token refresh failed for {Path}; clearing authentication cookies.", context.Request.Path);
+				// Solo si realmente necesitábamos refrescar y falló, cerramos la sesión.
 				authService.ClearAuthData();
 				await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -132,7 +162,6 @@ app.Use(async (context, next) =>
 
 	await next();
 });
-
 app.UseAuthorization();
 
 

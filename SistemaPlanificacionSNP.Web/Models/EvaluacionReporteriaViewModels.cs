@@ -32,12 +32,17 @@ namespace SistemaPlanificacionSNP.Web.Models
 		//public DateTime FechaUltimaActualizacion { get; set; }
 	}
 
-	public class ListadoAvancesViewModel
+	public class ListadoAvancesViewModel : IPermisosViewModel
 	{
 		public List<AvanceProyectoViewModel> Proyectos { get; set; } = new();
 		public string? Buscar { get; set; }
 		public int Page { get; set; } = 1;
 		public int TotalPages { get; set; } = 1;
+
+		public bool PuedeLeer { get; set; }
+		public bool PuedeCrear { get; set; }
+		public bool PuedeEditar { get; set; }
+		public bool PuedeEliminar { get; set; }
 	}
 
 	public class RegistroAvanceViewModel

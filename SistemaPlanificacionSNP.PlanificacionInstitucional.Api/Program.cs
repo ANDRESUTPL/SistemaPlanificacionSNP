@@ -63,22 +63,8 @@ namespace SistemaPlanificacionSNP.PlanificacionInstitucional.Api
 			builder.Services.AddScoped<IPlanesEstrategicosPiService, PlanesEstrategicosPiService>();
 			builder.Services.AddScoped<IProyectosInversionPiService, ProyectosInversionPiService>();
 
-			builder.Services
-				.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-				.AddJwtBearer(options =>
-				{
-					options.TokenValidationParameters = new TokenValidationParameters
-					{
-						ValidateIssuerSigningKey = true,
-						IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-						ValidateIssuer = true,
-						ValidIssuer = jwtSettings.Issuer,
-						ValidateAudience = true,
-						ValidAudience = jwtSettings.Audience,
-						ValidateLifetime = true,
-						ClockSkew = TimeSpan.Zero
-					};
-				});
+			builder.Services.AddSingleton(jwtSettings);
+			builder.Services.AddSnpJwtAuthentication(jwtSettings);
 
 			builder.Services.AddAuthorization();
 			builder.Services.AddControllers();

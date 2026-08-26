@@ -50,13 +50,18 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public int AuditoriasNoConformes { get; set; }
 	}
 
-	public class ControlCalidadIndexViewModel
+	public class ControlCalidadIndexViewModel : IPermisosViewModel
 	{
 		public List<RevisioneApiDto> Revisiones { get; set; } = new();
 		public ControlCalidadDashboardApiDto Dashboard { get; set; } = new();
 		public string? Buscar { get; set; }
 		public int Page { get; set; } = 1;
 		public int TotalPages { get; set; } = 1;
+	
+		public bool PuedeLeer { get; set; }
+		public bool PuedeCrear { get; set; }
+		public bool PuedeEditar { get; set; }
+		public bool PuedeEliminar { get; set; }
 	}
 
 	public class RevisionCreateViewModel

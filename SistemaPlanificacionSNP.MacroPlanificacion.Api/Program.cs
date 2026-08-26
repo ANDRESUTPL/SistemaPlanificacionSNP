@@ -40,35 +40,7 @@ builder.Services.AddAutoMapper(config =>
 
 // 5. JWT Y AUTENTICACIÓN
 builder.Services.AddSingleton(jwtSettings);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-	.AddJwtBearer(options =>
-	{
-		options.TokenValidationParameters = new TokenValidationParameters
-		{
-			ValidateIssuerSigningKey = true,
-			IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-			ValidateIssuer = true,
-			ValidIssuer = jwtSettings.Issuer,
-			ValidateAudience = true,
-			ValidAudience = jwtSettings.Audience,
-			ValidateLifetime = true,
-			ClockSkew = TimeSpan.Zero
-		};
-
-		options.Events = new JwtBearerEvents
-		{
-			OnAuthenticationFailed = context =>
-			{
-				if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-				{
-					context.Response.Headers.Append("Token-Expired", "true");
-				}
-
-				return Task.CompletedTask;
-			}
-		};
-	});
+builder.Services.AddSnpJwtAuthentication(jwtSettings);
 
 builder.Services.AddAuthorization(options =>
 {

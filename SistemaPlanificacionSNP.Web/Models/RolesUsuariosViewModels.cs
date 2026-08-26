@@ -34,7 +34,8 @@ namespace SistemaPlanificacionSNP.Web.Models
     {
         public int PermisoId { get; set; }
         public int PantallaId { get; set; }
-        public string CodigoPermiso { get; set; } = string.Empty;
+		public int? PantallaPadrId { get; set; }
+		public string CodigoPermiso { get; set; } = string.Empty;
         public string NombrePantalla { get; set; } = string.Empty;
         public bool Lectura { get; set; }
         public bool Creacion { get; set; }

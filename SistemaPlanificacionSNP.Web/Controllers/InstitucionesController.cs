@@ -13,11 +13,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 	[Route("parametrizacion/instituciones")]
 	public class InstitucionesController : Controller
 	{
-		private const string ClaimLectura = "Lectura_11";
-		private const string ClaimCreacion = "Creacion_11";
-		private const string ClaimEdicion = "Edicion_11";
-		private const string ClaimEliminacion = "Eliminacion_11";
-
 		private readonly IApiClient _apiClient;
 		private readonly ILogger<InstitucionesController> _logger;
 
@@ -44,16 +39,19 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			_logger.LogInformation("Instituciones.Index claims for user {User}: {Claims}", User.Identity?.Name, string.Join(", ", relevantClaims));
 
-			if (!HasPermission(ClaimLectura))
-			{
-				_logger.LogWarning("User {User} denied by missing claim {Claim}", User.Identity?.Name, ClaimLectura);
-				return RedirectToAccessDenied("No cuentas con permisos para visualizar Entidades Públicas.");
-			}
-
-			model.PuedeLeer = HasPermission(ClaimLectura);
-			model.PuedeCrear = HasPermission(ClaimCreacion);
-			model.PuedeEditar = HasPermission(ClaimEdicion);
-			model.PuedeEliminar = HasPermission(ClaimEliminacion);
+			// Asignar permisos al modelo basado en claims del JWT
+			model.PuedeLeer = User.Claims.Any(c => 
+				string.Equals(c.Type, "Lectura_11", StringComparison.OrdinalIgnoreCase) 
+				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+			model.PuedeCrear = User.Claims.Any(c => 
+				string.Equals(c.Type, "Creacion_11", StringComparison.OrdinalIgnoreCase) 
+				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+			model.PuedeEditar = User.Claims.Any(c => 
+				string.Equals(c.Type, "Edicion_11", StringComparison.OrdinalIgnoreCase) 
+				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
+			model.PuedeEliminar = User.Claims.Any(c => 
+				string.Equals(c.Type, "Eliminacion_11", StringComparison.OrdinalIgnoreCase) 
+				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
 
 			try
 			{
@@ -101,18 +99,13 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 			if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
-
+			HttpContext.CargarPermisos(model, "/parametrizacion/instituciones");
 			return View(model);
 		}
 
 		[HttpGet("crear-entidad")]
 		public async Task<IActionResult> CrearEntidad()
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear entidades.");
-			}
-
 			var model = new EntidadPublicaCreateViewModel();
 			await CargarPeriodosDisponibles(model);
 			return View(model);
@@ -122,11 +115,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearEntidad(EntidadPublicaCreateViewModel model)
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear entidades.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				await CargarPeriodosDisponibles(model);
@@ -161,11 +149,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearPeriodo(PeriodoPlanificacionCreateViewModel model)
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear períodos.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				TempData["Warning"] = "Datos del período incompletos o inválidos.";
@@ -205,11 +188,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("editar-entidad/{id:int}")]
 		public async Task<IActionResult> EditarEntidad(int id)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar entidades.");
-			}
-
 			var model = new EntidadPublicaEditViewModel { EntidadPublicaId = id };
 
 			try
@@ -253,11 +231,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditarEntidad(int id, EntidadPublicaEditViewModel model)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar entidades.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				await CargarPeriodosDisponibles(model);
@@ -292,11 +265,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> InactivarEntidad(int id)
 		{
-			if (!HasPermission(ClaimEliminacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para inactivar entidades.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/entidades/{id}");
@@ -323,11 +291,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditarPeriodo(int id, PeriodoPlanificacionCreateViewModel model)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar períodos.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				TempData["Warning"] = "Datos del período incompletos o inválidos.";
@@ -368,11 +331,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> InactivarPeriodo(int id)
 		{
-			if (!HasPermission(ClaimEliminacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para inactivar períodos.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/instituciones/periodos/{id}");
@@ -419,11 +377,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         [HttpGet("exportar")]
         public async Task<IActionResult> ExportarExcel(string? buscar)
         {
-			if (!HasPermission(ClaimLectura))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para exportar información de Entidades Públicas.");
-			}
-
             try
             {
                 // 1. Obtener datos de ambas APIs en paralelo
@@ -528,35 +481,5 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 return RedirectToAction(nameof(Index), new { buscar });
             }
         }
-
-		private IActionResult RedirectToAccessDenied(string message)
-		{
-			TempData["Warning"] = message;
-			return RedirectToAction("AccessDenied", "Account");
-		}
-
-		private bool HasPermission(string claimType)
-		{
-			var hasGranularClaim = User.Claims.Any(c =>
-				string.Equals(c.Type, claimType, StringComparison.OrdinalIgnoreCase)
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
-
-			if (hasGranularClaim)
-			{
-				return true;
-			}
-
-			var isAdministrador = User.IsInRole("Administrador") || User.Claims.Any(c =>
-				(string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
-				 || string.Equals(c.Type, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role", StringComparison.OrdinalIgnoreCase))
-				&& string.Equals(c.Value, "Administrador", StringComparison.OrdinalIgnoreCase));
-
-			if (isAdministrador)
-			{
-				_logger.LogWarning("User {User} granted permission {Claim} by Administrador fallback because granular claim was not present.", User.Identity?.Name, claimType);
-			}
-
-			return isAdministrador;
-		}
     }
 }

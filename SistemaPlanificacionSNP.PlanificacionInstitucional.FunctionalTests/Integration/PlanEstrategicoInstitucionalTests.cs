@@ -49,39 +49,39 @@ public sealed class PlanEstrategicoInstitucionalTests : PlanificacionInstitucion
         body.Data.PeriodoFin.Should().Be(2030);
     }
 
-    [Fact]
-    [Trait("Category", "Functional")]
-    [Trait("Microservice", "PlanificacionInstitucional")]
-    public async Task CrearPlanEstrategicoInstitucional_ConPeriodoInvalido_DebeRetornarBadRequest()
-    {
-        // Arrange
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Add("X-Test-EntidadPublicaId", "10");
+	[Fact]
+	[Trait("Category", "Functional")]
+	[Trait("Microservice", "PlanificacionInstitucional")]
+	public async Task CrearPlanEstrategicoInstitucional_ConPeriodoInvalido_DebeRetornarBadRequest()
+	{
+		// Arrange
+		var client = CreateClient();
+		client.DefaultRequestHeaders.Add("X-Test-EntidadPublicaId", "10");
 
-        var request = new PlanesEstrategicoCreateDto
-        {
-            EntidadPublicaId = 10,
-            Entidad = "Ministerio de Planificación e Inversión Pública",
+		var request = new PlanesEstrategicoCreateDto
+		{
+			EntidadPublicaId = 10,
+			Entidad = "Ministerio de Planificación e Inversión Pública",
             PlanNacionalId = 1,
-            PeriodoPlanificacionId = 1,
-            PeriodoInicio = 2030, // Inválido: Inicio > Fin
-            PeriodoFin = 2025,
-            Estado = "Borrador"
-        };
+			PeriodoPlanificacionId = 1,
+			PeriodoInicio = 2030, // Inválido: Inicio > Fin
+			PeriodoFin = 2025,
+			Estado = "Borrador"
+		};
 
-        // Act
-        var response = await client.PostAsJsonAsync("/api/PlanesEstrategicos/crear", request);
+		// Act
+		var response = await client.PostAsJsonAsync("/api/PlanesEstrategicos/crear", request);
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+		// Assert
+		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        var errorDetails = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
+		var errorDetails = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
 
-        errorDetails.Should().NotBeNull();
-        errorDetails!.Errors.Should().NotBeEmpty();
+		errorDetails.Should().NotBeNull();
+		errorDetails!.Errors.Should().NotBeEmpty();
 
-        // Actualizamos el texto esperado para que coincida con tu validador
-        var rawJson = await response.Content.ReadAsStringAsync();
-        rawJson.Should().Contain("PeriodoFin no puede ser menor a PeriodoInicio");
-    }
+		// Actualizamos el texto esperado para que coincida con tu validador
+		var rawJson = await response.Content.ReadAsStringAsync();
+		rawJson.Should().Contain("PeriodoFin no puede ser menor a PeriodoInicio");
+	}
 }

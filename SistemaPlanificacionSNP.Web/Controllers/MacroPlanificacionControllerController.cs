@@ -13,11 +13,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 	[Route("macroplanificacion/planes")]
 	public class MacroPlanificacionController : Controller
 	{
-		private const string ClaimLectura = "Lectura_13";
-		private const string ClaimCreacion = "Creacion_13";
-		private const string ClaimEdicion = "Edicion_13";
-		private const string ClaimEliminacion = "Eliminacion_13";
-
 		private readonly IApiClient _apiClient;
 		private readonly ILogger<MacroPlanificacionController> _logger;
 
@@ -31,16 +26,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		public async Task<IActionResult> Index(string? buscar)
 		{
 			var model = new MacroPlanificacionIndexViewModel { Buscar = buscar };
-
-			if (!HasPermission(ClaimLectura))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para visualizar Planes Nacionales.");
-			}
-
-			model.PuedeLeer = HasPermission(ClaimLectura);
-			model.PuedeCrear = HasPermission(ClaimCreacion);
-			model.PuedeEditar = HasPermission(ClaimEdicion);
-			model.PuedeEliminar = HasPermission(ClaimEliminacion);
 
 			try
 			{
@@ -91,17 +76,14 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 			if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 			if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
 
+			HttpContext.CargarPermisos(model, "/macroplanificacion/planes");
+
 			return View(model);
 		}
 
 		[HttpGet("crear")]
 		public async Task<IActionResult> CrearPlan()
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear planes nacionales.");
-			}
-
 			var model = new PlanNacionalCreateViewModel();
 			await CargarPeriodosDisponibles(model);
 			return View(model);
@@ -111,11 +93,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearPlan(PlanNacionalCreateViewModel model)
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear planes nacionales.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				await CargarPeriodosDisponibles(model);
@@ -170,11 +147,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("{id:int}/editar")]
 		public async Task<IActionResult> EditarPlan(int id)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar planes nacionales.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/planesnacionales/{id}");
@@ -228,11 +200,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditarPlan(int id, PlanNacionalEditViewModel model)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar planes nacionales.");
-			}
-
 			if (id != model.PlanNacionalId)
 			{
 				return BadRequest();
@@ -303,11 +270,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EliminarPlan(int id)
 		{
-			if (!HasPermission(ClaimEliminacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para eliminar planes nacionales.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/planesnacionales/{id}");
@@ -375,11 +337,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("{id:int}")]
 		public async Task<IActionResult> Detalle(int id)
 		{
-			if (!HasPermission(ClaimLectura))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para visualizar el detalle del plan nacional.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/planesnacionales/{id}/jerarquia");
@@ -396,9 +353,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 					if (envelope?.Data != null)
 					{
-						ViewBag.PuedeCrear = HasPermission(ClaimCreacion);
-						ViewBag.PuedeEditar = HasPermission(ClaimEdicion);
-						ViewBag.PuedeEliminar = HasPermission(ClaimEliminacion);
 						if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 						if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
 						return View(envelope.Data);
@@ -420,11 +374,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> CrearObjetivo(ObjetivoMacroCreateViewModel model)
 		{
-			if (!HasPermission(ClaimCreacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para crear objetivos estratégicos nacionales.");
-			}
-
 			if (!ModelState.IsValid)
 			{
 				TempData["Warning"] = "Datos del objetivo incompletos o inválidos.";
@@ -458,11 +407,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[HttpGet("{planId:int}/objetivos/{objetivoId:int}/editar")]
 		public async Task<IActionResult> EditarObjetivo(int planId, int objetivoId)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar objetivos estratégicos nacionales.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Get, $"/api/objetivosestrategicos/{objetivoId}");
@@ -515,11 +459,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EditarObjetivo(int planId, int objetivoId, ObjetivoMacroEditViewModel model)
 		{
-			if (!HasPermission(ClaimEdicion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para editar objetivos estratégicos nacionales.");
-			}
-
 			if (planId != model.PlanNacionalId || objetivoId != model.ObjetivoEstrategicoId)
 			{
 				return BadRequest();
@@ -557,11 +496,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> EliminarObjetivo(int planId, int objetivoId)
 		{
-			if (!HasPermission(ClaimEliminacion))
-			{
-				return RedirectToAccessDenied("No cuentas con permisos para eliminar objetivos estratégicos nacionales.");
-			}
-
 			try
 			{
 				var response = await _apiClient.SendAsync(HttpMethod.Delete, $"/api/objetivosestrategicos/{objetivoId}");
@@ -587,11 +521,6 @@ namespace SistemaPlanificacionSNP.Web.Controllers
         [HttpGet("exportar")]
         public async Task<IActionResult> ExportarExcel(string? buscar)
         {
-            if (!HasPermission(ClaimLectura))
-            {
-                return RedirectToAccessDenied("No cuentas con permisos para exportar Planes Nacionales.");
-            }
-
             try
             {
                 // Obtenemos los datos desde la API
@@ -666,29 +595,5 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 return RedirectToAction(nameof(Index), new { buscar });
             }
         }
-
-		private IActionResult RedirectToAccessDenied(string message)
-		{
-			TempData["Warning"] = message;
-			return RedirectToAction("AccessDenied", "Account");
-		}
-
-		private bool HasPermission(string claimType)
-		{
-			var hasGranularClaim = User.Claims.Any(c =>
-				string.Equals(c.Type, claimType, StringComparison.OrdinalIgnoreCase)
-				&& string.Equals(c.Value, "true", StringComparison.OrdinalIgnoreCase));
-
-			if (hasGranularClaim)
-			{
-				return true;
-			}
-
-			// El JWT emite el rol como "role" y como el URI largo; IsInRole solo cubre el RoleClaimType configurado.
-			return User.IsInRole("Administrador") || User.Claims.Any(c =>
-				(string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
-				 || string.Equals(c.Type, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role", StringComparison.OrdinalIgnoreCase))
-				&& string.Equals(c.Value, "Administrador", StringComparison.OrdinalIgnoreCase));
-		}
     }
 }

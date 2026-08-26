@@ -25,6 +25,8 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public string Nombre { get; set; } = string.Empty;
 		public decimal Monto { get; set; }
 		public string Estado { get; set; } = string.Empty;
+		public decimal? AvanceFisico { get; set; }
+		public decimal? AvanceFinanciero { get; set; }
 		public List<RespaldoEjecucionApiDto> RespaldosEjecucion { get; set; } = new();
 	}
 
@@ -43,13 +45,18 @@ namespace SistemaPlanificacionSNP.Web.Models
 	}
 
 	// --- ViewModels para las Vistas MVC ---
-	public class PlanificacionIndexViewModel
+	public class PlanificacionIndexViewModel : IPermisosViewModel
 	{
 		public List<PlanesEstrategicoApiDto> Planes { get; set; } = new();
 		public PlanificacionDashboardApiDto Dashboard { get; set; } = new();
 		public string? Buscar { get; set; }
 		public int Page { get; set; } = 1;
 		public int TotalPages { get; set; } = 1;
+		
+		public bool PuedeLeer { get; set; }
+		public bool PuedeCrear { get; set; }
+		public bool PuedeEditar { get; set; }
+		public bool PuedeEliminar { get; set; }
 	}
 
 	public class PlanEstrategicoCreateViewModel

@@ -18,6 +18,7 @@ namespace SistemaPlanificacionSNP.Infrastructure.DTOs
     public class PantallaCatalogoDto
     {
         public int PantallaId { get; set; }
+        public int? PantallaPadrId { get; set; }
         public string Nombre { get; set; } = null!;
         public string Ruta { get; set; } = null!;
         public string Icono { get; set; } = null!;

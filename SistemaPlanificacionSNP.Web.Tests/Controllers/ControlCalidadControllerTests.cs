@@ -196,6 +196,12 @@ public class ControlCalidadControllerTests : ControllerTestBase
             {
                 new { proyectoInversionId = 10, planEstrategicoId = 1, codigoProyecto = "CUP-001", nombre = "Hospital General", monto = 100m, estado = "Ejecucion" }
             })));
+
+        apiClientMock.Setup(x => x.SendAsync(HttpMethod.Get, "/api/proyectosinversion?pageNumber=1&pageSize=1000", null))
+            .ReturnsAsync(WebTestData.JsonResponse(WebTestData.ApiPaginatedResponse(new[]
+            {
+                new { proyectoInversionId = 10, planEstrategicoId = 1, codigoProyecto = "CUP-001", nombre = "Hospital General", monto = 100m, estado = "Ejecucion" }
+            })));
     }
 
     private static ControlCalidadController BuildController(Mock<IApiClient> apiClientMock)

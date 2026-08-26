@@ -58,9 +58,6 @@
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
-      "RouteClaimsRequirement": {
-        "Lectura_1": "true"
-      },
       "DangerousAcceptAnyServerCertificateValidator": true
     },
     {

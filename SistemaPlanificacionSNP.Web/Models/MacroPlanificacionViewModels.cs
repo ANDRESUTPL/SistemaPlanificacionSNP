@@ -33,7 +33,7 @@ namespace SistemaPlanificacionSNP.Web.Models
 		public int TotalObjetivos { get; set; }
 	}
 
-	public class MacroPlanificacionIndexViewModel
+	public class MacroPlanificacionIndexViewModel : IPermisosViewModel
 	{
 		public List<MacroPlanNacionalApiDto> PlanesNacionales { get; set; } = new();
 		public MacroPlanNacionalResumenApiDto Resumen { get; set; } = new();

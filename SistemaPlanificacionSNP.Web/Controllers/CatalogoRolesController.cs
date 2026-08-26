@@ -223,7 +223,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                 RolId = rolResult.Data.RolId,
                 Nombre = rolResult.Data.Nombre,
                 Descripcion = rolResult.Data.Descripcion,
-                Activo = rolResult.Data.Activo
+                Activo = rolResult.Data.Activo,
             };
 
             await PopulatePermissionMatrixAsync(model, BuildSelectionDictionary(rolResult.Data.Permisos));
@@ -327,6 +327,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
                     return new CatalogoRolPermisoViewModel
                     {
                         PantallaId = p.PantallaId,
+						PantallaPadrId = p.PantallaPadrId,
                         NombrePantalla = p.Nombre,
                         Ruta = p.Ruta,
                         Icono = p.Icono,

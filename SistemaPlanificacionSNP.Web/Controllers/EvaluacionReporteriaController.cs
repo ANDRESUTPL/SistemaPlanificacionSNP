@@ -68,7 +68,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 				_logger.LogError($"Error en Dashboard Ejecutivo: {ex.Message}");
 				ViewBag.Error = "No fue posible cargar las métricas en este momento.";
 			}
-
+		
 			return View(model);
 		}
 
@@ -125,7 +125,7 @@ namespace SistemaPlanificacionSNP.Web.Controllers
 
 			if (TempData.TryGetValue("Success", out var success)) ViewBag.SwalSuccess = success;
 			if (TempData.TryGetValue("Warning", out var warning)) ViewBag.SwalWarning = warning;
-
+			HttpContext.CargarPermisos(model, "/evaluacion/avances");
 			return View(model);
 		}
 
